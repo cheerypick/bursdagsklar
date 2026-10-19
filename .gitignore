@@ -38,3 +38,7 @@ web-build/
 
 # preview build
 dist-*/
+
+# Playwright
+test-results/
+playwright-report/

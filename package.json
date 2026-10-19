@@ -24,6 +24,7 @@
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/node": "^26.6.5",
     "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
@@ -44,7 +45,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "export:web": "expo export --platform web --output-dir dist && node scripts/postexport.mjs dist",
-    "ci": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run export:web"
+    "ci": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run export:web",
+    "e2e": "playwright test"
   },
   "private": true,
   "engines": {

@@ -65,15 +65,23 @@ export function isValidDate(y: number, m: number, d: number): boolean {
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
 }
 
-/** Today's calendar date in Europe/Oslo. */
+/**
+ * Today's calendar date in Europe/Oslo.
+ * Built from formatToParts, never from a locale's formatted string: WebKit/Safari
+ * formats 'en-CA' as «10/19/2026», not «2026-10-19», which broke every date parse.
+ */
 export function todayOslo(now: Date = new Date()): ISODate {
-  // en-CA formats as YYYY-MM-DD
-  return new Intl.DateTimeFormat('en-CA', {
+  const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Europe/Oslo',
     year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(now);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const y = get('year');
+  const m = get('month');
+  const day = get('day');
+  return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 /** ISO week: Monday of the week containing iso. */

@@ -13,7 +13,9 @@ npm install
 npm run web        # open in the browser (http://localhost:8081)
 npm start          # Expo dev server: press i / a, or scan the QR code with Expo Go
 npm test           # unit tests (src/core)
-npm run ci         # everything CI runs: typecheck, lint, prettier, tests, web export
+npm run ci         # typecheck, lint, prettier, tests, web export
+npm run e2e        # the whole flow in WebKit (Safari) and Chromium, after export:web
+                   # first time: npx playwright install webkit chromium
 ```
 
 ## Stack

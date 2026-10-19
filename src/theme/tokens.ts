@@ -29,15 +29,26 @@ export const radii = { lg: 28, md: 20, sm: 14, pill: 999 } as const;
 /** 4-pt spacing scale; 22 is the prototype's page gutter. */
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 22, xxl: 28, xxxl: 40 } as const;
 
-/** Font family names as registered with expo-font in app/_layout.tsx. */
+/**
+ * Font family names as registered with expo-font in app/_layout.tsx.
+ *
+ * On web the first render never waits for these files (Safari/WebKit can leave
+ * `document.fonts.load()` pending, which blanked the page). So each family carries
+ * a system-font fallback: text shows at once in the system font and swaps to the
+ * brand font when it arrives. Native resolves a single family name, so no stack there.
+ */
+const DISPLAY_FALLBACK = ', ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const BODY_FALLBACK = ', system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const withFallback = (family: string, fallback: string) => (Platform.OS === 'web' ? `${family}${fallback}` : family);
+
 export const fonts = {
-  display: 'BricolageGrotesque_700Bold',
-  displayHeavy: 'BricolageGrotesque_800ExtraBold',
-  displaySemi: 'BricolageGrotesque_600SemiBold',
-  body: 'Figtree_400Regular',
-  bodyMedium: 'Figtree_500Medium',
-  bodySemi: 'Figtree_600SemiBold',
-  bodyBold: 'Figtree_700Bold',
+  display: withFallback('BricolageGrotesque_700Bold', DISPLAY_FALLBACK),
+  displayHeavy: withFallback('BricolageGrotesque_800ExtraBold', DISPLAY_FALLBACK),
+  displaySemi: withFallback('BricolageGrotesque_600SemiBold', DISPLAY_FALLBACK),
+  body: withFallback('Figtree_400Regular', BODY_FALLBACK),
+  bodyMedium: withFallback('Figtree_500Medium', BODY_FALLBACK),
+  bodySemi: withFallback('Figtree_600SemiBold', BODY_FALLBACK),
+  bodyBold: withFallback('Figtree_700Bold', BODY_FALLBACK),
 } as const;
 
 /** Type scale (px). */

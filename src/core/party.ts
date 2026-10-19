@@ -4,7 +4,7 @@
  */
 import type { HHMM, HomeItemId, ISODate, Party, ThemeId } from './model';
 import { SCHEMA_VERSION } from './model';
-import { DEFAULT_HOST_ADULTS, muffinsDefault, programmeDefaults } from './rules/constants';
+import { DEFAULT_HOST_ADULTS, programmeDefaults } from './rules/constants';
 import { diffDays, formatRangeCompact } from './rules/dates';
 import { defaultMenu, MENU_NAMES } from './rules/food';
 import { headCount } from './rules/people';
@@ -62,7 +62,8 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     cake: {
       mode: 'bake',
       cakeId: age <= 6 ? 'vaniljekake-langpanne' : 'sjokoladekake-langpanne',
-      muffins: muffinsDefault(age),
+      // off until the parent picks it on the Kake step (muffinsDefault suggests it there)
+      muffins: false,
     },
     programme: programmeDefaults(age),
     guests: [],
@@ -106,6 +107,8 @@ export function homeItemsFor(p: Party): HomeItemId[] {
     if (id === 'pizzahjul') return p.menu.kind === 'pizza';
     if (id === 'stor-kjele') return p.menu.kind === 'wienerpolser';
     if (id === 'grill') return p.menu.kind === 'grillpolser';
+    if (id === 'laken-fiskedam' || id === 'fiskestang') return p.programme.includeSkattejakt;
+    if (id === 'muffinsformer') return p.cake.muffins;
     return true;
   });
 }
@@ -143,7 +146,7 @@ export function summarize(p: Party, today: ISODate): PartySummary {
     countdownLabel,
     kidsComing: hc.kidsComing,
     adultsEating: hc.adultsEating,
-    menuLine: `${MENU_NAMES[p.menu.kind]} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
+    menuLine: `${p.menuChosen ? MENU_NAMES[p.menu.kind] : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
     cakeLine: p.cake.mode === 'buy' ? 'Kake fra bakeren' : `${theme.cake}${p.cake.muffins ? ' og muffins' : ''}`,
     programmeLine: `Program ${tid}${p.programme.includeSkattejakt ? ' med skattejakt' : ''}`,
     tasksThisWeek: pr.thisWeekOpen,

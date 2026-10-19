@@ -35,10 +35,9 @@ export const nb = {
   date: {
     title: 'Når er festen?',
     lede: 'Vi regner ut fristene bakover fra datoen.',
-    placeholder: 'For eksempel 8. november',
+    placeholder: 'Trykk for å velge dato',
     label: 'Dato for festen',
-    youWrote: 'Du skrev',
-    pickInstead: 'Velg i kalenderen',
+    nextSaturdays: 'Eller en av de neste lørdagene:',
     time: (range: string) => `Kl. ${range}`,
     fits: (alder: number, tekst: string) => `Passer for ${alder}-åringer: ${tekst}`,
     start: 'Start',
@@ -58,7 +57,7 @@ export const nb = {
   },
   theme: {
     title: (navn: string) => `Hva er ${navn} opptatt av nå?`,
-    lede: 'Temaet går igjen i invitasjonen, kaken, piñataen og skattejakten.',
+    lede: 'Temaet går igjen i invitasjonen, kaken og aktivitetene.',
     cta: 'Lag planen',
   },
   ready: {
@@ -124,10 +123,10 @@ export const nb = {
       title: 'Mat',
       text: 'Her velger du hovedrett: grillpølser, wienerpølser, pizza, taco eller din egen rett. Vi regner ut mengdene med litt ekstra, og lager handlelista.',
     },
-    cake: { title: 'Kake', text: 'Her kommer kaken med oppskrift tilpasset antall gjester, og muffins til de minste.' },
+    cake: { title: 'Kake', text: 'Her kommer kaken, med oppskrift tilpasset antall gjester.' },
     programme: {
       title: 'Program og leker',
-      text: 'Her kommer et ferdig program med klokkeslett, leker, piñata og skattejakt.',
+      text: 'Her kommer et ferdig program med klokkeslett og leker dere velger selv.',
     },
     day: {
       title: 'Festdagen',

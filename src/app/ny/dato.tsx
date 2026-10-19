@@ -1,21 +1,22 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
+import { DatePicker } from '../../features/setup/DatePicker';
 import { Icon, Pill, PillRow, Surface, Text } from '../../ui';
 import { colors, fonts, radii, TOUCH } from '../../theme';
 import { nb } from '../../i18n/nb';
 import {
-  DATE_ERRORS,
+  dateBounds,
   defaultPartyTime,
   diffDays,
-  formatLongCap,
+  formatDayMonthShort,
   formatRange,
   fromMinutes,
   isWeekend,
   minutesOf,
-  parseDateInput,
+  nextSaturdays,
   SHORT_NOTICE_DAYS,
   weekendNudge,
   type ISODate,
@@ -25,27 +26,23 @@ export default function DateStep() {
   const { draft, updateDraft, today } = useParty();
   const router = useRouter();
   const [editTime, setEditTime] = useState(false);
-  const [focused, setFocused] = useState(false);
-  // «Nei» is only shown as chosen after the parent has actually tapped it
-  const [saidNo, setSaidNo] = useState(false);
   const age = draft.age ?? 5;
+  const { min, max } = dateBounds(today);
 
-  const parsed = parseDateInput(draft.dateText, today);
-  const typed: ISODate | null = parsed.ok ? parsed.date : null;
-  const nudge = typed ? weekendNudge(typed, today) : null;
   const chosen = draft.date;
+  // the gentle hint stays about the date the parent picked, even after a one-tap switch
+  const [picked, setPicked] = useState<ISODate | null>(chosen);
+  const nudge = picked ? weekendNudge(picked, today) : null;
   const why = chosen ? defaultPartyTime(age, isWeekend(chosen)).why : '';
+  const saturdays = nextSaturdays(today, 3);
 
-  const setDate = (date: ISODate | null, text = draft.dateText) => {
-    if (!date) return updateDraft({ dateText: text, date: null });
+  const setDate = (date: ISODate) => {
     const t = defaultPartyTime(age, isWeekend(date));
-    updateDraft({ dateText: text, date, start: t.start, end: t.end });
+    updateDraft({ dateText: date, date, start: t.start, end: t.end });
   };
-
-  const onType = (text: string) => {
-    setSaidNo(false);
-    const r = parseDateInput(text, today);
-    setDate(r.ok ? r.date : null, text);
+  const pick = (date: ISODate) => {
+    setPicked(date);
+    setDate(date);
   };
 
   const shift = (which: 'start' | 'end', delta: number) => {
@@ -61,7 +58,6 @@ export default function DateStep() {
     updateDraft({ start: fromMinutes(s), end: fromMinutes(e) });
   };
 
-  const showError = !parsed.ok && parsed.reason !== 'empty' && draft.dateText.trim().length >= 3;
   const shortNotice = chosen ? diffDays(today, chosen) < SHORT_NOTICE_DAYS : false;
 
   return (
@@ -74,65 +70,48 @@ export default function DateStep() {
       nextDisabled={!chosen}
       testID="step-date"
     >
-      <TextInput
+      <DatePicker
         testID="date-input"
-        value={draft.dateText}
-        onChangeText={onType}
+        value={chosen}
+        min={min}
+        max={max}
+        onChange={pick}
+        label={nb.date.label}
         placeholder={nb.date.placeholder}
-        placeholderTextColor="#B8B2A8"
-        accessibilityLabel={nb.date.label}
-        autoCorrect={false}
-        autoFocus
-        returnKeyType="done"
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={[styles.field, focused && { borderBottomColor: colors.pink }]}
       />
-      {showError ? (
-        <Text style={styles.error} accessibilityLiveRegion="polite">
-          {DATE_ERRORS[parsed.ok ? 'unparsed' : parsed.reason]}
+
+      <View style={{ marginTop: 14 }} testID="saturday-chips">
+        <Text variant="small" style={{ marginBottom: 8 }}>
+          {nb.date.nextSaturdays}
         </Text>
-      ) : null}
+        <PillRow>
+          {saturdays.map((sat) => (
+            <Pill
+              key={sat}
+              label={formatDayMonthShort(sat)}
+              accessibilityLabel={`Lørdag ${formatDayMonthShort(sat)}`}
+              on={chosen === sat}
+              onPress={() => pick(sat)}
+            />
+          ))}
+        </PillRow>
+      </View>
 
-      {typed && chosen ? (
+      {chosen ? (
         <Surface style={{ marginTop: 22 }}>
-          <Text variant="small">
-            {nb.date.youWrote} «{draft.dateText.trim()}»
-          </Text>
-          <Text style={styles.typed} testID="date-result">
-            {formatLongCap(chosen)}
-          </Text>
-
-          {nudge ? (
-            <View style={styles.nudge} testID="weekend-nudge">
+          {nudge && chosen !== nudge.saturday ? (
+            <View style={styles.nudge} testID="weekend-nudge" accessibilityLiveRegion="polite">
               <Text style={{ fontFamily: fonts.bodySemi }}>{nudge.question}</Text>
               <View style={{ marginTop: 12 }}>
                 <PillRow>
-                  <Pill
-                    light
-                    label={nudge.yes}
-                    on={chosen === nudge.saturday}
-                    onPress={() => {
-                      setSaidNo(false);
-                      setDate(nudge.saturday);
-                    }}
-                  />
-                  <Pill
-                    light
-                    label={nudge.no}
-                    on={saidNo && chosen === typed}
-                    onPress={() => {
-                      setSaidNo(true);
-                      setDate(typed);
-                    }}
-                  />
+                  <Pill light label={nudge.yes} onPress={() => setDate(nudge.saturday)} />
                 </PillRow>
               </View>
             </View>
           ) : null}
 
           {draft.start && draft.end ? (
-            <View style={styles.timechip}>
+            <View style={[styles.timechip, !(nudge && chosen !== nudge.saturday) && { marginTop: 0 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.bodyBold }}>{nb.date.time(formatRange(draft.start, draft.end))}</Text>
                 <Text variant="small">{nb.date.fits(age, why)}</Text>
@@ -206,19 +185,7 @@ function TimeShifter({
 }
 
 const styles = StyleSheet.create({
-  field: {
-    fontFamily: fonts.display,
-    fontSize: 34,
-    color: colors.ink,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.green,
-    paddingVertical: 8,
-    paddingHorizontal: 2,
-    outlineStyle: 'none',
-  } as object,
-  error: { marginTop: 12, color: '#A23A4F', fontFamily: fonts.bodySemi, fontSize: 15 },
-  typed: { fontFamily: fonts.display, fontSize: 34, lineHeight: 38, color: colors.ink, marginTop: 4 },
-  nudge: { marginTop: 16, backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
+  nudge: { backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
   timechip: {
     marginTop: 16,
     flexDirection: 'row',

@@ -4,6 +4,15 @@ import { expect, test, type Page } from '@playwright/test';
 // Planen → Gjøremål → tick a to-do → reload keeps it.
 const visible = (page: Page, testId: string) => page.getByTestId(testId).filter({ visible: true });
 
+/** ISO date of the first Sunday at least `days` days from now (local time). */
+function nextSundayAfter(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 test('welcome screen renders without waiting for fonts', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -11,6 +20,23 @@ test('welcome screen renders without waiting for fonts', async ({ page }) => {
   await expect(page.getByText('Hele bursdagen, klar.').filter({ visible: true })).toBeVisible({ timeout: 5_000 });
   expect(await page.evaluate(() => document.body.innerText.trim().length)).toBeGreaterThan(0);
   expect(errors).toEqual([]);
+});
+
+test('date step: the next-Saturday chips pick a date in one tap', async ({ page }) => {
+  await page.goto('/');
+  await visible(page, 'start').click();
+  await visible(page, 'name-input').fill('Emma');
+  await visible(page, 'next').click();
+  await visible(page, 'age-5').click();
+  await visible(page, 'next').click();
+  const input = visible(page, 'date-input');
+  await expect(input).toHaveAttribute('type', 'date');
+  await expect(input).toHaveAttribute('min', /^\d{4}-\d{2}-\d{2}$/);
+  await expect(input).toHaveAttribute('max', /^\d{4}-\d{2}-\d{2}$/);
+  await visible(page, 'saturday-chips').getByRole('button').first().click();
+  await expect(visible(page, 'date-result')).toContainText('Lørdag');
+  await expect(visible(page, 'weekend-nudge')).toHaveCount(0);
+  await expect(visible(page, 'next')).toBeEnabled();
 });
 
 test('setup → Festen er klar → Planen → Gjøremål, and a tick survives reload', async ({ page }) => {
@@ -21,16 +47,16 @@ test('setup → Festen er klar → Planen → Gjøremål, and a tick survives re
   await visible(page, 'age-5').click();
   await visible(page, 'next').click();
 
-  // A date without a year resolves to the next 8. november; whatever year, the
-  // flow must parse it and show a result (this broke in Safari once).
-  await visible(page, 'date-input').fill('8. november');
-  await expect(visible(page, 'date-result')).toBeVisible();
+  // A real date picker: fill the native <input type="date"> with a Sunday a few
+  // weeks out. The gentle weekend hint offers the Saturday before; never a block.
+  const sunday = nextSundayAfter(10);
+  await visible(page, 'date-input').fill(sunday);
+  await expect(visible(page, 'date-result')).toContainText('Søndag');
   const nudge = visible(page, 'weekend-nudge');
-  if (await nudge.count()) {
-    await expect(nudge).toContainText('8. november er en søndag');
-    await page.getByText('Ja, lørdag 7.').filter({ visible: true }).click();
-    await expect(visible(page, 'date-result')).toHaveText('Lørdag 7. november');
-  }
+  await expect(nudge).toContainText('Det er en søndag – passer det?');
+  await nudge.getByRole('button', { name: /^Bytt til lørdag \d+\./ }).click();
+  await expect(visible(page, 'date-result')).toContainText('Lørdag');
+  await expect(nudge).toHaveCount(0);
   await visible(page, 'next').click();
   // kids: keep the default (wait for the step, so the click isn't eaten by the fading one)
   await expect(

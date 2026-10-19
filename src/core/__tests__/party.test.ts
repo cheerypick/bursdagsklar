@@ -33,12 +33,22 @@ describe('createParty', () => {
       child: { name: 'Emma', age: 5 },
       kidsInvited: 12,
       hostAdults: 2,
-      programme: { includePinata: true, includeSkattejakt: true },
-      cake: { mode: 'bake', muffins: true },
+      // nothing the parent hasn't chosen: no piñata, skattejakt or muffins yet
+      programme: { includePinata: false, includeSkattejakt: false },
+      cake: { mode: 'bake', muffins: false },
       menuChosen: false,
     });
     // November → wienerpølser by default until the parent picks (Mat is milestone 2)
     expect(p.menu.kind).toBe('wienerpolser');
+  });
+  it('a fresh party assumes no activity or menu the parent has not chosen', () => {
+    const p = createParty(draft, { id: 'abc', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' });
+    const s = summarize(p, '2026-10-19');
+    expect(s.menuLine).toBe('Mat for 13 barn og 4 voksne'); // 12 invited + Emma
+    expect(s.cakeLine).toBe('Enhjørningkake');
+    expect(s.programmeLine).toBe('Program 12–14');
+    const text = JSON.stringify(s) + JSON.stringify(homeItemsFor(p));
+    expect(text).not.toMatch(/piñata|skattejakt|fiskedam|fiskestang|muffins/i);
   });
   it('changing the date re-plans from today', () => {
     const p = withDate(emma(), '2026-11-14', '2026-10-25');

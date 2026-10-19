@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  parseDateInput,
+  dateBounds,
+  pickedDate,
+  nextSaturdays,
   weekendNudge,
   formatLong,
   weekday,
@@ -12,33 +14,25 @@ import { defaultPartyTime } from '../rules/partyTime';
 
 const TODAY = '2026-10-19'; // Monday
 
-describe('parseDateInput (spec §6.3)', () => {
-  it.each([
-    ['8. november', '2026-11-08'],
-    ['8 nov', '2026-11-08'],
-    ['8.11', '2026-11-08'],
-    ['08.11.2026', '2026-11-08'],
-    ['lørdag 7. november', '2026-11-07'],
-    ['Lørdag 7. November', '2026-11-07'],
-    ['7/11', '2026-11-07'],
-    ['2026-11-07', '2026-11-07'],
-    ['19. oktober', '2026-10-19'],
-    ['3. mars', '2027-03-03'], // no year: next occurrence
-    ['1. jan', '2027-01-01'],
-  ])('%s → %s', (input, expected) => {
-    expect(parseDateInput(input, TODAY)).toEqual({ ok: true, date: expected });
+describe('date picker bounds and shortcuts (spec §6.3)', () => {
+  it('range is today to one year ahead', () => {
+    expect(dateBounds(TODAY)).toEqual({ min: '2026-10-19', max: '2027-10-19' });
   });
-
-  it('rejects past dates with a year', () => {
-    expect(parseDateInput('01.10.2026', TODAY)).toEqual({ ok: false, reason: 'past' });
+  it('accepts a picked value inside the range', () => {
+    expect(pickedDate('2026-11-08', TODAY)).toBe('2026-11-08');
+    expect(pickedDate('2026-10-19', TODAY)).toBe('2026-10-19');
+    expect(pickedDate('2027-10-19', TODAY)).toBe('2027-10-19');
   });
-  it('rejects dates more than 365 days ahead', () => {
-    expect(parseDateInput('01.12.2027', TODAY)).toEqual({ ok: false, reason: 'too-far' });
+  it('rejects empty, malformed, impossible and out-of-range values', () => {
+    expect(pickedDate('', TODAY)).toBeNull();
+    expect(pickedDate('8. november', TODAY)).toBeNull();
+    expect(pickedDate('2026-11-31', TODAY)).toBeNull();
+    expect(pickedDate('2026-10-18', TODAY)).toBeNull();
+    expect(pickedDate('2027-10-20', TODAY)).toBeNull();
   });
-  it('rejects nonsense and impossible dates', () => {
-    expect(parseDateInput('neste uke', TODAY).ok).toBe(false);
-    expect(parseDateInput('31.11', TODAY).ok).toBe(false);
-    expect(parseDateInput('', TODAY)).toEqual({ ok: false, reason: 'empty' });
+  it('next three Saturdays', () => {
+    expect(nextSaturdays(TODAY)).toEqual(['2026-10-24', '2026-10-31', '2026-11-07']);
+    expect(nextSaturdays('2026-10-24', 2)).toEqual(['2026-10-24', '2026-10-31']);
   });
 });
 
@@ -49,19 +43,23 @@ describe('weekend check (spec §6.3)', () => {
   it('«8. november» is a Sunday → suggests Saturday 7th', () => {
     const n = weekendNudge('2026-11-08', TODAY)!;
     expect(n.saturday).toBe('2026-11-07');
-    expect(n.question).toBe('8. november er en søndag. Mente du lørdag 7.?');
-    expect(n.yes).toBe('Ja, lørdag 7.');
-    expect(n.no).toBe('Nei, søndag 8.');
+    expect(n.question).toBe('Det er en søndag – passer det? Lørdag 7.?');
+    expect(n.yes).toBe('Bytt til lørdag 7.');
   });
   it('Monday–Wednesday → previous Saturday', () => {
     const n = weekendNudge('2026-11-11', TODAY)!; // Wednesday
     expect(n.saturday).toBe('2026-11-07');
-    expect(n.question).toBe('11. november er en onsdag. Mente du lørdag 7.?');
-    expect(n.no).toBe('Nei, onsdag passer');
+    expect(n.question).toBe('Det er en onsdag – passer det? Lørdag 7.?');
   });
   it('Thursday–Friday → next Saturday', () => {
     expect(weekendNudge('2026-11-12', TODAY)!.saturday).toBe('2026-11-14');
     expect(weekendNudge('2026-11-13', TODAY)!.saturday).toBe('2026-11-14');
+  });
+  it('names the month when the Saturday is in another month', () => {
+    const n = weekendNudge('2026-11-01', TODAY)!; // Sunday
+    expect(n.saturday).toBe('2026-10-31');
+    expect(n.question).toBe('Det er en søndag – passer det? Lørdag 31. oktober?');
+    expect(n.yes).toBe('Bytt til lørdag 31. oktober');
   });
   it('a suggested Saturday in the past falls forward', () => {
     // Tuesday 20 Oct: previous Saturday 17 Oct is past → next Saturday 24 Oct

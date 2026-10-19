@@ -74,11 +74,15 @@ export const RSVP_DAYS_DEFAULT = 7;
 export const RSVP_FULL_PLAN_MIN_AVAIL = 14;
 export const SHORT_NOTICE_DAYS = 7;
 
-/** Programme and piñata/skattejakt are on by default for these ages (§4). */
-export function programmeDefaults(age: number) {
-  const on = age >= 3 && age <= 9;
-  return { includePinata: on, includeSkattejakt: on };
+/**
+ * Piñata and skattejakt start OFF: nothing in the plan, summary or to-dos assumes an
+ * activity the parent hasn't chosen. The Program step (milestone 3) turns them on;
+ * PROGRAMME_SUGGESTED_AGES is when it should suggest them (§4).
+ */
+export function programmeDefaults(_age: number) {
+  return { includePinata: false, includeSkattejakt: false };
 }
+export const PROGRAMME_SUGGESTED_AGES = { min: 3, max: 9 } as const;
 
 /** Muffins on by default for ages 3–8 (I). */
 export function muffinsDefault(age: number): boolean {

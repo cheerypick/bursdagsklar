@@ -156,79 +156,32 @@ export function formatRangeCompact(start: HHMM, end: HHMM): string {
   return formatRange(start, end);
 }
 
-// ---------- parsing the date field (spec §6.3) ----------
+// ---------- the date picker's bounds and shortcuts (spec §6.3) ----------
 
-export type DateParseResult =
-  { ok: true; date: ISODate } | { ok: false; reason: 'empty' | 'unparsed' | 'past' | 'too-far' };
-
+/** How far ahead a party can be planned. */
 export const MAX_DAYS_AHEAD = 365;
 
-function monthFromWord(word: string): number | null {
-  const w = word.toLowerCase().replace(/\.$/, '');
-  if (w.length < 3) return null;
-  for (let i = 0; i < 12; i++) {
-    if (MONTHS[i] === w || MONTHS[i].startsWith(w)) return i + 1;
-  }
-  return null;
+/** The picker's range: today up to one year ahead. */
+export function dateBounds(today: ISODate): { min: ISODate; max: ISODate } {
+  return { min: today, max: addDays(today, MAX_DAYS_AHEAD) };
 }
 
-const WEEKDAY_WORDS = /\b(mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag|man|tir|ons|tor|fre|lør|søn)\b\.?/giu;
-
-/**
- * Accepts «8. november», «8 nov», «8.11», «08.11.2026», «lørdag 7. november»,
- * «7/11», and the native picker's «2026-11-07». Weekday words are ignored.
- * Without a year: the next occurrence on or after today.
- */
-export function parseDateInput(input: string, today: ISODate): DateParseResult {
-  const raw = input.trim();
-  if (!raw) return { ok: false, reason: 'empty' };
-
-  let y: number | null = null;
-  let m: number | null = null;
-  let d: number | null = null;
-
-  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (iso) {
-    y = +iso[1];
-    m = +iso[2];
-    d = +iso[3];
-  } else {
-    const text = raw.toLowerCase().replace(WEEKDAY_WORDS, ' ').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-    const numeric = text.match(/^(\d{1,2})\s*[./-]\s*(\d{1,2})(?:\s*[./-]\s*(\d{2,4}))?\.?$/);
-    const worded = text.match(/^(\d{1,2})\.?\s*([a-zæøå]+)\.?(?:\s+(\d{4}))?$/u);
-    if (numeric) {
-      d = +numeric[1];
-      m = +numeric[2];
-      if (numeric[3]) y = numeric[3].length === 2 ? 2000 + +numeric[3] : +numeric[3];
-    } else if (worded) {
-      d = +worded[1];
-      m = monthFromWord(worded[2]);
-      if (worded[3]) y = +worded[3];
-    }
-  }
-  if (d === null || m === null) return { ok: false, reason: 'unparsed' };
-
-  const t = parts(today);
-  if (y === null) {
-    if (!isValidDate(t.y, m, d) && !isValidDate(t.y + 1, m, d)) return { ok: false, reason: 'unparsed' };
-    // 29 February without a year: take the next year where it exists
-    let year = t.y;
-    while (!isValidDate(year, m, d) || toISO(year, m, d) < today) year++;
-    y = year;
-  }
-  if (!isValidDate(y, m, d)) return { ok: false, reason: 'unparsed' };
-  const date = toISO(y, m, d);
-  if (date < today) return { ok: false, reason: 'past' };
-  if (diffDays(today, date) > MAX_DAYS_AHEAD) return { ok: false, reason: 'too-far' };
-  return { ok: true, date };
+/** A picked value inside the range, or null (empty, malformed or out of range). */
+export function pickedDate(value: string, today: ISODate): ISODate | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (!isValidDate(y, mo, d)) return null;
+  const iso = toISO(y, mo, d);
+  const { min, max } = dateBounds(today);
+  return iso < min || iso > max ? null : iso;
 }
 
-export const DATE_ERRORS: Record<'empty' | 'unparsed' | 'past' | 'too-far', string> = {
-  empty: 'Skriv en dato, for eksempel «8. november».',
-  unparsed: 'Vi skjønte ikke datoen. Prøv for eksempel «8. november» eller «8.11».',
-  past: 'Den datoen har vært. Velg en dato fram i tid.',
-  'too-far': 'Det er over et år til. Velg en dato innen et år.',
-};
+/** The next `count` Saturdays from today (today included when it is a Saturday). */
+export function nextSaturdays(today: ISODate, count = 3): ISODate[] {
+  const first = addDays(today, (6 - weekday(today) + 7) % 7);
+  return Array.from({ length: count }, (_, i) => addDays(first, 7 * i));
+}
 
 // ---------- weekend check (spec §6.3) ----------
 
@@ -237,9 +190,10 @@ export interface WeekendNudge {
   date: ISODate;
   /** The Saturday we suggest instead. */
   saturday: ISODate;
+  /** Gentle hint shown after picking, e.g. «Det er en søndag – passer det? Lørdag 7.?» */
   question: string;
+  /** The one-tap switch. */
   yes: string;
-  no: string;
 }
 
 /**
@@ -256,23 +210,13 @@ export function weekendNudge(date: ISODate, today: ISODate): WeekendNudge | null
   else saturday = addDays(date, 6 - wd);
   if (saturday < today) saturday = addDays(date, 6 - wd);
   if (saturday < today) return null;
-  const dSat = parts(saturday).d;
-  const head = `${formatDayMonth(date)} er en ${WEEKDAYS[wd]}.`;
-  if (wd === 0) {
-    return {
-      date,
-      saturday,
-      question: `${head} Mente du lørdag ${dSat}.?`,
-      yes: `Ja, lørdag ${dSat}.`,
-      no: `Nei, søndag ${parts(date).d}.`,
-    };
-  }
+  // «Lørdag 7.» in the same month; «Lørdag 31. oktober» across a month change
+  const sat = parts(saturday).m === parts(date).m ? `${parts(saturday).d}.` : formatDayMonth(saturday);
   return {
     date,
     saturday,
-    question: `${head} Mente du lørdag ${dSat}.?`,
-    yes: `Ja, lørdag ${dSat}.`,
-    no: `Nei, ${WEEKDAYS[wd]} passer`,
+    question: `Det er en ${WEEKDAYS[wd]} – passer det? Lørdag ${sat}?`,
+    yes: `Bytt til lørdag ${sat}`,
   };
 }
 

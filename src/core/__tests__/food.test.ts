@@ -1,0 +1,185 @@
+import { describe, expect, it } from 'vitest';
+import { EMMA_PEOPLE, emma } from '../__fixtures__/emma';
+import {
+  customDish,
+  extras,
+  extraSausagesFor,
+  homemadePizza,
+  pizzaCount,
+  pizzaUnits,
+  sausages,
+  shoppingList,
+  taco,
+  defaultMenu,
+} from '../rules/food';
+import { headCount } from '../rules/people';
+import { ceilSafe } from '../rules/constants';
+import type { Guest } from '../model';
+
+const P = EMMA_PEOPLE;
+
+describe('head-count (spec §4.1)', () => {
+  it('Emma: 13 kids coming, 4 adults eating', () => {
+    expect(headCount(emma())).toMatchObject({ kidsComing: 13, adultsEating: 4, pendingCount: 12 });
+  });
+  it('two «Kommer ikke» → 11 kids, still 4 adults', () => {
+    const no = (i: number): Guest => ({
+      id: `g${i}`,
+      label: `Barn ${i}`,
+      status: 'no',
+      adultsStaying: 0,
+      allergies: [],
+    });
+    expect(headCount(emma({ guests: [no(1), no(2)] }))).toMatchObject({ kidsComing: 11, adultsEating: 4 });
+  });
+});
+
+describe('ceilSafe', () => {
+  it('ignores float noise but never rounds down', () => {
+    expect(ceilSafe((13 * 2 + 4 * 2) * 1.35)).toBe(46);
+    expect(ceilSafe(45.000000000001)).toBe(45);
+    expect(ceilSafe(45.01)).toBe(46);
+  });
+});
+
+describe('sausages (spec §6.4)', () => {
+  it('grill: 46 → 5 pk à 10, lomper 50, pølsebrød 23 → 3 pk', () => {
+    expect(sausages('grillpolser', P)).toMatchObject({ need: 46, packs: 5, lomper: 50, buns: 23, bunPacks: 3 });
+  });
+  it('wiener: 43 → 6 pk à 8, lomper 50, pølsebrød 22 → 3 pk', () => {
+    expect(sausages('wienerpolser', P)).toMatchObject({ need: 43, packs: 6, lomper: 50, buns: 22, bunPacks: 3 });
+  });
+  it('wiener with 0 adults: 33 → 5 pk, lomper 40, pølsebrød 17 → 3 pk', () => {
+    expect(sausages('wienerpolser', { ...P, adultsEating: 0 })).toMatchObject({
+      need: 33,
+      packs: 5,
+      lomper: 40,
+      buns: 17,
+      bunPacks: 3,
+    });
+  });
+  it('two declines: (22 + 8) × 1.35 = 40.5 → 41 → 5 pk; pølsebrød 21 → 3 pk', () => {
+    expect(sausages('grillpolser', { ...P, kidsComing: 11 })).toMatchObject({
+      need: 41,
+      packs: 5,
+      buns: 21,
+      bunPacks: 3,
+    });
+  });
+  it('one child who eats no pork → 3 kyllingpølser', () => {
+    expect(extraSausagesFor('grillpolser', 1, 5)).toBe(3);
+  });
+});
+
+describe('pizza (spec §6.5)', () => {
+  it('45 units for Emma', () => expect(pizzaUnits(P)).toBe(45));
+  it('frossen 6, bestilt vanlig 6, bestilt stor 4, hjemmelaget 3 langpanner', () => {
+    expect(pizzaCount(45, 'frossen')).toBe(6);
+    expect(pizzaCount(45, 'bestilt', '30')).toBe(6);
+    expect(pizzaCount(45, 'bestilt', '40')).toBe(4);
+    expect(pizzaCount(45, 'hjemmelaget')).toBe(3);
+  });
+  it('homemade ×3: flour, yeast, sauce, cheese, ham', () => {
+    expect(homemadePizza(3)).toMatchObject({
+      squares: 72,
+      flourDl: 24,
+      flourPacks: 2,
+      yeastG: 75,
+      yeastPacks: 2,
+      waterDl: 9,
+      oilSs: 6,
+      saltTs: 3,
+      sauceDl: 7.5,
+      sauceJars: 3,
+      cheeseG: 900,
+      cheesePacks: 3,
+      hamG: 450,
+      hamPacks: 3,
+    });
+  });
+  it('sanity: 15 guests + birthday child aged 8, 2 adults → 57 units, 5 large or 8 regular', () => {
+    const u = pizzaUnits({ kidsComing: 16, adultsEating: 2, age: 8 });
+    expect(u).toBe(57);
+    expect(pizzaCount(u, 'bestilt', '40')).toBe(5);
+    expect(pizzaCount(u, 'bestilt', '30')).toBe(8);
+  });
+});
+
+describe('taco and egen meny (spec §6.6)', () => {
+  it('taco: kjøttdeig 6 pk, tortillas 6 pk, ost 2 pk, krydder 3, sides 3', () => {
+    expect(taco(P)).toMatchObject({
+      meatG: 2113,
+      meatPacks: 6,
+      tortillas: 45,
+      tortillaPacks: 6,
+      cheeseG: 688,
+      cheesePacks: 2,
+      spiceBags: 3,
+      mais: 3,
+      romme: 3,
+      tacosaus: 3,
+    });
+  });
+  it('Kyllingklubber: 48 stk → 4 pk à 12', () => {
+    expect(
+      customDish(
+        { kind: 'egen', name: 'Kyllingklubber', unit: 'stk', perChild: 2, perAdult: 3, bufferPct: 25, packSize: 12 },
+        P,
+      ),
+    ).toEqual({ need: 48, packs: 4 });
+  });
+});
+
+describe('extras (spec §6.7)', () => {
+  it('saft 8,9 l → 2 bottles; fruit ca. 2,3 kg; 1 cake; 12 muffins; 6 candles; 1,3 kg candy; 13 bags', () => {
+    expect(extras(P, { muffins: true })).toMatchObject({
+      saftLitres: 8.9,
+      saftBottles: 2,
+      fruitG: 2250,
+      fruitDisplay: 'ca. 2,3 kg',
+      cakePieces: 19,
+      cakeBatches: 1,
+      muffins: 12,
+      candles: 6,
+      candyG: 1300,
+      candyDisplay: 'ca. 1,3 kg',
+      goodyBags: 13,
+    });
+  });
+  it('nut allergy makes the candy nut-free', () => {
+    expect(extras(P, { muffins: true, nutFree: true }).candyName).toBe('Nøttefritt godteri');
+  });
+});
+
+describe('shopping list for Emma (spec §6.9)', () => {
+  it('grill menu lines', () => {
+    const list = shoppingList(emma());
+    const by = Object.fromEntries(list.map((i) => [i.id, i]));
+    expect(by.grillpolser).toMatchObject({ need: 46, packs: 5, display: '50 (5 pk à 10)' });
+    expect(by.lomper).toMatchObject({ packs: 5 });
+    expect(by.polsebrod).toMatchObject({ packs: 3 });
+    expect(by.saft.packs).toBe(2);
+  });
+  it('RSVPs: Nora (nøtter) and Adam (ikke svin) → +3 kyllingpølser, nut-free candy', () => {
+    const g = (id: string, label: string, allergies: Guest['allergies']): Guest => ({
+      id,
+      label,
+      status: 'yes',
+      adultsStaying: 0,
+      allergies,
+    });
+    const list = shoppingList(emma({ guests: [g('1', 'Nora', ['notter']), g('2', 'Adam', ['ikke-svin'])] }));
+    const by = Object.fromEntries(list.map((i) => [i.id, i]));
+    expect(by.kyllingpolser.need).toBe(3);
+    expect(by.godteri.name).toBe('Nøttefritt godteri');
+  });
+  it('a «har dette hjemme» tick removes the line', () => {
+    const list = shoppingList(emma({ haveAtHome: ['kakelys', 'ballonger'] }));
+    expect(list.map((i) => i.id)).not.toContain('kakelys');
+    expect(list.map((i) => i.id)).not.toContain('ballonger');
+  });
+  it('default menu: grill May–September, wiener otherwise', () => {
+    expect(defaultMenu('2026-06-13').kind).toBe('grillpolser');
+    expect(defaultMenu('2026-11-07').kind).toBe('wienerpolser');
+  });
+});

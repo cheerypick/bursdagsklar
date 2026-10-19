@@ -1,0 +1,56 @@
+name: EAS Build (iOS + Android)
+
+# Builds the native apps in Expo's cloud. Needs the repository secret EXPO_TOKEN
+# (see docs/RELEASE.md). Without it, the job skips cleanly instead of failing.
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'eas.json build profile'
+        type: choice
+        options: [preview, production, development]
+        default: preview
+      platform:
+        description: 'Platform'
+        type: choice
+        options: [all, ios, android]
+        default: all
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID || secrets.EAS_PROJECT_ID }}
+    steps:
+      - name: Check for EXPO_TOKEN
+        id: token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is not set. Add it under Settings → Secrets and variables → Actions to enable native builds. Skipping."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.present == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - uses: expo/expo-github-action@v8
+        if: steps.token.outputs.present == 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+        if: steps.token.outputs.present == 'true'
+      - name: EAS Build
+        if: steps.token.outputs.present == 'true'
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          PLATFORM="${{ github.event.inputs.platform || 'all' }}"
+          eas build --non-interactive --no-wait --profile "$PROFILE" --platform "$PLATFORM"

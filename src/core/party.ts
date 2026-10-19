@@ -120,6 +120,8 @@ export interface PartySummary {
   adultsEating: number;
   menuLine: string;
   cakeLine: string;
+  /** The theme's cake suggestion («Lyseblå og hvit kake med snøkrystaller»), shown on Festen er klar and Planen. */
+  cakeIdea: string;
   programmeLine: string;
   tasksThisWeek: number;
   done: number;
@@ -148,6 +150,8 @@ export function summarize(p: Party, today: ISODate): PartySummary {
     adultsEating: hc.adultsEating,
     menuLine: `${p.menuChosen ? MENU_NAMES[p.menu.kind] : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
     cakeLine: p.cake.mode === 'buy' ? 'Kake fra bakeren' : `${theme.cake}${p.cake.muffins ? ' og muffins' : ''}`,
+    cakeIdea:
+      p.cake.mode === 'buy' ? 'Kake fra bakeren' : `${theme.copy.cakeIdea}${p.cake.muffins ? ' og muffins' : ''}`,
     programmeLine: `Program ${tid}${p.programme.includeSkattejakt ? ' med skattejakt' : ''}`,
     tasksThisWeek: pr.thisWeekOpen,
     done: pr.done,

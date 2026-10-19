@@ -1,9 +1,11 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, shadow, TOUCH } from '../theme';
+import { Pressable, View } from 'react-native';
+import { shadow, TOUCH, useColors, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
 import { Icon } from './Icon';
 
 export function BackButton({ onPress, label = nb.common.back }: { onPress: () => void; label?: string }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.icon} hitSlop={6}>
       <Icon name="back" size={22} color={colors.ink} />
@@ -13,6 +15,8 @@ export function BackButton({ onPress, label = nb.common.back }: { onPress: () =>
 
 /** Back button + «Steg n av 5» progress dashes (setup). */
 export function TopBar({ onBack, step, of }: { onBack?: () => void; step?: number; of?: number }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.bar}>
       {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: TOUCH }} />}
@@ -30,7 +34,7 @@ export function TopBar({ onBack, step, of }: { onBack?: () => void; step?: numbe
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -51,4 +55,4 @@ const styles = StyleSheet.create({
   },
   progress: { flex: 1, flexDirection: 'row', gap: 6, marginHorizontal: 14 },
   dash: { flex: 1, height: 6, borderRadius: 6, backgroundColor: colors.line },
-});
+}));

@@ -4,10 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { Button, Screen, Text } from '../ui';
-import { colors, fonts, images, useLayout } from '../theme';
+import { fonts, images, useLayout, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
 
 export default function Welcome() {
+  const styles = useStyles();
   const { ready, party } = useParty();
   const router = useRouter();
   const { isWide, gutter } = useLayout();
@@ -71,7 +72,7 @@ export default function Welcome() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   hero: { overflow: 'hidden', borderBottomLeftRadius: 36, borderBottomRightRadius: 36, backgroundColor: colors.sage },
   brand: {
     position: 'absolute',
@@ -83,4 +84,4 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowRadius: 12,
   },
-});
+}));

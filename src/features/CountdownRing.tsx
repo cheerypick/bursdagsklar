@@ -1,10 +1,11 @@
 import Svg, { Circle } from 'react-native-svg';
 import { View } from 'react-native';
-import { colors, fonts } from '../theme';
+import { fonts, useColors } from '../theme';
 import { Text } from '../ui';
 
 /** Ring showing the share of to-dos done, with days left in the middle. */
 export function CountdownRing({ percent, label, size = 58 }: { percent: number; label: string; size?: number }) {
+  const colors = useColors();
   const stroke = 7;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;

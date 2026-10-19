@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
+import { LicenseNote } from '../../features/LicenseNote';
 import { Grid, ThemeTile } from '../../ui';
 import { themeImages, useLayout } from '../../theme';
 import { nb } from '../../i18n/nb';
@@ -49,6 +50,7 @@ export default function ThemeStep() {
           />
         )}
       />
+      <LicenseNote always />
     </SetupStep>
   );
 }

@@ -3,11 +3,12 @@ import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { Stepper, Text } from '../../ui';
-import { colors, radii } from '../../theme';
+import { radii, useColors } from '../../theme';
 import { nb } from '../../i18n/nb';
 import { MAX_KIDS, MIN_KIDS } from '../../core';
 
 export default function KidsStep() {
+  const colors = useColors();
   const { draft, updateDraft } = useParty();
   const router = useRouter();
   const name = draft.name.trim() || 'bursdagsbarnet';

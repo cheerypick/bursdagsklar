@@ -1,15 +1,17 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { Grid, Text } from '../../ui';
-import { colors, fonts, radii, shadow } from '../../theme';
+import { fonts, radii, shadow, useColors, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
 import { defaultPartyTime, isWeekend } from '../../core';
 
 const AGES = Array.from({ length: 12 }, (_, i) => i + 1);
 
 export default function AgeStep() {
+  const styles = useStyles();
+  const colors = useColors();
   const { draft, updateDraft } = useParty();
   const router = useRouter();
   const name = draft.name.trim() || 'barnet';
@@ -49,7 +51,7 @@ export default function AgeStep() {
               onPress={() => pick(age)}
               style={[styles.age, on && { backgroundColor: colors.green }]}
             >
-              <Text style={[styles.ageText, on && { color: colors.white }]}>{age}</Text>
+              <Text style={[styles.ageText, on && { color: colors.onPrimary }]}>{age}</Text>
             </Pressable>
           );
         }}
@@ -58,7 +60,7 @@ export default function AgeStep() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   age: {
     aspectRatio: 1,
     borderRadius: radii.md,
@@ -68,4 +70,4 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   ageText: { fontFamily: fonts.display, fontSize: 30, color: colors.ink },
-});
+}));

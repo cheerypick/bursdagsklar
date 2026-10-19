@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, CONTENT_MAX, fonts, shadow } from '../theme';
+import { CONTENT_MAX, fonts, shadow, useColors, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -21,6 +21,8 @@ const TABS: {
 
 /** Bottom tab bar on phones; a top navigation bar on wide screens. */
 export function NavBar({ active, placement }: { active: TabId; placement: 'top' | 'bottom' }) {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   if (placement === 'top') {
@@ -40,8 +42,13 @@ export function NavBar({ active, placement }: { active: TabId; placement: 'top' 
                   onPress={() => router.navigate(t.route)}
                   style={[styles.topLink, on && styles.topLinkOn]}
                 >
-                  <Icon name={t.icon} size={20} color={on ? colors.white : colors.green} strokeWidth={on ? 2.4 : 2} />
-                  <Text style={[styles.topLabel, { color: on ? colors.white : colors.green }]}>{t.label}</Text>
+                  <Icon
+                    name={t.icon}
+                    size={20}
+                    color={on ? colors.onPrimary : colors.green}
+                    strokeWidth={on ? 2.4 : 2}
+                  />
+                  <Text style={[styles.topLabel, { color: on ? colors.onPrimary : colors.green }]}>{t.label}</Text>
                 </Pressable>
               );
             })}
@@ -72,7 +79,7 @@ export function NavBar({ active, placement }: { active: TabId; placement: 'top' 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   bottom: {
     position: 'absolute',
     left: 0,
@@ -115,4 +122,4 @@ const styles = StyleSheet.create({
   },
   topLinkOn: { backgroundColor: colors.green },
   topLabel: { fontFamily: fonts.bodySemi, fontSize: 15 },
-});
+}));

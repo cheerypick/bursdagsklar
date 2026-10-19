@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createParty, draftComplete, EMPTY_DRAFT, summarize, withDate, homeItemsFor } from '../party';
 import { createPartyRepository, memoryStore, migrate } from '../storage/PartyRepository';
 import { emma } from '../__fixtures__/emma';
-import { invitationCard, render, genitive, TEMPLATES } from '../texts/render';
+import { invitationCard, render, genitive, themeTexts } from '../texts/render';
 import { THEMES } from '../themes';
 
 const draft = {
@@ -66,6 +66,7 @@ describe('summary for «Festen er klar» and Planen (spec §10.2)', () => {
       adultsEating: 4,
       menuLine: 'Grillmeny for 13 barn og 4 voksne',
       cakeLine: 'Enhjørningkake og muffins',
+      cakeIdea: 'Rosa og hvit kake med regnbuedryss og muffins',
       programmeLine: 'Program 12–14 med skattejakt',
       tasksThisWeek: 3,
       progressLine: '1 av 16 gjøremål er gjort. Godt i rute.',
@@ -85,7 +86,7 @@ describe('summary for «Festen er klar» and Planen (spec §10.2)', () => {
 describe('texts (no AI: templates only)', () => {
   it('invitation card for Emma', () => {
     expect(invitationCard(emma())).toEqual({
-      headline: 'Bli med på enhjørningfest!',
+      headline: 'Bli med på en magisk enhjørningfest!',
       name: 'Emma',
       line: 'fyller 5',
       when: 'Lørdag 7. november kl. 12–14',
@@ -106,9 +107,10 @@ describe('texts (no AI: templates only)', () => {
     expect(THEMES.map((t) => t.id)).toEqual(expect.arrayContaining(['pokemon', 'paw-patrol', 'frost']));
     expect(THEMES).toHaveLength(9);
     for (const t of THEMES) {
-      const tt = (TEMPLATES.themes as Record<string, { fest: string }>)[t.id];
-      expect(tt, t.id).toBeTruthy();
+      const tt = themeTexts(t.id);
+      expect(tt.navn, t.id).toBe(t.name);
       expect(tt.fest).toBe(t.fest);
+      expect(tt.apning.store.length).toBeGreaterThan(0);
     }
   });
 });

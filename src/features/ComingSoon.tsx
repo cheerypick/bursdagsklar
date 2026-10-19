@@ -1,9 +1,9 @@
-import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import { Image, View, type ImageSourcePropType } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from './Loading';
 import { BackButton, Button, Screen, Text, type TabId } from '../ui';
-import { colors, useLayout } from '../theme';
+import { useLayout, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
 
 /** Placeholder for areas that arrive in later milestones (Invitasjon, Mat, Kake, Program, Festdagen). */
@@ -20,6 +20,7 @@ export function ComingSoon({
   tab?: TabId;
   showBack?: boolean;
 }) {
+  const styles = useStyles();
   const { ready, party } = useParty();
   const router = useRouter();
   const { isWide, gutter } = useLayout();
@@ -52,7 +53,7 @@ export function ComingSoon({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   hero: {
     height: 300,
     overflow: 'hidden',
@@ -60,4 +61,4 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 32,
     backgroundColor: colors.sage,
   },
-});
+}));

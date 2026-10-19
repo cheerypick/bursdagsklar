@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, CONTENT_MAX, NARROW_MAX, useLayout } from '../theme';
+import { CONTENT_MAX, NARROW_MAX, useLayout, useColors } from '../theme';
 import { NavBar, type TabId } from './NavBar';
 
 interface Props {
@@ -18,23 +18,16 @@ interface Props {
   testID?: string;
 }
 
-export function Screen({
-  children,
-  footer,
-  tab,
-  narrow,
-  background = colors.bg,
-  bleedTop,
-  contentStyle,
-  testID,
-}: Props) {
+export function Screen({ children, footer, tab, narrow, background, bleedTop, contentStyle, testID }: Props) {
+  const colors = useColors();
+  const bg = background ?? colors.bg;
   const insets = useSafeAreaInsets();
   const { isWide } = useLayout();
   const maxWidth = narrow ? NARROW_MAX : CONTENT_MAX;
   const bottomBar = tab && !isWide;
   const fixedFooter = footer && !isWide;
   return (
-    <View testID={testID} style={[styles.root, { backgroundColor: background }]}>
+    <View testID={testID} style={[styles.root, { backgroundColor: bg }]}>
       {tab && isWide ? <NavBar active={tab} placement="top" /> : null}
       <ScrollView
         style={{ flex: 1 }}
@@ -54,10 +47,7 @@ export function Screen({
       </ScrollView>
       {fixedFooter ? (
         <View
-          style={[
-            styles.footer,
-            { backgroundColor: background, paddingBottom: 20 + insets.bottom + (bottomBar ? 72 : 0) },
-          ]}
+          style={[styles.footer, { backgroundColor: bg, paddingBottom: 20 + insets.bottom + (bottomBar ? 72 : 0) }]}
         >
           <View style={{ width: '100%', maxWidth }}>{footer}</View>
         </View>

@@ -1,12 +1,14 @@
-import { StyleSheet, TextInput } from 'react-native';
+import { TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
-import { colors, fonts } from '../../theme';
+import { fonts, useColors, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
 
 export default function NameStep() {
+  const styles = useStyles();
+  const colors = useColors();
   const { draft, updateDraft } = useParty();
   const router = useRouter();
   const [focused, setFocused] = useState(false);
@@ -44,7 +46,7 @@ export default function NameStep() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   field: {
     fontFamily: fonts.display,
     fontSize: 40,
@@ -55,4 +57,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     outlineStyle: 'none',
   } as object,
-});
+}));

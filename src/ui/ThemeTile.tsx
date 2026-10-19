@@ -1,5 +1,5 @@
-import { Image, Pressable, StyleSheet, View, type ImageSourcePropType } from 'react-native';
-import { colors, fonts, radii, shadow } from '../theme';
+import { Image, Pressable, View, type ImageSourcePropType } from 'react-native';
+import { fonts, radii, shadow, useColors, themedStyles } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -14,6 +14,8 @@ export function ThemeTile({
   selected: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -28,14 +30,14 @@ export function ThemeTile({
       <Text style={styles.label}>{label}</Text>
       {selected ? (
         <View style={styles.check}>
-          <Icon name="check" size={18} color={colors.white} strokeWidth={3} />
+          <Icon name="check" size={18} color={colors.onPrimary} strokeWidth={3} />
         </View>
       ) : null}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   tile: {
     flex: 1,
     borderWidth: 3,
@@ -60,4 +62,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

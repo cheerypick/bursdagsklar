@@ -1,9 +1,9 @@
-import { Text as RNText, type TextProps, type TextStyle, StyleSheet } from 'react-native';
-import { colors, fonts, type as t } from '../theme';
+import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
+import { fonts, type as t, themedStyles } from '../theme';
 
 type Variant = 'hero' | 'h1' | 'h1Small' | 'h2' | 'h2Small' | 'h3' | 'body' | 'lede' | 'small' | 'eyebrow' | 'label';
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   hero: {
     fontFamily: fonts.display,
     fontSize: t.hero,
@@ -39,11 +39,12 @@ const styles = StyleSheet.create({
     color: colors.green2,
   },
   label: { fontFamily: fonts.bodySemi, fontSize: t.body, lineHeight: t.body * 1.35, color: colors.ink },
-});
+}));
 
 const headingLevel: Partial<Record<Variant, number>> = { hero: 1, h1: 1, h1Small: 1, h2: 2, h2Small: 2, h3: 3 };
 
 export function Text({ variant = 'body', style, color, ...rest }: TextProps & { variant?: Variant; color?: string }) {
+  const styles = useStyles();
   const level = headingLevel[variant];
   const a11y = level ? ({ role: 'heading', 'aria-level': level } as unknown as TextProps) : {};
   return <RNText {...a11y} {...rest} style={[styles[variant], color ? ({ color } as TextStyle) : null, style]} />;

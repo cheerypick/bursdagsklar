@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, fonts, radii, TOUCH, useLayout } from '../theme';
+import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { fonts, radii, TOUCH, useLayout, useColors, themedStyles } from '../theme';
 import { Text } from './Text';
 
 type Kind = 'primary' | 'light' | 'ghost' | 'onDark';
@@ -28,10 +28,12 @@ export function Button({
   style,
   testID,
 }: Props) {
+  const styles = useStyles();
+  const colors = useColors();
   const { isWide } = useLayout();
   const fullWidth = block ?? !isWide;
   const bg = kind === 'primary' ? colors.green : kind === 'light' || kind === 'onDark' ? colors.white : 'transparent';
-  const fg = kind === 'primary' ? colors.white : colors.green;
+  const fg = kind === 'primary' ? colors.onPrimary : colors.green;
   return (
     <Pressable
       testID={testID}
@@ -45,7 +47,7 @@ export function Button({
         { backgroundColor: bg, minHeight: compact ? 54 : 62 },
         kind === 'light' && styles.lightRing,
         fullWidth ? styles.block : styles.auto,
-        hovered && kind === 'primary' && !disabled && { backgroundColor: colors.green2 },
+        hovered && kind === 'primary' && !disabled && { backgroundColor: colors.primaryHover },
         pressed && { transform: [{ scale: 0.98 }] },
         disabled && { opacity: 0.4 },
         style,
@@ -69,6 +71,8 @@ export function Pill({
   accessibilityLabel?: string;
   light?: boolean;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -77,16 +81,17 @@ export function Pill({
       onPress={onPress}
       style={[styles.pill, { backgroundColor: on ? colors.green : light ? colors.white : colors.sage }]}
     >
-      <Text style={[styles.pillText, { color: on ? colors.white : colors.green }]}>{label}</Text>
+      <Text style={[styles.pillText, { color: on ? colors.onPrimary : colors.green }]}>{label}</Text>
     </Pressable>
   );
 }
 
 export function PillRow({ children }: { children: React.ReactNode }) {
+  const styles = useStyles();
   return <View style={styles.pills}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   base: { borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
   block: { alignSelf: 'stretch' },
   auto: { alignSelf: 'flex-start', minWidth: 280 },
@@ -101,4 +106,4 @@ const styles = StyleSheet.create({
   },
   pillText: { fontFamily: fonts.bodySemi, fontSize: 15 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-});
+}));

@@ -4,7 +4,7 @@ import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { colors } from '../../theme';
+import { useColors } from '../../theme';
 import { parts, toISO, type ISODate } from '../../core';
 import { DateField } from './DateField';
 import type { DatePickerProps } from './DatePicker.types';
@@ -20,6 +20,7 @@ const toIso = (dt: Date): ISODate => toISO(dt.getFullYear(), dt.getMonth() + 1, 
  * system date dialog. Both are bounded to today … today + 1 year.
  */
 export function DatePicker({ value, min, max, onChange, label, placeholder, testID }: DatePickerProps) {
+  const colors = useColors();
   const [open, setOpen] = useState(false);
   const current = toDate(value ?? min);
 

@@ -1,13 +1,5 @@
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  View,
-  type ImageSourcePropType,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
-import { colors, fonts, radii, shadow } from '../theme';
+import { Image, Pressable, View, type ImageSourcePropType, type StyleProp, type ViewStyle } from 'react-native';
+import { fonts, radii, shadow, useColors, themedStyles } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -21,6 +13,7 @@ export function Surface({
   style?: StyleProp<ViewStyle>;
   padded?: boolean;
 }) {
+  const styles = useStyles();
   return <View style={[styles.surface, padded && { padding: 20 }, style]}>{children}</View>;
 }
 
@@ -48,6 +41,8 @@ export function PhotoCard({
   arrow = true,
   style,
 }: PhotoCardProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="link"
@@ -82,7 +77,7 @@ export function PhotoCard({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   surface: { backgroundColor: colors.card, borderRadius: radii.lg, ...shadow },
   card: { overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
@@ -112,4 +107,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

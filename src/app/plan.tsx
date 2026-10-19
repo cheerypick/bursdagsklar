@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { CountdownRing } from '../features/CountdownRing';
+import { LicenseNote } from '../features/LicenseNote';
 import { Button, Grid, PhotoCard, Pill, PillRow, Screen, Surface, Text } from '../ui';
-import { colors, fonts, images, radii, themeImages, useLayout } from '../theme';
+import { fonts, images, radii, themeImages, useLayout, themedStyles, useColors } from '../theme';
 import { nb } from '../i18n/nb';
 import { buildTasks, formatLongCap, formatRangeCompact, genitive, nextTask, summarize, themeById } from '../core';
 
 export default function PlanScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const { ready, party, today, startOver } = useParty();
   const router = useRouter();
   const { isWide, gutter } = useLayout();
@@ -26,7 +29,7 @@ export default function PlanScreen() {
   const cards = [
     {
       key: 'invite',
-      image: images.inviteArt,
+      image: themeImages[party.theme],
       title: nb.plan.cards.invite.title,
       sub: nb.plan.cards.invite.sub,
       badge: nb.plan.cards.invite.badge,
@@ -40,7 +43,7 @@ export default function PlanScreen() {
       badge: party.menuChosen ? undefined : nb.plan.cards.food.badgeChoose,
       route: '/mat',
     },
-    { key: 'cake', image: images.cake, title: nb.plan.cards.cake.title, sub: s.cakeLine, route: '/kake', half: true },
+    { key: 'cake', image: images.cake, title: nb.plan.cards.cake.title, sub: s.cakeIdea, route: '/kake', half: true },
     {
       key: 'programme',
       image: images.pinata,
@@ -84,9 +87,10 @@ export default function PlanScreen() {
           <Text variant="h2Small" style={{ marginTop: 12, marginBottom: 6 }}>
             {next.task.title}
           </Text>
-          <Text style={{ color: '#5a4a4f' }}>{next.quiet ?? next.task.detail ?? ''}</Text>
+          <Text style={{ color: colors.muted }}>{next.quiet ?? next.task.detail ?? ''}</Text>
           <View style={{ marginTop: 16, flexDirection: 'row', gap: 10 }}>
             <Button
+              testID="next-task-cta"
               compact
               block={!isWide}
               label={next.task.link?.label ?? nb.tabs.todo}
@@ -102,30 +106,35 @@ export default function PlanScreen() {
 
   return (
     <Screen tab="plan" testID="screen-plan">
-      <View style={[styles.head, { paddingHorizontal: gutter }]}>
+      <View style={[styles.hero, { marginHorizontal: gutter, marginTop: isWide ? 24 : 14 }]} testID="plan-hero">
         <View style={{ flex: 1 }}>
-          <Text variant="eyebrow">{nb.plan.eyebrow(theme.name)}</Text>
-          <Text variant="h1Small" style={{ marginTop: 4 }}>
+          <Text variant="eyebrow" color={colors.onPrimarySoft}>
+            {theme.emoji} {nb.plan.eyebrow(theme.name)}
+          </Text>
+          <Text variant="h1Small" color={colors.onPrimary} style={{ marginTop: 6 }}>
             {nb.plan.title(genitive(party.child.name), party.child.age)}
           </Text>
-          <Text variant="small" style={{ marginTop: 6, fontSize: 16 }}>
+          <Text style={styles.greeting} testID="plan-greeting">
+            {theme.copy.greeting}
+          </Text>
+          <Text variant="small" color={colors.onPrimarySoft} style={{ marginTop: 8, fontSize: 16 }}>
             {nb.plan.meta(formatLongCap(party.date), tid, party.kidsInvited)}
           </Text>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 8 }}>
-          <View style={styles.avatar}>
-            <Image source={themeImages[party.theme]} style={{ width: '100%', height: '100%' }} />
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={nb.plan.newParty}
-            onPress={() => setConfirm(true)}
-            hitSlop={10}
-            style={{ minHeight: 32, justifyContent: 'center' }}
-          >
-            <Text style={styles.newLink}>{nb.plan.newParty}</Text>
-          </Pressable>
+        <View style={[styles.heroArt, isWide && { width: 140, height: 140, borderRadius: 32 }]}>
+          <Image source={themeImages[party.theme]} style={{ width: '100%', height: '100%' }} />
         </View>
+      </View>
+      <View style={{ paddingHorizontal: gutter, alignItems: 'flex-end', marginTop: 6 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={nb.plan.newParty}
+          onPress={() => setConfirm(true)}
+          hitSlop={10}
+          style={{ minHeight: 32, justifyContent: 'center' }}
+        >
+          <Text style={styles.newLink}>{nb.plan.newParty}</Text>
+        </Pressable>
       </View>
 
       {confirm ? (
@@ -219,13 +228,24 @@ export default function PlanScreen() {
           </>
         )}
       </View>
+      <View style={{ paddingHorizontal: gutter }}>
+        <LicenseNote />
+      </View>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  head: { paddingTop: 22, paddingBottom: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  avatar: { width: 56, height: 56, borderRadius: 28, overflow: 'hidden', borderWidth: 3, borderColor: colors.white },
+const useStyles = themedStyles((colors) => ({
+  hero: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  heroArt: { width: 92, height: 92, borderRadius: 24, overflow: 'hidden', backgroundColor: colors.cardTint },
+  greeting: { fontFamily: fonts.displaySemi, fontSize: 19, lineHeight: 24, color: colors.onPrimary, marginTop: 8 },
   newLink: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.green2, textDecorationLine: 'underline' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   next: { backgroundColor: colors.blush, borderRadius: radii.lg, padding: 20 },
@@ -236,6 +256,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
-  whenText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.pink },
+  whenText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.hot },
   confirm: { marginTop: 10, backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
-});
+}));

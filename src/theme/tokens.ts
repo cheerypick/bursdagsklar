@@ -4,12 +4,17 @@
  */
 import { Platform } from 'react-native';
 
+/**
+ * The brand colours (the neutral look before a theme is chosen). Screens and components read the
+ * live, theme-aware set through `useColors()` (theme/ThemeProvider.tsx), where `green`, `green2`,
+ * `bg`, `sage`, `blush` and `readyText` are replaced by the chosen theme's palette.
+ */
 export const colors = {
   bg: '#FBF7F1', // warm cream app background
   page: '#EFE9DF', // behind the content column on wide screens
   card: '#FFFFFF',
   ink: '#1F2A26',
-  muted: '#6B7570',
+  muted: '#5F6964', // AA (4.5:1) on every theme background
   line: '#ECE6DC',
   green: '#1F3D36', // primary buttons, selected states
   green2: '#2C5348', // hover, eyebrow text
@@ -18,7 +23,8 @@ export const colors = {
   sage: '#E0EADD', // pills, date chips
   lilac: '#ECE3F5', // hints
   sky: '#DFEBF1',
-  pink: '#D9607A', // focus ring, «hot» dates
+  pink: '#D9607A', // focus ring
+  hot: '#B0354F', // «hot» date text (AA on white)
   readyText: '#CFE0D9',
   white: '#FFFFFF',
   boxBorder: '#CFC7BA',

@@ -16,9 +16,9 @@ import {
   Figtree_600SemiBold,
   Figtree_700Bold,
 } from '@expo-google-fonts/figtree';
-import { PartyProvider } from '../state/PartyProvider';
+import { PartyProvider, useParty } from '../state/PartyProvider';
 import { ToastProvider } from '../ui';
-import { colors } from '../theme';
+import { ThemeProvider, useColors } from '../theme';
 
 // Native: keep the splash up until the fonts are in (expo-font is reliable there).
 // Web: never hold the first render on fonts. Safari/WebKit can leave the
@@ -55,13 +55,26 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <PartyProvider>
-        <ToastProvider>
-          <StatusBar style="dark" />
-          <Stack
-            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}
-          />
-        </ToastProvider>
+        <PartyTheme>
+          <ToastProvider>
+            <StatusBar style="dark" />
+            <ThemedStack />
+          </ToastProvider>
+        </PartyTheme>
       </PartyProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** The chosen theme (saved party, or the one picked during setup) paints the whole app; brand look before that. */
+function PartyTheme({ children }: { children: React.ReactNode }) {
+  const { party, draft } = useParty();
+  return <ThemeProvider themeId={party?.theme ?? draft.theme ?? null}>{children}</ThemeProvider>;
+}
+
+function ThemedStack() {
+  const colors = useColors();
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }} />
   );
 }

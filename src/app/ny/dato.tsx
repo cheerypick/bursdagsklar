@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { DatePicker } from '../../features/setup/DatePicker';
 import { Icon, Pill, PillRow, Surface, Text } from '../../ui';
-import { colors, fonts, radii, TOUCH } from '../../theme';
+import { fonts, radii, TOUCH, useColors, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
 import {
   dateBounds,
@@ -23,6 +23,7 @@ import {
 } from '../../core';
 
 export default function DateStep() {
+  const styles = useStyles();
   const { draft, updateDraft, today } = useParty();
   const router = useRouter();
   const [editTime, setEditTime] = useState(false);
@@ -160,6 +161,8 @@ function TimeShifter({
   onMinus: () => void;
   onPlus: () => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.shifter}>
       <Text style={{ fontFamily: fonts.bodySemi, width: 60 }}>{label}</Text>
@@ -184,7 +187,7 @@ function TimeShifter({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   nudge: { backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
   timechip: {
     marginTop: 16,
@@ -207,4 +210,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   clock: { fontFamily: fonts.display, fontSize: 24, minWidth: 80, textAlign: 'center' },
-});
+}));

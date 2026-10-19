@@ -1,6 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { Icon, Text } from '../../ui';
-import { colors, fonts, radii } from '../../theme';
+import { fonts, radii, useColors, themedStyles } from '../../theme';
 import { formatLongCap, type ISODate } from '../../core';
 
 /** The big card both pickers show: «Lørdag 7. november», or the placeholder. */
@@ -13,6 +13,8 @@ export function DateField({
   placeholder: string;
   active?: boolean;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={[styles.card, value ? styles.chosen : null, active ? styles.active : null]}>
       <View style={styles.badge}>
@@ -27,7 +29,7 @@ export function DateField({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   card: {
     minHeight: 88,
     flexDirection: 'row',
@@ -52,4 +54,4 @@ const styles = StyleSheet.create({
   },
   value: { fontFamily: fonts.display, fontSize: 26, lineHeight: 31, color: colors.ink },
   placeholder: { fontFamily: fonts.displaySemi, fontSize: 22, lineHeight: 28, color: colors.muted },
-});
+}));

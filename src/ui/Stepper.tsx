@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, fonts, radii, shadow } from '../theme';
+import { Pressable, View } from 'react-native';
+import { fonts, radii, shadow, useColors, themedStyles } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -20,6 +20,8 @@ export function Stepper({
   lessLabel: string;
   moreLabel: string;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.wrap}>
       <Pressable
@@ -53,7 +55,7 @@ export function Stepper({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -72,4 +74,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   value: { fontFamily: fonts.displayHeavy, fontSize: 64, lineHeight: 68, color: colors.ink },
-});
+}));

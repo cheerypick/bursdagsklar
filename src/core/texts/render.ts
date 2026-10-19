@@ -7,6 +7,7 @@ import templates from './templates.json';
 import type { Party } from '../model';
 import { formatLong, formatRangeCompact, formatDayMonth, capitalize } from '../rules/dates';
 import { buildTasks } from '../rules/todos';
+import { THEMES, themeById } from '../themes';
 
 export type Ctx = Record<string, string | number | boolean | undefined | null>;
 
@@ -49,9 +50,28 @@ type ThemeTexts = {
   leken: string;
 };
 
+/** Texts for parties without a (known) theme. */
+const NO_THEME: ThemeTexts = {
+  navn: 'Bursdag',
+  fest: 'bursdagsfest',
+  emoji: '🎈',
+  fargelegging: 'ballonger og kaker',
+  apning: { sma: 'Du er invitert i bursdag!', store: 'Bli med i bursdag!' },
+  leken: 'Hipp hipp hurra! Det blir bursdagsfest, og du er invitert.',
+};
+
+/** The template slots for a theme, read from the single theme list in core/themes.ts. */
 export function themeTexts(id: string): ThemeTexts {
-  const t = templates.themes as Record<string, ThemeTexts>;
-  return t[id] ?? t.ingen;
+  const t = THEMES.find((x) => x.id === id);
+  if (!t) return NO_THEME;
+  return {
+    navn: t.name,
+    fest: t.fest,
+    emoji: t.emoji,
+    fargelegging: t.copy.colouring,
+    apning: { sma: t.copy.opening.small, store: t.copy.opening.big },
+    leken: t.copy.playful,
+  };
 }
 
 /** The genitive used in headings: «Emmas», «Hans'». */
@@ -72,7 +92,9 @@ export function invitationCard(p: Party): { headline: string; name: string; line
     tid: formatRangeCompact(p.start, p.end),
   };
   return {
-    headline: render(card.overskrift, ctx),
+    headline: THEMES.some((t) => t.id === p.theme)
+      ? themeById(p.theme).copy.inviteHeadline
+      : render(card.overskrift, ctx),
     name: render(card.navn, ctx),
     line: render(card.linje, ctx),
     when: render(card.naar, ctx),

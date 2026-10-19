@@ -1,12 +1,14 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, fonts, radii, TOUCH } from '../theme';
+import { Pressable, View } from 'react-native';
+import { fonts, radii, TOUCH, useColors, themedStyles } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
 export function CheckBox({ checked, size = 30 }: { checked: boolean; size?: number }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={[styles.box, { width: size, height: size, borderRadius: size / 3 }, checked && styles.boxOn]}>
-      {checked ? <Icon name="check" size={size * 0.6} color={colors.white} strokeWidth={3} /> : null}
+      {checked ? <Icon name="check" size={size * 0.6} color={colors.onPrimary} strokeWidth={3} /> : null}
     </View>
   );
 }
@@ -43,15 +45,17 @@ export function TaskRow({
   a11yToggle,
   first,
 }: TaskRowProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={[styles.row, !first && styles.divider]}>
       <View style={[styles.date, hot && { backgroundColor: colors.blush }]}>
-        <Text style={[styles.dateDay, hot && { color: colors.pink }]}>{day}</Text>
-        <Text style={[styles.dateMonth, hot && { color: colors.pink }]}>{month}</Text>
+        <Text style={[styles.dateDay, hot && { color: colors.hot }]}>{day}</Text>
+        <Text style={[styles.dateMonth, hot && { color: colors.hot }]}>{month}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.title, checked && styles.titleDone]}>{title}</Text>
-        {overdueText ? <Text style={[styles.detail, { color: colors.pink }]}>{overdueText}</Text> : null}
+        {overdueText ? <Text style={[styles.detail, { color: colors.hot }]}>{overdueText}</Text> : null}
         {detail ? <Text style={styles.detail}>{detail}</Text> : null}
         {linkLabel && onLink ? (
           <Pressable
@@ -82,6 +86,7 @@ export function TaskRow({
 
 /** «Har dere dette hjemme?» toggle button. */
 export function HomeToggle({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -96,7 +101,7 @@ export function HomeToggle({ label, on, onPress }: { label: string; on: boolean;
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((colors) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
   divider: { borderTopWidth: 1, borderTopColor: colors.line },
   date: { width: 58, borderRadius: radii.sm, backgroundColor: colors.sage, paddingVertical: 6, alignItems: 'center' },
@@ -137,4 +142,4 @@ const styles = StyleSheet.create({
   },
   homeOn: { backgroundColor: colors.sage, borderColor: colors.sage },
   homeText: { fontFamily: fonts.bodySemi, fontSize: 15, flexShrink: 1 },
-});
+}));

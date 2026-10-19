@@ -20,8 +20,8 @@ The rule that keeps this maintainable: **screens never calculate anything**. Eve
 | File                         | Spec     | What                                                                                                                                  |
 | ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `model.ts`                   | §4       | `Party`, `Guest`, `Task`, `MenuChoice`, `ShoppingItem`, …                                                                             |
-| `rules/dates.ts`             | §6.3     | Date parsing («8. november», «8.11», «lørdag 7. november», ISO), weekend nudge, nb-NO formatting, Oslo «today».                       |
-| `rules/partyTime.ts`         | §6.2     | Default party time by age and weekday/weekend.                                                                                        |
+| `rules/dates.ts`             | §6.3     | Date picker bounds, nb-NO formatting, weekday/weekend, Oslo «today». No day is preferred over another.                                |
+| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 16.30–18.30, Sat–Sun 12.00–14.00; follows the date until edited.                                                |
 | `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                          |
 | `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                      |
 | `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, egen meny, extras and the allergy additions. The Mat screen comes in milestone 2. |

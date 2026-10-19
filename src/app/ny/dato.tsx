@@ -4,21 +4,19 @@ import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { DatePicker } from '../../features/setup/DatePicker';
-import { Icon, Pill, PillRow, Surface, Text } from '../../ui';
+import { Icon, Pill, Surface, Text } from '../../ui';
 import { fonts, radii, TOUCH, useColors, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
 import {
   dateBounds,
   defaultPartyTime,
   diffDays,
-  formatDayMonthShort,
+  draftWithDate,
   formatRange,
   fromMinutes,
   isWeekend,
   minutesOf,
-  nextSaturdays,
   SHORT_NOTICE_DAYS,
-  weekendNudge,
   type ISODate,
 } from '../../core';
 
@@ -31,20 +29,10 @@ export default function DateStep() {
   const { min, max } = dateBounds(today);
 
   const chosen = draft.date;
-  // the gentle hint stays about the date the parent picked, even after a one-tap switch
-  const [picked, setPicked] = useState<ISODate | null>(chosen);
-  const nudge = picked ? weekendNudge(picked, today) : null;
-  const why = chosen ? defaultPartyTime(age, isWeekend(chosen)).why : '';
-  const saturdays = nextSaturdays(today, 3);
-
-  const setDate = (date: ISODate) => {
-    const t = defaultPartyTime(age, isWeekend(date));
-    updateDraft({ dateText: date, date, start: t.start, end: t.end });
-  };
-  const pick = (date: ISODate) => {
-    setPicked(date);
-    setDate(date);
-  };
+  // a neutral picker: any day is fine. The default time follows the day (weekday 16.30–18.30,
+  // weekend 12.00–14.00) until the parent changes the time by hand.
+  const why = chosen && !draft.timeEdited ? defaultPartyTime(age, isWeekend(chosen)).why : '';
+  const pick = (date: ISODate) => updateDraft(draftWithDate(draft, date));
 
   const shift = (which: 'start' | 'end', delta: number) => {
     if (!draft.start || !draft.end) return;
@@ -56,7 +44,7 @@ export default function DateStep() {
     } else {
       e = Math.min(Math.max(e + delta, s + 30), 22 * 60);
     }
-    updateDraft({ start: fromMinutes(s), end: fromMinutes(e) });
+    updateDraft({ start: fromMinutes(s), end: fromMinutes(e), timeEdited: true });
   };
 
   const shortNotice = chosen ? diffDays(today, chosen) < SHORT_NOTICE_DAYS : false;
@@ -81,41 +69,13 @@ export default function DateStep() {
         placeholder={nb.date.placeholder}
       />
 
-      <View style={{ marginTop: 14 }} testID="saturday-chips">
-        <Text variant="small" style={{ marginBottom: 8 }}>
-          {nb.date.nextSaturdays}
-        </Text>
-        <PillRow>
-          {saturdays.map((sat) => (
-            <Pill
-              key={sat}
-              label={formatDayMonthShort(sat)}
-              accessibilityLabel={`Lørdag ${formatDayMonthShort(sat)}`}
-              on={chosen === sat}
-              onPress={() => pick(sat)}
-            />
-          ))}
-        </PillRow>
-      </View>
-
       {chosen ? (
         <Surface style={{ marginTop: 22 }}>
-          {nudge && chosen !== nudge.saturday ? (
-            <View style={styles.nudge} testID="weekend-nudge" accessibilityLiveRegion="polite">
-              <Text style={{ fontFamily: fonts.bodySemi }}>{nudge.question}</Text>
-              <View style={{ marginTop: 12 }}>
-                <PillRow>
-                  <Pill light label={nudge.yes} onPress={() => setDate(nudge.saturday)} />
-                </PillRow>
-              </View>
-            </View>
-          ) : null}
-
           {draft.start && draft.end ? (
-            <View style={[styles.timechip, !(nudge && chosen !== nudge.saturday) && { marginTop: 0 }]}>
+            <View style={styles.timechip} testID="party-time">
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.bodyBold }}>{nb.date.time(formatRange(draft.start, draft.end))}</Text>
-                <Text variant="small">{nb.date.fits(age, why)}</Text>
+                {why ? <Text variant="small">{nb.date.fits(age, why)}</Text> : null}
               </View>
               <Pill
                 light
@@ -188,9 +148,7 @@ function TimeShifter({
 }
 
 const useStyles = themedStyles((colors) => ({
-  nudge: { backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
   timechip: {
-    marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

@@ -19,7 +19,10 @@ async function setupWithTheme(page: Page, themeName: string) {
   await visible(page, 'next').click();
   await visible(page, 'age-5').click();
   await visible(page, 'next').click();
-  await visible(page, 'saturday-chips').getByRole('button').first().click();
+  const d = new Date();
+  d.setDate(d.getDate() + 14);
+  await visible(page, 'date-input').fill(d.toISOString().slice(0, 10));
+  await expect(visible(page, 'date-result')).not.toContainText('Trykk');
   await visible(page, 'next').click();
   await expect(
     page.getByRole('heading', { name: 'Hvor mange barn inviterer dere?' }).filter({ visible: true }),

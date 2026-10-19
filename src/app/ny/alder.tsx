@@ -5,7 +5,7 @@ import { SetupStep } from '../../features/setup/SetupStep';
 import { Grid, Text } from '../../ui';
 import { fonts, radii, shadow, useColors, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
-import { defaultPartyTime, isWeekend } from '../../core';
+import { draftWithAge } from '../../core';
 
 const AGES = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -15,16 +15,8 @@ export default function AgeStep() {
   const { draft, updateDraft } = useParty();
   const router = useRouter();
   const name = draft.name.trim() || 'barnet';
-  const pick = (age: number) => {
-    const patch: Partial<typeof draft> = { age };
-    // the age changes the default party time (spec §6.2)
-    if (draft.date) {
-      const t = defaultPartyTime(age, isWeekend(draft.date));
-      patch.start = t.start;
-      patch.end = t.end;
-    }
-    updateDraft(patch);
-  };
+  // the age can change the default party time's reason (spec §6.2); a hand-set time is kept
+  const pick = (age: number) => updateDraft(draftWithAge(draft, age));
   return (
     <SetupStep
       step={2}

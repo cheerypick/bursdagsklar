@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createParty, draftComplete, EMPTY_DRAFT, summarize, withDate, homeItemsFor } from '../party';
+import {
+  createParty,
+  draftComplete,
+  draftWithAge,
+  draftWithDate,
+  EMPTY_DRAFT,
+  summarize,
+  withDate,
+  homeItemsFor,
+} from '../party';
 import { createPartyRepository, memoryStore, migrate } from '../storage/PartyRepository';
 import { emma } from '../__fixtures__/emma';
 import { invitationCard, render, genitive, themeTexts } from '../texts/render';
@@ -16,6 +25,33 @@ const draft = {
   kidsInvited: 12,
   theme: 'enhjorning' as const,
 };
+
+describe('default time follows the date until the parent edits it', () => {
+  const base = { ...EMPTY_DRAFT, name: 'Emma', age: 5 };
+  it('a Wednesday gets 16.30–18.30, with no weekend hint anywhere', () => {
+    expect(draftWithDate(base, '2026-11-11')).toEqual({
+      date: '2026-11-11',
+      dateText: '2026-11-11',
+      start: '16:30',
+      end: '18:30',
+    });
+  });
+  it('switching to a Saturday moves the default to 12.00–14.00, and back again', () => {
+    const wed = { ...base, ...draftWithDate(base, '2026-11-11') };
+    const sat = { ...wed, ...draftWithDate(wed, '2026-11-14') };
+    expect([sat.start, sat.end]).toEqual(['12:00', '14:00']);
+    const fri = { ...sat, ...draftWithDate(sat, '2026-11-13') };
+    expect([fri.start, fri.end]).toEqual(['16:30', '18:30']);
+  });
+  it('a hand-set time is kept when the date or the age changes', () => {
+    const edited = { ...base, date: '2026-11-11', start: '17:00', end: '19:15', timeEdited: true };
+    expect(draftWithDate(edited, '2026-11-14')).toEqual({ date: '2026-11-14', dateText: '2026-11-14' });
+    expect(draftWithAge(edited, 7)).toEqual({ age: 7 });
+  });
+  it('picking an age before a date sets no time yet', () => {
+    expect(draftWithAge(EMPTY_DRAFT, 4)).toEqual({ age: 4 });
+  });
+});
 
 describe('createParty', () => {
   it('needs a complete setup', () => {

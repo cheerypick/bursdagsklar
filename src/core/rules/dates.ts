@@ -177,50 +177,7 @@ export function pickedDate(value: string, today: ISODate): ISODate | null {
   return iso < min || iso > max ? null : iso;
 }
 
-/** The next `count` Saturdays from today (today included when it is a Saturday). */
-export function nextSaturdays(today: ISODate, count = 3): ISODate[] {
-  const first = addDays(today, (6 - weekday(today) + 7) % 7);
-  return Array.from({ length: count }, (_, i) => addDays(first, 7 * i));
-}
-
-// ---------- weekend check (spec §6.3) ----------
-
-export interface WeekendNudge {
-  /** The party date as chosen. */
-  date: ISODate;
-  /** The Saturday we suggest instead. */
-  saturday: ISODate;
-  /** Gentle hint shown after picking, e.g. «Det er en søndag – passer det? Lørdag 7.?» */
-  question: string;
-  /** The one-tap switch. */
-  yes: string;
-}
-
-/**
- * Saturday: null (no nudge). Sunday: suggest the day before.
- * Monday–Wednesday: the previous Saturday. Thursday–Friday: the next Saturday.
- * A suggested Saturday that is already past falls back to the next Saturday.
- */
-export function weekendNudge(date: ISODate, today: ISODate): WeekendNudge | null {
-  const wd = weekday(date);
-  if (wd === 6) return null;
-  let saturday: ISODate;
-  if (wd === 0) saturday = addDays(date, -1);
-  else if (wd <= 3) saturday = addDays(date, -(wd + 1));
-  else saturday = addDays(date, 6 - wd);
-  if (saturday < today) saturday = addDays(date, 6 - wd);
-  if (saturday < today) return null;
-  // «Lørdag 7.» in the same month; «Lørdag 31. oktober» across a month change
-  const sat = parts(saturday).m === parts(date).m ? `${parts(saturday).d}.` : formatDayMonth(saturday);
-  return {
-    date,
-    saturday,
-    question: `Det er en ${WEEKDAYS[wd]} – passer det? Lørdag ${sat}?`,
-    yes: `Bytt til lørdag ${sat}`,
-  };
-}
-
-/** Saturday and Sunday use the weekend time column (§6.2). */
+/** Saturday and Sunday get the weekend default time (§6.2). */
 export function isWeekend(date: ISODate): boolean {
   const wd = weekday(date);
   return wd === 0 || wd === 6;

@@ -340,7 +340,7 @@
           9
         ],
         "default": {
-          "helg": 150,
+          "helg": 120,
           "hverdag": 120
         },
         "lengths": {
@@ -470,7 +470,7 @@
           12
         ],
         "default": {
-          "helg": 180,
+          "helg": 150,
           "hverdag": 150
         },
         "lengths": {

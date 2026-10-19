@@ -1,14 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// The whole milestone-1 flow, in every engine: setup → weekend nudge → Festen er klar →
+// The whole milestone-1 flow, in every engine: setup → neutral date picker → Festen er klar →
 // Planen → Gjøremål → tick a to-do → reload keeps it.
 const visible = (page: Page, testId: string) => page.getByTestId(testId).filter({ visible: true });
 
-/** ISO date of the first Sunday at least `days` days from now (local time). */
-function nextSundayAfter(days: number): string {
+/** ISO date of the first given weekday (0 = Sunday … 6 = Saturday) at least `days` days from now. */
+function nextDayAfter(days: number, weekday: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+  while (d.getDay() !== weekday) d.setDate(d.getDate() + 1);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
@@ -22,7 +22,7 @@ test('welcome screen renders without waiting for fonts', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('date step: the next-Saturday chips pick a date in one tap', async ({ page }) => {
+test('date step: neutral picker, the default time follows the day until edited', async ({ page }) => {
   await page.goto('/');
   await visible(page, 'start').click();
   await visible(page, 'name-input').fill('Emma');
@@ -33,9 +33,30 @@ test('date step: the next-Saturday chips pick a date in one tap', async ({ page 
   await expect(input).toHaveAttribute('type', 'date');
   await expect(input).toHaveAttribute('min', /^\d{4}-\d{2}-\d{2}$/);
   await expect(input).toHaveAttribute('max', /^\d{4}-\d{2}-\d{2}$/);
-  await visible(page, 'saturday-chips').getByRole('button').first().click();
-  await expect(visible(page, 'date-result')).toContainText('Lørdag');
+  // no Saturday shortcuts, no weekend hint
+  await expect(visible(page, 'saturday-chips')).toHaveCount(0);
+  await expect(page.getByText(/lørdag/i).filter({ visible: true })).toHaveCount(0);
+
+  // a Wednesday: after barnehage, 16.30–18.30, and nothing suggests another day
+  await input.fill(nextDayAfter(10, 3));
+  await expect(visible(page, 'date-result')).toContainText('Onsdag');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 16.30–18.30');
   await expect(visible(page, 'weekend-nudge')).toHaveCount(0);
+  await expect(page.getByText(/passer det\?|Bytt til/).filter({ visible: true })).toHaveCount(0);
+
+  // a Saturday: 12.00–14.00; back to a Friday: 16.30–18.30 again
+  await input.fill(nextDayAfter(10, 6));
+  await expect(visible(page, 'party-time')).toContainText('Kl. 12.00–14.00');
+  await input.fill(nextDayAfter(10, 5));
+  await expect(visible(page, 'party-time')).toContainText('Kl. 16.30–18.30');
+
+  // a hand-set time (15-minute steps) stays when the date changes
+  await visible(page, 'party-time').getByRole('button', { name: 'Endre klokkeslett' }).click();
+  await page.getByRole('button', { name: 'Start 15 minutter senere' }).filter({ visible: true }).click();
+  await expect(visible(page, 'party-time')).toContainText('Kl. 16.45–18.30');
+  await input.fill(nextDayAfter(10, 6));
+  await expect(visible(page, 'date-result')).toContainText('Lørdag');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 16.45–18.30');
   await expect(visible(page, 'next')).toBeEnabled();
 });
 
@@ -47,16 +68,10 @@ test('setup → Festen er klar → Planen → Gjøremål, and a tick survives re
   await visible(page, 'age-5').click();
   await visible(page, 'next').click();
 
-  // A real date picker: fill the native <input type="date"> with a Sunday a few
-  // weeks out. The gentle weekend hint offers the Saturday before; never a block.
-  const sunday = nextSundayAfter(10);
-  await visible(page, 'date-input').fill(sunday);
-  await expect(visible(page, 'date-result')).toContainText('Søndag');
-  const nudge = visible(page, 'weekend-nudge');
-  await expect(nudge).toContainText('Det er en søndag – passer det?');
-  await nudge.getByRole('button', { name: /^Bytt til lørdag \d+\./ }).click();
-  await expect(visible(page, 'date-result')).toContainText('Lørdag');
-  await expect(nudge).toHaveCount(0);
+  // A real date picker: fill the native <input type="date"> with a Wednesday a few weeks out.
+  await visible(page, 'date-input').fill(nextDayAfter(10, 3));
+  await expect(visible(page, 'date-result')).toContainText('Onsdag');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 16.30–18.30');
   await visible(page, 'next').click();
   // kids: keep the default (wait for the step, so the click isn't eaten by the fading one)
   await expect(

@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dateBounds,
   pickedDate,
-  nextSaturdays,
-  weekendNudge,
+  isWeekend,
   formatLong,
   weekday,
   todayOslo,
@@ -30,40 +29,15 @@ describe('date picker bounds and shortcuts (spec §6.3)', () => {
     expect(pickedDate('2026-10-18', TODAY)).toBeNull();
     expect(pickedDate('2027-10-20', TODAY)).toBeNull();
   });
-  it('next three Saturdays', () => {
-    expect(nextSaturdays(TODAY)).toEqual(['2026-10-24', '2026-10-31', '2026-11-07']);
-    expect(nextSaturdays('2026-10-24', 2)).toEqual(['2026-10-24', '2026-10-31']);
-  });
 });
 
-describe('weekend check (spec §6.3)', () => {
-  it('Saturday: no nudge', () => {
-    expect(weekendNudge('2026-11-07', TODAY)).toBeNull();
-  });
-  it('«8. november» is a Sunday → suggests Saturday 7th', () => {
-    const n = weekendNudge('2026-11-08', TODAY)!;
-    expect(n.saturday).toBe('2026-11-07');
-    expect(n.question).toBe('Det er en søndag – passer det? Lørdag 7.?');
-    expect(n.yes).toBe('Bytt til lørdag 7.');
-  });
-  it('Monday–Wednesday → previous Saturday', () => {
-    const n = weekendNudge('2026-11-11', TODAY)!; // Wednesday
-    expect(n.saturday).toBe('2026-11-07');
-    expect(n.question).toBe('Det er en onsdag – passer det? Lørdag 7.?');
-  });
-  it('Thursday–Friday → next Saturday', () => {
-    expect(weekendNudge('2026-11-12', TODAY)!.saturday).toBe('2026-11-14');
-    expect(weekendNudge('2026-11-13', TODAY)!.saturday).toBe('2026-11-14');
-  });
-  it('names the month when the Saturday is in another month', () => {
-    const n = weekendNudge('2026-11-01', TODAY)!; // Sunday
-    expect(n.saturday).toBe('2026-10-31');
-    expect(n.question).toBe('Det er en søndag – passer det? Lørdag 31. oktober?');
-    expect(n.yes).toBe('Bytt til lørdag 31. oktober');
-  });
-  it('a suggested Saturday in the past falls forward', () => {
-    // Tuesday 20 Oct: previous Saturday 17 Oct is past → next Saturday 24 Oct
-    expect(weekendNudge('2026-10-20', TODAY)!.saturday).toBe('2026-10-24');
+describe('weekdays and weekends are treated equally', () => {
+  it('only Saturday and Sunday count as weekend', () => {
+    expect(isWeekend('2026-11-07')).toBe(true); // Saturday
+    expect(isWeekend('2026-11-08')).toBe(true); // Sunday
+    for (const d of ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13']) {
+      expect(isWeekend(d)).toBe(false);
+    }
   });
 });
 
@@ -81,14 +55,19 @@ describe('formatting', () => {
   });
 });
 
-describe('default party time (spec §6.2)', () => {
-  it('age 5 weekend: 12.00–14.00, etter lunsj, før middag', () => {
+describe('default party time (spec §6.2, revised: weekdays are normal)', () => {
+  it('weekday: 16.30–18.30, after barnehage', () => {
+    expect(defaultPartyTime(5, false)).toEqual({ start: '16:30', end: '18:30', why: 'etter barnehagen, før middag' });
+  });
+  it('weekend: 12.00–14.00, etter lunsj, før middag', () => {
     expect(defaultPartyTime(5, true)).toEqual({ start: '12:00', end: '14:00', why: 'etter lunsj, før middag' });
   });
-  it('weekday and other bands', () => {
-    expect(defaultPartyTime(5, false).start).toBe('17:00');
-    expect(defaultPartyTime(8, true).end).toBe('14:30');
-    expect(defaultPartyTime(11, true)).toMatchObject({ start: '14:00', end: '17:00' });
-    expect(defaultPartyTime(2, true)).toMatchObject({ start: '11:00', end: '12:30' });
+  it('the same times for every age; only the reason changes', () => {
+    for (let age = 1; age <= 12; age++) {
+      expect(defaultPartyTime(age, false)).toMatchObject({ start: '16:30', end: '18:30' });
+      expect(defaultPartyTime(age, true)).toMatchObject({ start: '12:00', end: '14:00' });
+    }
+    expect(defaultPartyTime(2, false).why).toBe('etter barnehagen, kort og rolig');
+    expect(defaultPartyTime(8, false).why).toBe('etter skole og SFO');
   });
 });

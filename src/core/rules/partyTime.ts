@@ -1,54 +1,30 @@
 import type { HHMM } from '../model';
 
-/** Default party time by age (spec §6.2). */
-interface TimeRow {
-  minAge: number;
+/**
+ * Default party time (spec §6.2, revised Oct 2026 after parent feedback): most kindergarten
+ * birthdays are on weekdays, after barnehage, so weekdays and weekends are treated equally.
+ * Mon–Fri 16.30–18.30, Sat–Sun 12.00–14.00, for every age. Only the short reason varies by age.
+ */
+export const WEEKDAY_TIME: [HHMM, HHMM] = ['16:30', '18:30'];
+export const WEEKEND_TIME: [HHMM, HHMM] = ['12:00', '14:00'];
+
+interface WhyRow {
   maxAge: number;
-  weekend: [HHMM, HHMM];
-  weekday: [HHMM, HHMM];
-  chipWeekend: string;
-  chipWeekday: string;
+  weekday: string;
+  weekend: string;
 }
 
-const ROWS: TimeRow[] = [
-  {
-    minAge: 1,
-    maxAge: 2,
-    weekend: ['11:00', '12:30'],
-    weekday: ['16:30', '18:00'],
-    chipWeekend: 'før middagsluren',
-    chipWeekday: 'kort og rolig',
-  },
-  {
-    minAge: 3,
-    maxAge: 6,
-    weekend: ['12:00', '14:00'],
-    weekday: ['17:00', '19:00'],
-    chipWeekend: 'etter lunsj, før middag',
-    chipWeekday: 'etter barnehagen, før leggetid',
-  },
-  {
-    minAge: 7,
-    maxAge: 9,
-    weekend: ['12:00', '14:30'],
-    weekday: ['17:00', '19:00'],
-    chipWeekend: 'tid til litt flere leker',
-    chipWeekday: 'tid til litt flere leker',
-  },
-  {
-    minAge: 10,
-    maxAge: 12,
-    weekend: ['14:00', '17:00'],
-    weekday: ['17:00', '19:30'],
-    chipWeekend: 'store barn vil ha god tid',
-    chipWeekday: 'store barn vil ha god tid',
-  },
+const WHY: WhyRow[] = [
+  { maxAge: 2, weekday: 'etter barnehagen, kort og rolig', weekend: 'midt på dagen, kort og rolig' },
+  { maxAge: 6, weekday: 'etter barnehagen, før middag', weekend: 'etter lunsj, før middag' },
+  { maxAge: 9, weekday: 'etter skole og SFO', weekend: 'etter lunsj, før middag' },
+  { maxAge: 12, weekday: 'etter skolen, før middag', weekend: 'etter lunsj, før middag' },
 ];
 
 export function defaultPartyTime(age: number, weekend: boolean): { start: HHMM; end: HHMM; why: string } {
-  const row = ROWS.find((r) => age >= r.minAge && age <= r.maxAge) ?? ROWS[1];
-  const [start, end] = weekend ? row.weekend : row.weekday;
-  return { start, end, why: weekend ? row.chipWeekend : row.chipWeekday };
+  const row = WHY.find((r) => age <= r.maxAge) ?? WHY[WHY.length - 1];
+  const [start, end] = weekend ? WEEKEND_TIME : WEEKDAY_TIME;
+  return { start, end, why: weekend ? row.weekend : row.weekday };
 }
 
 /** 15-minute steps for the «Endre» time picker. */

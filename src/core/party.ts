@@ -5,7 +5,8 @@
 import type { HHMM, HomeItemId, ISODate, Party, ThemeId } from './model';
 import { SCHEMA_VERSION } from './model';
 import { DEFAULT_HOST_ADULTS, programmeDefaults } from './rules/constants';
-import { diffDays, formatRangeCompact } from './rules/dates';
+import { diffDays, formatRangeCompact, isWeekend } from './rules/dates';
+import { defaultPartyTime } from './rules/partyTime';
 import { defaultMenu, MENU_NAMES } from './rules/food';
 import { headCount } from './rules/people';
 import { buildTasks, progress } from './rules/todos';
@@ -19,6 +20,8 @@ export interface SetupDraft {
   dateText: string;
   start: HHMM | null;
   end: HHMM | null;
+  /** True once the parent has changed the time by hand; then a new date or age keeps it. */
+  timeEdited?: boolean;
   kidsInvited: number;
   theme: ThemeId | null;
 }
@@ -30,9 +33,27 @@ export const EMPTY_DRAFT: SetupDraft = {
   dateText: '',
   start: null,
   end: null,
+  timeEdited: false,
   kidsInvited: 10,
   theme: null,
 };
+
+/** The default time (weekday 16.30–18.30, weekend 12.00–14.00) unless the parent has set their own. */
+function defaultTimePatch(d: SetupDraft, age: number | null, date: ISODate | null): Partial<SetupDraft> {
+  if (!date || (d.timeEdited && d.start && d.end)) return {};
+  const t = defaultPartyTime(age ?? 5, isWeekend(date));
+  return { start: t.start, end: t.end };
+}
+
+/** Picking a date: the default time follows the new date unless the time was edited by hand. */
+export function draftWithDate(d: SetupDraft, date: ISODate): Partial<SetupDraft> {
+  return { date, dateText: date, ...defaultTimePatch(d, d.age, date) };
+}
+
+/** Picking an age: same rule as the date. */
+export function draftWithAge(d: SetupDraft, age: number): Partial<SetupDraft> {
+  return { age, ...defaultTimePatch(d, age, d.date) };
+}
 
 export function draftComplete(d: SetupDraft): boolean {
   return Boolean(d.name.trim() && d.age && d.date && d.start && d.end && d.theme && d.kidsInvited > 0);

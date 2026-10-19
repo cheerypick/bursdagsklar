@@ -37,7 +37,6 @@ export const nb = {
     lede: 'Vi regner ut fristene bakover fra datoen.',
     placeholder: 'Trykk for å velge dato',
     label: 'Dato for festen',
-    nextSaturdays: 'Eller en av de neste lørdagene:',
     time: (range: string) => `Kl. ${range}`,
     fits: (alder: number, tekst: string) => `Passer for ${alder}-åringer: ${tekst}`,
     start: 'Start',

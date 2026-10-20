@@ -92,14 +92,20 @@ export const nb = {
     todos: 'Gjøremål med datoer',
     cta: 'Se planen din 🎉',
   },
+  /** «Start på nytt»: deletes everything stored on this device, after a confirm dialog. */
+  startOver: {
+    action: 'Start på nytt',
+    title: 'Vil du starte på nytt?',
+    /** names = «Emma» or «Emma og Jonas» */
+    message: (names: string) => `Planen for ${names} slettes.`,
+    messageDraft: 'Det du har fylt inn så langt slettes.',
+    confirm: 'Slett og start på nytt',
+    cancel: 'Avbryt',
+  },
   plan: {
     greeting: 'Alt er planlagt. Nå blir det fest!',
     meta: (dato: string, tid: string, barn: number) => `${dato} · kl. ${tid} · ${barn} barn`,
     section: 'Alt til festen',
-    newParty: 'Ny fest',
-    confirmNew: 'Vil du starte en ny fest? Denne festen slettes fra telefonen.',
-    confirmYes: 'Ja, start på nytt',
-    confirmNo: 'Avbryt',
     allDone: 'Alt er gjort. Kos dere på festen!',
     cards: {
       invite: { title: 'Invitasjon', sub: 'Kort, tekst og melding til foreldrene', badge: 'Klar til å sendes' },

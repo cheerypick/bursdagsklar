@@ -4,6 +4,7 @@ import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { InvitationCard } from '../features/InvitationCard';
 import { LicenseNote } from '../features/LicenseNote';
+import { StartOverButton } from '../features/StartOver';
 import { HeroButton, Icon, Screen, Text } from '../ui';
 import { fonts, useLayout, useColors, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
@@ -58,6 +59,9 @@ export default function Ready() {
             {title}
             <View style={{ marginTop: 26, marginBottom: 30 }}>{cta}</View>
             {list}
+            <View style={{ marginTop: 28, marginLeft: -12 }}>
+              <StartOverButton onPrimary align="flex-start" />
+            </View>
             <LicenseNote onPrimary />
           </View>
         </View>
@@ -69,6 +73,9 @@ export default function Ready() {
           </View>
           <View style={{ marginTop: 22, marginBottom: 26 }}>{cta}</View>
           {list}
+          <View style={{ marginTop: 28 }}>
+            <StartOverButton onPrimary />
+          </View>
           <LicenseNote onPrimary />
         </View>
       )}

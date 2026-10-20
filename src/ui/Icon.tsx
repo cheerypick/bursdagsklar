@@ -1,7 +1,8 @@
 import Svg, { Path, Rect } from 'react-native-svg';
 import { colors } from '../theme';
 
-type Name = 'back' | 'forward' | 'close' | 'arrow' | 'check' | 'home' | 'list' | 'star' | 'plus' | 'minus' | 'calendar';
+type Name =
+  'back' | 'forward' | 'close' | 'arrow' | 'check' | 'home' | 'list' | 'star' | 'plus' | 'minus' | 'calendar' | 'reset';
 
 export function Icon({
   name,
@@ -51,6 +52,7 @@ export function Icon({
       )}
       {name === 'plus' && <Path d="M12 5v14M5 12h14" {...common} />}
       {name === 'minus' && <Path d="M5 12h14" {...common} />}
+      {name === 'reset' && <Path d="M4 12a8 8 0 1 0 2.4-5.7M4 4.5v4h4" {...common} />}
       {name === 'calendar' && (
         <>
           <Rect x={3.5} y={5} width={17} height={15.5} rx={3} {...common} />

@@ -9,6 +9,8 @@
  *   bursdagsklar:index        { schemaVersion, activeId, ids: string[] }
  *   bursdagsklar:party:<id>   Party JSON
  *   bursdagsklar:draft        the unfinished setup (so a reload keeps it)
+ *
+ * Every key the app writes starts with `bursdagsklar:`; `reset()` («Start på nytt») removes them all.
  */
 import type { Party } from '../model';
 import { SCHEMA_VERSION } from '../model';
@@ -20,6 +22,8 @@ export interface KeyValueStore {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
+  /** Every key in the store. Optional: AsyncStorage (and so localStorage on web) has it. */
+  getAllKeys?(): Promise<readonly string[]>;
 }
 
 export interface PartyRepository {
@@ -32,12 +36,22 @@ export interface PartyRepository {
   setActiveId(id: string | null): Promise<void>;
   loadDraft(): Promise<SetupDraft | null>;
   saveDraft(draft: SetupDraft | null): Promise<void>;
+  /**
+   * «Start på nytt»: removes everything this app has stored — every party, the active id, the
+   * unfinished setup and any other `bursdagsklar:` key (an older theme or draft key included).
+   * Keys of other apps on the same origin are left alone.
+   */
+  reset(): Promise<void>;
 }
 
 const PREFIX = 'bursdagsklar';
 const INDEX_KEY = `${PREFIX}:index`;
 const DRAFT_KEY = `${PREFIX}:draft`;
+/** The theme lived in its own key before it moved onto the party; reset() still clears it. */
+const LEGACY_THEME_KEY = `${PREFIX}:theme`;
 const partyKey = (id: string) => `${PREFIX}:party:${id}`;
+/** True for a key this app owns. */
+export const isAppKey = (key: string) => key.startsWith(`${PREFIX}:`);
 
 interface Index {
   schemaVersion: number;
@@ -155,6 +169,19 @@ export function createPartyRepository(
       if (draft) await store.setItem(DRAFT_KEY, JSON.stringify(draft));
       else await store.removeItem(DRAFT_KEY);
     },
+    async reset() {
+      const idx = await readIndex();
+      const keys = new Set<string>([INDEX_KEY, DRAFT_KEY, LEGACY_THEME_KEY, ...idx.ids.map(partyKey)]);
+      // parties that fell out of the index, and keys from older versions, when the store can list keys
+      if (store.getAllKeys) {
+        try {
+          for (const k of await store.getAllKeys()) if (isAppKey(k)) keys.add(k);
+        } catch {
+          // listing is a bonus; the known keys above are removed regardless
+        }
+      }
+      for (const k of keys) await store.removeItem(k);
+    },
   };
   return repo;
 }
@@ -171,6 +198,9 @@ export function memoryStore(): KeyValueStore & { dump(): Record<string, string> 
     },
     async removeItem(k) {
       m.delete(k);
+    },
+    async getAllKeys() {
+      return [...m.keys()];
     },
     dump() {
       return Object.fromEntries(m);

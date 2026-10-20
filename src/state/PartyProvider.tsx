@@ -28,7 +28,11 @@ interface PartyState {
   toggleHome: (id: HomeItemId) => boolean;
   /** «Velg tema» on Planen: a theme, or null for the neutral look. Saved like any change. */
   setTheme: (id: ThemeId | null) => void;
-  /** «Ny fest»: removes the active party and starts a fresh setup. */
+  /**
+   * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
+   * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
+   * The caller navigates to the start screen.
+   */
   startOver: () => Promise<void>;
 }
 
@@ -133,11 +137,13 @@ export function PartyProvider({
   const setTheme = useCallback((id: ThemeId | null) => update((p) => withTheme(p, id)), [update]);
 
   const startOver = useCallback(async () => {
-    if (party) await repository.remove(party.id);
-    await repository.saveDraft(null);
-    setParty(null);
+    // a change still waiting to be saved would write the old party back after the reset
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    await repository.reset();
+    setParty(null); // → ThemeProvider gets themeId null → the neutral brand look
     setDraft(EMPTY_DRAFT);
-  }, [party, repository]);
+  }, [repository]);
 
   const value = useMemo<PartyState>(
     () => ({ ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, setTheme, startOver }),

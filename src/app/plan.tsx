@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { CountdownRing } from '../features/CountdownRing';
 import { LicenseNote } from '../features/LicenseNote';
-import { Button, Grid, Icon, PhotoCard, Pill, PillRow, Screen, Surface, Text } from '../ui';
+import { StartOverButton } from '../features/StartOver';
+import { Button, Grid, Icon, PhotoCard, Screen, Surface, Text } from '../ui';
 import { fonts, images, radii, themeImages, useLayout, themedStyles, useColors } from '../theme';
 import { nb } from '../i18n/nb';
 import { buildTasks, formatLongCap, formatRangeCompact, nextTask, planTitle, summarize, themeById } from '../core';
@@ -13,10 +13,9 @@ import { buildTasks, formatLongCap, formatRangeCompact, nextTask, planTitle, sum
 export default function PlanScreen() {
   const styles = useStyles();
   const colors = useColors();
-  const { ready, party, today, startOver } = useParty();
+  const { ready, party, today } = useParty();
   const router = useRouter();
   const { isWide, gutter } = useLayout();
-  const [confirm, setConfirm] = useState(false);
   if (!ready) return <Loading />;
   if (!party) return <Redirect href="/" />;
 
@@ -64,11 +63,6 @@ export default function PlanScreen() {
       route: '/gjoremal',
     },
   ];
-
-  const startNew = async () => {
-    await startOver();
-    router.replace('/ny/hvem');
-  };
 
   const countdown = (
     <Surface style={[styles.row, { paddingVertical: 16, paddingHorizontal: 18 }]}>
@@ -129,29 +123,9 @@ export default function PlanScreen() {
           <Image source={heroImage} style={{ width: '100%', height: '100%' }} />
         </View>
       </View>
-      <View style={{ paddingHorizontal: gutter, alignItems: 'flex-end', marginTop: 6 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={nb.plan.newParty}
-          onPress={() => setConfirm(true)}
-          hitSlop={10}
-          style={{ minHeight: 32, justifyContent: 'center' }}
-        >
-          <Text style={styles.newLink}>{nb.plan.newParty}</Text>
-        </Pressable>
+      <View style={{ paddingHorizontal: gutter - 12, marginTop: 4 }}>
+        <StartOverButton align="flex-end" />
       </View>
-
-      {confirm ? (
-        <View style={[styles.confirm, { marginHorizontal: gutter }]} accessibilityLiveRegion="polite">
-          <Text style={{ fontFamily: fonts.bodySemi }}>{nb.plan.confirmNew}</Text>
-          <View style={{ marginTop: 12 }}>
-            <PillRow>
-              <Pill label={nb.plan.confirmYes} on onPress={startNew} />
-              <Pill label={nb.plan.confirmNo} light onPress={() => setConfirm(false)} />
-            </PillRow>
-          </View>
-        </View>
-      ) : null}
 
       {isWide ? (
         <View style={{ flexDirection: 'row', gap: 16, paddingHorizontal: gutter, marginTop: 14 }}>
@@ -273,7 +247,6 @@ const useStyles = themedStyles((colors) => ({
   },
   heroArt: { width: 92, height: 92, borderRadius: 24, overflow: 'hidden', backgroundColor: colors.cardTint },
   greeting: { fontFamily: fonts.displaySemi, fontSize: 19, lineHeight: 24, color: colors.onPrimary, marginTop: 8 },
-  newLink: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.green2, textDecorationLine: 'underline' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   next: { backgroundColor: colors.blush, borderRadius: radii.lg, padding: 20 },
   when: {
@@ -307,5 +280,4 @@ const useStyles = themedStyles((colors) => ({
     justifyContent: 'center',
   },
   themeTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
-  confirm: { marginTop: 10, backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
 }));

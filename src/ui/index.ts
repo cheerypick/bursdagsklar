@@ -3,6 +3,7 @@ export * from './Calendar';
 export * from './Card';
 export * from './CheckRow';
 export * from './Grid';
+export * from './HeroButton';
 export * from './Icon';
 export * from './NavBar';
 export * from './Screen';

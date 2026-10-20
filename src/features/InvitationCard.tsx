@@ -7,7 +7,8 @@ import { Text } from '../ui';
  * The invitation card preview («Festen er klar»). With a theme, colours, picture, motif and headline
  * come from core/themes.ts; without one, the neutral brand look. The rest is the pre-written templates.
  */
-export function InvitationCard({ party }: { party: Party }) {
+/** `compact`: a wider, shorter picture, so «Festen er klar» on a phone shows its button without scrolling. */
+export function InvitationCard({ party, compact }: { party: Party; compact?: boolean }) {
   // no theme chosen: the neutral brand card, our own picture and a neutral headline
   const theme = party.theme ? themeById(party.theme) : null;
   const { inviteTint, inviteInk } = theme ? theme.palette : BRAND_PALETTE;
@@ -20,17 +21,21 @@ export function InvitationCard({ party }: { party: Party }) {
       accessible
       accessibilityLabel={`Invitasjon: ${card.headline} ${card.name} ${card.line}. ${card.when}. ${card.rsvp}.`}
     >
-      <View style={styles.art}>
+      <View style={[styles.art, compact && { aspectRatio: 2.2 }]}>
         <Image source={art} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         <View style={[styles.motif, { backgroundColor: inviteTint }]}>
           <Text style={styles.motifText}>{theme ? theme.emoji : '🎈'}</Text>
         </View>
       </View>
-      <View style={styles.text}>
+      <View style={[styles.text, compact && { paddingBottom: 20 }]}>
         <Text testID="invitation-headline" style={[styles.sub, { color: inviteInk }]}>
           {card.headline}
         </Text>
-        <Text style={[styles.big, { color: inviteInk }]} numberOfLines={1} adjustsFontSizeToFit>
+        <Text
+          style={[styles.big, { color: inviteInk }, compact && { fontSize: 36, lineHeight: 40 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           {card.name} {card.line}
         </Text>
         <Text style={styles.sub}>{card.when}</Text>

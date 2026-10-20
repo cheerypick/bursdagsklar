@@ -90,7 +90,7 @@ export const nb = {
       `Alt det tunge er gjort. Du har ${dager} ${dager === 1 ? 'dag' : 'dager'} og ${n} ${n === 1 ? 'ting' : 'ting'} å gjøre denne uka.`,
     invite: 'Invitasjon og melding til foreldrene',
     todos: 'Gjøremål med datoer',
-    cta: 'Se planen',
+    cta: 'Se planen din 🎉',
   },
   plan: {
     greeting: 'Alt er planlagt. Nå blir det fest!',

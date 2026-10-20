@@ -139,7 +139,13 @@ test('setup in 4 steps → Festen er klar → Planen → Gjøremål, and a tick 
   await visible(page, 'next').click();
 
   await expect(visible(page, 'screen-ready')).toContainText('Emmas fest er klar.');
-  await visible(page, 'see-plan').click();
+  // the way to the plan is the hero of the screen: visible without scrolling
+  const cta = visible(page, 'see-plan');
+  await expect(cta).toHaveAccessibleName('Se planen din');
+  await expect(cta).toBeInViewport({ ratio: 1 });
+  const box = (await cta.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(64);
+  await cta.click();
   await expect(visible(page, 'screen-plan')).toContainText('Emmas 5-årsdag');
 
   // Phone: bottom tab bar. Desktop: links in the top navigation.

@@ -8,11 +8,11 @@ import type { Party } from '../model';
 export function emma(overrides: Partial<Party> = {}): Party {
   return {
     id: '7d0c3f5e-1c1a-4f6b-9a51-6a3c2b1e0e01',
-    schemaVersion: 1,
+    schemaVersion: 2,
     createdAt: '2026-10-19T08:00:00.000Z',
     updatedAt: '2026-10-19T08:00:00.000Z',
     plannedFrom: '2026-10-19',
-    child: { name: 'Emma', age: 5 },
+    celebrants: [{ id: 'c1', name: 'Emma', age: 5 }],
     date: '2026-11-07',
     start: '12:00',
     end: '14:00',

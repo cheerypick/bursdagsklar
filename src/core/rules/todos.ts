@@ -39,7 +39,11 @@ export function buildTasks(p: Party): TaskPlan {
   };
   const front = (ideal: number) => at(frontOffset(ideal, avail, R));
   const hc = headCount(p);
-  const theme = themeById(p.theme);
+  // Nothing here depends on a theme; the theme only changes the words of a themed extra
+  // (the piñata), and that to-do only exists when the parent has turned the activity on.
+  const theme = p.theme ? themeById(p.theme) : null;
+  // a joint birthday shares ONE cake for all guests, with a candle set for each child
+  const candleNote = p.celebrants.length > 1 ? 'Ett lys-sett per bursdagsbarn' : null;
   const pinata = p.programme.includePinata;
   const clues = p.programme.includeSkattejakt;
   const bake = p.cake.mode === 'bake';
@@ -66,12 +70,17 @@ export function buildTasks(p: Party): TaskPlan {
       avail >= 8 && {
         id: 'orderPinata',
         date: front(17),
-        title: `Bestill ${theme.pinata}`,
+        title: theme ? `Bestill ${theme.pinata}` : 'Bestill piñata',
         detail: 'Levering tar ofte 3–5 dager',
       },
     pinata &&
       avail < 8 && { id: 'buyPinata', date: at(4), title: 'Kjøp piñata i butikken', detail: 'Leke- eller festbutikk' },
-    !bake && { id: 'orderCake', date: at(7), title: 'Bestill kaken', detail: 'Hos bakeren eller i butikken' },
+    !bake && {
+      id: 'orderCake',
+      date: at(7),
+      title: candleNote ? 'Bestill én felles kake' : 'Bestill kaken',
+      detail: candleNote ? `Stor nok til alle gjestene. ${candleNote}` : 'Hos bakeren eller i butikken',
+    },
     {
       id: 'rsvpReminder',
       date: at(R + 1),
@@ -147,7 +156,7 @@ export function buildTasks(p: Party): TaskPlan {
       id: 'bakeMuffins',
       date: at(1),
       title: p.cake.muffins ? 'Pynt kaken og bak muffins' : 'Pynt kaken',
-      detail: `Og fyll ${hc.kidsComing} godteposer`,
+      detail: candleNote ? `${candleNote}. Og fyll ${hc.kidsComing} godteposer` : `Og fyll ${hc.kidsComing} godteposer`,
       link: { label: 'Oppskrift', route: '/kake' },
     },
     {

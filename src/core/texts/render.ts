@@ -8,6 +8,7 @@ import type { Party } from '../model';
 import { formatLong, formatRangeCompact, formatDayMonth, capitalize } from '../rules/dates';
 import { buildTasks } from '../rules/todos';
 import { THEMES, themeById } from '../themes';
+import { agesText, celebrantNames } from '../rules/celebrants';
 
 export type Ctx = Record<string, string | number | boolean | undefined | null>;
 
@@ -61,8 +62,8 @@ const NO_THEME: ThemeTexts = {
 };
 
 /** The template slots for a theme, read from the single theme list in core/themes.ts. */
-export function themeTexts(id: string): ThemeTexts {
-  const t = THEMES.find((x) => x.id === id);
+export function themeTexts(id: string | null | undefined): ThemeTexts {
+  const t = id ? THEMES.find((x) => x.id === id) : undefined;
   if (!t) return NO_THEME;
   return {
     navn: t.name,
@@ -74,7 +75,7 @@ export function themeTexts(id: string): ThemeTexts {
   };
 }
 
-/** The genitive used in headings: «Emmas», «Hans'». */
+/** The genitive used in headings: «Emmas», «Hans'». Only for ONE name; see `partyTitle` for joint parties. */
 export function genitive(name: string): string {
   return /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
 }
@@ -86,15 +87,18 @@ export function invitationCard(p: Party): { headline: string; name: string; line
   const { rsvpDeadline } = buildTasks(p);
   const ctx: Ctx = {
     tema_fest: theme.fest,
-    barn: p.child.name,
-    alder: p.child.age,
+    barn: celebrantNames(p.celebrants),
+    alder: agesText(p.celebrants.map((c) => c.age)),
+    flere: p.celebrants.length > 1,
     dato: capitalize(formatLong(p.date)),
     tid: formatRangeCompact(p.start, p.end),
   };
   return {
-    headline: THEMES.some((t) => t.id === p.theme)
-      ? themeById(p.theme).copy.inviteHeadline
-      : render(card.overskrift, ctx),
+    // a chosen theme has its own headline; without one the neutral template line is used
+    headline:
+      p.theme && THEMES.some((t) => t.id === p.theme)
+        ? themeById(p.theme).copy.inviteHeadline
+        : render(card.overskrift, ctx),
     name: render(card.navn, ctx),
     line: render(card.linje, ctx),
     when: render(card.naar, ctx),

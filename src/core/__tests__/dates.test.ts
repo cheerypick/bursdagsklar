@@ -63,11 +63,11 @@ describe('default party time (spec §6.2, revised: weekdays are normal)', () => 
     expect(defaultPartyTime(5, true)).toEqual({ start: '12:00', end: '14:00', why: 'etter lunsj, før middag' });
   });
   it('the same times for every age; only the reason changes', () => {
-    for (let age = 1; age <= 12; age++) {
+    for (let age = 3; age <= 10; age++) {
       expect(defaultPartyTime(age, false)).toMatchObject({ start: '16:30', end: '18:30' });
       expect(defaultPartyTime(age, true)).toMatchObject({ start: '12:00', end: '14:00' });
     }
-    expect(defaultPartyTime(2, false).why).toBe('etter barnehagen, kort og rolig');
+    expect(defaultPartyTime(3, false).why).toBe('etter barnehagen, før middag');
     expect(defaultPartyTime(8, false).why).toBe('etter skole og SFO');
   });
 });

@@ -76,7 +76,29 @@ export interface TaskState {
   hidden?: boolean;
 }
 
-export const SCHEMA_VERSION = 1 as const;
+/**
+ * v2 (Oct 2026): `child` became `celebrants` (joint birthdays: siblings or 2–3 kindergarten
+ * friends), `theme` became optional (chosen later, on Planen) and `home.type` gained 'lokale'/'ute'.
+ * Older records are upgraded in storage/PartyRepository.ts `migrate`.
+ */
+export const SCHEMA_VERSION = 2 as const;
+
+/** The ages the app plans for (3–10). A 1-year-old's party is a family coffee party, not this. */
+export const MIN_AGE = 3;
+export const MAX_AGE = 10;
+/** A joint birthday has at most three children. */
+export const MAX_CELEBRANTS = 3;
+
+/** One birthday child. A party has 1–3 of them. */
+export interface Celebrant {
+  /** Stable within the party ('c1', 'c2' …). */
+  id: string;
+  name: string;
+  age: number;
+}
+
+/** Where the party is held. */
+export type PlaceType = 'hus' | 'leilighet' | 'lokale' | 'ute';
 
 export interface Party {
   /** Stable id (crypto.randomUUID). Never changes, also not when synced. */
@@ -87,13 +109,15 @@ export interface Party {
   updatedAt: string;
   /** The day the to-do dates were computed from; reset when the party date changes. */
   plannedFrom: ISODate;
-  child: { name: string; age: number };
+  /** The birthday children, 1–3, in the order the parent entered them. */
+  celebrants: Celebrant[];
   date: ISODate;
   start: HHMM;
   end: HHMM;
-  theme: ThemeId;
-  home: { type: 'hus' | 'leilighet' | null; garden: boolean | null };
-  /** Invited children, not counting the birthday child. 1..40 */
+  /** Optional: chosen on Planen («Velg tema»). null = the neutral brand look and neutral texts. */
+  theme: ThemeId | null;
+  home: { type: PlaceType | null; garden: boolean | null };
+  /** Invited children, not counting the birthday children. 1..40 */
   kidsInvited: number;
   siblingsAttending: number;
   hostAdults: number;

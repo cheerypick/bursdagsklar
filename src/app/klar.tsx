@@ -7,7 +7,7 @@ import { LicenseNote } from '../features/LicenseNote';
 import { Button, Icon, Screen, Text } from '../ui';
 import { fonts, useLayout, useColors, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
-import { genitive, summarize } from '../core';
+import { readyTitle, summarize } from '../core';
 
 export default function Ready() {
   const styles = useStyles();
@@ -23,7 +23,7 @@ export default function Ready() {
   const text = (
     <View style={{ paddingHorizontal: isWide ? 0 : gutter }}>
       <Text variant="h1" color={colors.onPrimary} style={{ marginTop: 28, marginBottom: 6 }}>
-        {nb.ready.title(genitive(party.child.name))}
+        {readyTitle(party)}
       </Text>
       <Text variant="lede" color={colors.readyText} style={{ marginBottom: 18 }}>
         {nb.ready.lede(s.daysLeft, s.tasksThisWeek)}

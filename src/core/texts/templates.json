@@ -13,9 +13,9 @@
     "selection": "text = texts[kind].tones|variants[tone]; apning = themes[tema].apning[sma|store] for varm, themes[tema].leken for leken; gavelinje = texts.gift.modes[mode][variant of the message]."
   },
   "slots": {
-    "barn": "Bursdagsbarnets fornavn. «Emma»",
+    "barn": "Bursdagsbarnets fornavn, eller navnene slått sammen ved felles bursdag. «Emma», «Emma og Jonas», «Emma, Jonas og Ali»",
     "barns": "Genitiv: navnet + s; navn som slutter på s, x eller z får apostrof (Hans → Hans'). «Emmas»",
-    "alder": "Alderen barnet fyller. «5»",
+    "alder": "Alderen barnet fyller; ved felles bursdag alle aldrene, samme alder bare én gang. «5», «5 og 7»",
     "dato": "Ukedag + dato, små bokstaver. «lørdag 7. november»",
     "dag": "Bare ukedagen for festen. «lørdag»",
     "tid": "Start–slutt. Hele timer uten minutter, ellers med punktum. «12–14», «12.30–14.30»",
@@ -58,7 +58,8 @@
     "onske": "et ønske er fylt inn",
     "allergier": "minst én allergi eller kosttagg er meldt (M4; før det er flagget av)",
     "spleis": "gavemodus er «spleis-vipps» eller «spleis-lenke»",
-    "gjenglemt": "forelderen slår på «Noen glemte noe?» på Etter-skjermen"
+    "gjenglemt": "forelderen slår på «Noen glemte noe?» på Etter-skjermen",
+    "flere": "mer enn ett bursdagsbarn (felles bursdag)"
   },
   "texts": {
     "invitation": {
@@ -100,19 +101,19 @@
       "purpose": "Gavelinjen ({gavelinje}) i foreldremeldingen. Modus velges i skjemaet, variant følger meldingen.",
       "modes": {
         "spleis-vipps": {
-          "standard": "Vi foreslår en felles gave: {belop} per barn på Vipps til {vipps} innen {spleisfrist}.{#onske} {barn} ønsker seg {onske}.{/onske}",
-          "kort": "Felles gave: {belop} på Vipps til {vipps}.",
-          "formell": "Vi foreslår en frivillig felles gave på {belop} per barn, som kan betales med Vipps til {vipps} innen {spleisfrist}."
+          "standard": "Vi foreslår en felles gave{#flere} til hver av bursdagsbarna{/flere}: {belop} per barn på Vipps til {vipps} innen {spleisfrist}.{#onske} {barn} ønsker seg {onske}.{/onske}",
+          "kort": "Felles gave{#flere} til hver{/flere}: {belop} på Vipps til {vipps}.",
+          "formell": "Vi foreslår en frivillig felles gave{#flere} til hver av bursdagsbarna{/flere} på {belop} per barn, som kan betales med Vipps til {vipps} innen {spleisfrist}."
         },
         "spleis-lenke": {
-          "standard": "Vi foreslår en felles gave, {belop} per barn. Bidra her innen {spleisfrist}: {spleislenke}{#onske} ({barn} ønsker seg {onske}.){/onske}",
-          "kort": "Felles gave: {belop} her: {spleislenke}",
-          "formell": "Vi foreslår en frivillig felles gave på {belop} per barn. Bidrag kan gis innen {spleisfrist} her: {spleislenke}"
+          "standard": "Vi foreslår en felles gave{#flere} til hver av bursdagsbarna{/flere}, {belop} per barn. Bidra her innen {spleisfrist}: {spleislenke}{#onske} ({barn} ønsker seg {onske}.){/onske}",
+          "kort": "Felles gave{#flere} til hver{/flere}: {belop} her: {spleislenke}",
+          "formell": "Vi foreslår en frivillig felles gave{#flere} til hver av bursdagsbarna{/flere} på {belop} per barn. Bidrag kan gis innen {spleisfrist} her: {spleislenke}"
         },
         "maks": {
-          "standard": "Vil dere gi gave, holder det godt med noe til rundt {belop}.",
-          "kort": "Gave: maks {belop}.",
-          "formell": "Dersom dere ønsker å gi gave, foreslår vi en ramme på {belop}."
+          "standard": "Vil dere gi gave, holder det godt med noe til rundt {belop}{#flere}, en gave til hver{/flere}.",
+          "kort": "Gave: maks {belop}{#flere} til hver{/flere}.",
+          "formell": "Dersom dere ønsker å gi gave, foreslår vi en ramme på {belop}{#flere} per bursdagsbarn{/flere}."
         },
         "ingen-gaver": {
           "standard": "Ikke tenk på gave, vi gleder oss bare til å se dere!",
@@ -128,7 +129,7 @@
       "english": {
         "spleis-vipps": "We suggest a joint gift: {belop} per child via Vipps to {vipps} by {spleisfrist_en}.",
         "spleis-lenke": "We suggest a joint gift, {belop} per child: {spleislenke}",
-        "maks": "If you'd like to bring a gift, around {belop} is plenty.",
+        "maks": "If you'd like to bring a gift, around {belop}{#flere} for each birthday child{/flere} is plenty.",
         "ingen-gaver": "No gifts, please, just come!",
         "ikke-nevn": ""
       },
@@ -175,47 +176,13 @@
   "programme": {
     "purpose": "Faste tidsblokker per aldersgruppe og lengde. Ingen omskriving i appen.",
     "rules": [
-      "Velg gruppe etter alder (1–2, 3–6, 7–9, 10–12) og lengde etter festens varighet i minutter.",
+      "Velg gruppe etter alder (3–6, 7–9, 10) og lengde etter festens varighet i minutter. Ved felles bursdag gjelder det yngste barnet.",
       "Hvis varigheten ikke finnes i gruppen: ta nærmeste lengde (likt: den korteste), skaler starttidene proporsjonalt og rund av til 5 minutter. Mat og kake beholdes alltid.",
       "Piñata av: blokken byttes med blokkens «erstatning» (ballongdans), samme minutter. Skattejakt av: byttes med «sangleker» (3–6) eller «gjemsel» (7–9).",
       "Blokker med ute = true viser «Plan B inne: {planB}» når festen er i oktober–mars eller dere ikke har hage.",
       "Klokkeslett = festens start + blokkens start. Siste blokk (takk) står på sluttiden."
     ],
     "bands": {
-      "1-2": {
-        "ages": [
-          1,
-          2
-        ],
-        "default": {
-          "helg": 90,
-          "hverdag": 90
-        },
-        "lengths": {
-          "90": [
-            [
-              "velkommen_1_2",
-              0
-            ],
-            [
-              "mat",
-              30
-            ],
-            [
-              "kake",
-              50
-            ],
-            [
-              "bobler",
-              65
-            ],
-            [
-              "takk_sma",
-              90
-            ]
-          ]
-        }
-      },
       "3-6": {
         "ages": [
           3,
@@ -464,10 +431,10 @@
           ]
         }
       },
-      "10-12": {
+      "10": {
         "ages": [
           10,
-          12
+          10
         ],
         "default": {
           "helg": 150,
@@ -546,10 +513,6 @@
       }
     },
     "blocks": {
-      "velkommen_1_2": {
-        "tittel": "Velkommen og fri lek",
-        "tekst": "Legg fram leker på gulvet og la de minste bli kjent. Foreldrene får kaffe."
-      },
       "velkommen_sma": {
         "tittel": "Velkommen",
         "tekst": "Ta imot gjestene og gavene i gangen. Legg fram fargeleggingsark med {tema_fargelegging}, så de som kommer først har noe å gjøre."
@@ -630,10 +593,6 @@
         "tekst": "Hinderløype i hagen eller karaoke i stua. De voksne tar tiden.",
         "ute": true,
         "planB": "Karaoke eller «Just Dance» inne."
-      },
-      "bobler": {
-        "tittel": "Såpebobler og ballonger",
-        "tekst": "Blås såpebobler og slipp ballonger løs på gulvet. Enkelt, og de minste elsker det."
       },
       "godteposer": {
         "tittel": "Godteposer",

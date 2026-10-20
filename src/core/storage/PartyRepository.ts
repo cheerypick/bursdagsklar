@@ -12,7 +12,8 @@
  */
 import type { Party } from '../model';
 import { SCHEMA_VERSION } from '../model';
-import type { SetupDraft } from '../party';
+import { normalizeDraft, type SetupDraft } from '../party';
+import { clampAge } from '../rules/celebrants';
 
 /** The minimal async key-value API both AsyncStorage and an in-memory test store implement. */
 export interface KeyValueStore {
@@ -44,6 +45,20 @@ interface Index {
   ids: string[];
 }
 
+/** A party saved before joint birthdays (schemaVersion 1): one `child`, a required theme. */
+type PartyV1 = Omit<Party, 'schemaVersion' | 'celebrants'> & {
+  schemaVersion: 1;
+  child: { name: string; age: number };
+};
+
+/** v1 → v2: the single child is wrapped into `celebrants`; its age is kept inside 3–10. */
+function migrateV1(r: PartyV1): Party {
+  const { child, ...rest } = r;
+  const name = typeof child?.name === 'string' ? child.name : '';
+  const age = typeof child?.age === 'number' ? clampAge(child.age) : 5;
+  return { ...rest, schemaVersion: SCHEMA_VERSION, theme: rest.theme ?? null, celebrants: [{ id: 'c1', name, age }] };
+}
+
 /**
  * Upgrades a stored record to the current schemaVersion. Add a case per version bump;
  * never change the meaning of an old field in place.
@@ -52,7 +67,9 @@ export function migrate(raw: unknown): Party | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Partial<Party> & { schemaVersion?: number };
   if (typeof r.id !== 'string') return null;
-  switch (r.schemaVersion) {
+  switch (r.schemaVersion as number) {
+    case 1:
+      return migrateV1(r as unknown as PartyV1);
     case SCHEMA_VERSION:
       return r as Party;
     default:
@@ -129,7 +146,7 @@ export function createPartyRepository(
       const raw = await store.getItem(DRAFT_KEY);
       if (!raw) return null;
       try {
-        return JSON.parse(raw) as SetupDraft;
+        return normalizeDraft(JSON.parse(raw));
       } catch {
         return null;
       }

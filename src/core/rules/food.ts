@@ -5,6 +5,7 @@
 import type { AllergyTag, MenuChoice, Party, ShoppingItem } from '../model';
 import * as C from './constants';
 import { band, ceilSafe } from './constants';
+import { oldestAge } from './celebrants';
 import { headCount } from './people';
 
 const nb = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
@@ -140,7 +141,8 @@ export function customDish(m: Extract<MenuChoice, { kind: 'egen' }>, p: Pick<Peo
 
 // ---------------- extras (§6.7) ----------------
 
-export function extras(p: People, opts: { muffins: boolean; nutFree?: boolean }) {
+/** `candleAges`: one candle set per birthday child (age + 1 each); defaults to `p.age`. */
+export function extras(p: People, opts: { muffins: boolean; nutFree?: boolean; candleAges?: number[] }) {
   const saftLitres = (p.kidsComing * C.SAFT_DL_CHILD + p.adultsEating * C.SAFT_DL_ADULT) / 10;
   const fruitG = p.kidsComing * C.FRUIT_G_CHILD + p.adultsEating * C.FRUIT_G_ADULT;
   const cakePieces = ceilSafe((p.kidsComing + p.adultsEating) * C.CAKE_PIECES_FACTOR);
@@ -154,7 +156,7 @@ export function extras(p: People, opts: { muffins: boolean; nutFree?: boolean })
     cakePieces,
     cakeBatches: packs(cakePieces, C.CAKE_PIECES_PER_LANGPANNE),
     muffins,
-    candles: p.age + 1,
+    candles: (opts.candleAges ?? [p.age]).reduce((sum, a) => sum + a + 1, 0),
     candyG,
     candyDisplay: formatGrams(candyG),
     candyName: opts.nutFree ? 'Nøttefritt godteri' : 'Godteri',
@@ -208,7 +210,8 @@ export function mainItemWord(menu: MenuChoice): string {
 
 export function shoppingList(party: Party): ShoppingItem[] {
   const hc = headCount(party);
-  const p: People = { kidsComing: hc.kidsComing, adultsEating: hc.adultsEating, age: party.child.age };
+  // joint birthday: portions follow the OLDEST birthday child's band (it feeds the most, and it's safe)
+  const p: People = { kidsComing: hc.kidsComing, adultsEating: hc.adultsEating, age: oldestAge(party.celebrants) };
   const allergies = allergyUnion(party);
   const nutFree = allergies.includes('notter') || allergies.includes('peanott');
   const out: ShoppingItem[] = [];
@@ -435,7 +438,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
     );
   }
 
-  const e = extras(p, { muffins: party.cake.muffins, nutFree });
+  const e = extras(p, { muffins: party.cake.muffins, nutFree, candleAges: party.celebrants.map((c) => c.age) });
   out.push(
     item({
       id: 'saft',
@@ -485,6 +488,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
     item({
       id: 'kakelys',
       name: 'Kakelys',
+      why: party.celebrants.length > 1 ? 'Ett lys-sett per bursdagsbarn' : undefined,
       need: e.candles,
       unit: 'stk',
       display: `${e.candles}`,

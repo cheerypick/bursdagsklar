@@ -5,10 +5,10 @@ import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { CountdownRing } from '../features/CountdownRing';
 import { LicenseNote } from '../features/LicenseNote';
-import { Button, Grid, PhotoCard, Pill, PillRow, Screen, Surface, Text } from '../ui';
+import { Button, Grid, Icon, PhotoCard, Pill, PillRow, Screen, Surface, Text } from '../ui';
 import { fonts, images, radii, themeImages, useLayout, themedStyles, useColors } from '../theme';
 import { nb } from '../i18n/nb';
-import { buildTasks, formatLongCap, formatRangeCompact, genitive, nextTask, summarize, themeById } from '../core';
+import { buildTasks, formatLongCap, formatRangeCompact, nextTask, planTitle, summarize, themeById } from '../core';
 
 export default function PlanScreen() {
   const styles = useStyles();
@@ -21,7 +21,10 @@ export default function PlanScreen() {
   if (!party) return <Redirect href="/" />;
 
   const s = summarize(party, today);
-  const theme = themeById(party.theme);
+  // the theme is optional: without one, the neutral look, our own picture and neutral words
+  const theme = party.theme ? themeById(party.theme) : null;
+  const heroImage = party.theme ? themeImages[party.theme] : images.hero;
+  const place = nb.place.eyebrow[party.home.type ?? 'none'];
   const { tasks } = buildTasks(party);
   const next = nextTask(party, tasks, today);
   const tid = formatRangeCompact(party.start, party.end);
@@ -29,7 +32,7 @@ export default function PlanScreen() {
   const cards = [
     {
       key: 'invite',
-      image: themeImages[party.theme],
+      image: heroImage,
       title: nb.plan.cards.invite.title,
       sub: nb.plan.cards.invite.sub,
       badge: nb.plan.cards.invite.badge,
@@ -64,7 +67,7 @@ export default function PlanScreen() {
 
   const startNew = async () => {
     await startOver();
-    router.replace('/ny/navn');
+    router.replace('/ny/hvem');
   };
 
   const countdown = (
@@ -109,20 +112,21 @@ export default function PlanScreen() {
       <View style={[styles.hero, { marginHorizontal: gutter, marginTop: isWide ? 24 : 14 }]} testID="plan-hero">
         <View style={{ flex: 1 }}>
           <Text variant="eyebrow" color={colors.onPrimarySoft}>
-            {theme.emoji} {nb.plan.eyebrow(theme.name)}
+            {theme ? `${theme.emoji} ` : ''}
+            {place}
           </Text>
           <Text variant="h1Small" color={colors.onPrimary} style={{ marginTop: 6 }}>
-            {nb.plan.title(genitive(party.child.name), party.child.age)}
+            {planTitle(party)}
           </Text>
           <Text style={styles.greeting} testID="plan-greeting">
-            {theme.copy.greeting}
+            {theme ? theme.copy.greeting : nb.plan.greeting}
           </Text>
           <Text variant="small" color={colors.onPrimarySoft} style={{ marginTop: 8, fontSize: 16 }}>
             {nb.plan.meta(formatLongCap(party.date), tid, party.kidsInvited)}
           </Text>
         </View>
         <View style={[styles.heroArt, isWide && { width: 140, height: 140, borderRadius: 32 }]}>
-          <Image source={themeImages[party.theme]} style={{ width: '100%', height: '100%' }} />
+          <Image source={heroImage} style={{ width: '100%', height: '100%' }} />
         </View>
       </View>
       <View style={{ paddingHorizontal: gutter, alignItems: 'flex-end', marginTop: 6 }}>
@@ -160,6 +164,29 @@ export default function PlanScreen() {
           {nextCard}
         </View>
       )}
+
+      <View style={{ paddingHorizontal: gutter, marginTop: 14 }}>
+        <Pressable
+          testID="theme-card"
+          accessibilityRole="button"
+          accessibilityLabel={`${theme ? nb.theme.cardChosen.title(theme.name) : nb.theme.card.title}. ${theme ? nb.theme.cardChosen.sub : nb.theme.card.sub}`}
+          onPress={() => router.push('/tema')}
+          style={({ pressed }) => [styles.themeCard, pressed && { opacity: 0.85 }]}
+        >
+          <View style={styles.themeThumb}>
+            {party.theme ? (
+              <Image source={themeImages[party.theme]} style={{ width: '100%', height: '100%' }} />
+            ) : (
+              <Text style={{ fontSize: 28 }}>🎨</Text>
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.themeTitle}>{theme ? nb.theme.cardChosen.title(theme.name) : nb.theme.card.title}</Text>
+            <Text variant="small">{theme ? nb.theme.cardChosen.sub : nb.theme.card.sub}</Text>
+          </View>
+          <Icon name="forward" size={22} strokeWidth={2.4} color={colors.green} />
+        </Pressable>
+      </View>
 
       <Text variant="h2Small" style={{ marginTop: 28, marginBottom: 12, paddingHorizontal: gutter }}>
         {nb.plan.section}
@@ -257,5 +284,28 @@ const useStyles = themedStyles((colors) => ({
     paddingHorizontal: 12,
   },
   whenText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.hot },
+  themeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 72,
+    padding: 12,
+    paddingRight: 18,
+    borderRadius: radii.md,
+    backgroundColor: colors.card,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.boxBorder,
+  },
+  themeThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: colors.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
   confirm: { marginTop: 10, backgroundColor: colors.butter, borderRadius: radii.md, padding: 18 },
 }));

@@ -3,15 +3,17 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
-import { DatePicker } from '../../features/setup/DatePicker';
-import { Icon, Pill, Surface, Text } from '../../ui';
+import { DateField } from '../../features/setup/DateField';
+import { Calendar, Icon, Pill, Surface, Text } from '../../ui';
 import { fonts, radii, TOUCH, useColors, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
 import {
   dateBounds,
   defaultPartyTime,
   diffDays,
+  formatLongCap,
   draftWithDate,
+  draftYoungest,
   formatRange,
   fromMinutes,
   isWeekend,
@@ -25,7 +27,10 @@ export default function DateStep() {
   const { draft, updateDraft, today } = useParty();
   const router = useRouter();
   const [editTime, setEditTime] = useState(false);
-  const age = draft.age ?? 5;
+  const [open, setOpen] = useState(true);
+  // the time reason follows the youngest birthday child
+  const age = draftYoungest(draft) ?? 5;
+  const joint = draft.celebrants.length > 1;
   const { min, max } = dateBounds(today);
 
   const chosen = draft.date;
@@ -51,7 +56,7 @@ export default function DateStep() {
 
   return (
     <SetupStep
-      step={3}
+      step={2}
       title={nb.date.title}
       lede={nb.date.lede}
       onBack={() => router.back()}
@@ -59,15 +64,20 @@ export default function DateStep() {
       nextDisabled={!chosen}
       testID="step-date"
     >
-      <DatePicker
-        testID="date-input"
-        value={chosen}
-        min={min}
-        max={max}
-        onChange={pick}
-        label={nb.date.label}
-        placeholder={nb.date.placeholder}
-      />
+      <Pressable
+        testID="date-card"
+        accessibilityRole="button"
+        accessibilityLabel={`${nb.date.label}: ${chosen ? formatLongCap(chosen) : nb.date.placeholder}. ${open ? nb.date.hide : nb.date.show}`}
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((v) => !v)}
+      >
+        <DateField value={chosen} placeholder={nb.date.placeholder} />
+      </Pressable>
+      {open ? (
+        <View style={{ marginTop: 12 }}>
+          <Calendar testID="calendar" value={chosen} min={min} max={max} today={today} onChange={pick} />
+        </View>
+      ) : null}
 
       {chosen ? (
         <Surface style={{ marginTop: 22 }}>
@@ -75,7 +85,9 @@ export default function DateStep() {
             <View style={styles.timechip} testID="party-time">
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.bodyBold }}>{nb.date.time(formatRange(draft.start, draft.end))}</Text>
-                {why ? <Text variant="small">{nb.date.fits(age, why)}</Text> : null}
+                {why ? (
+                  <Text variant="small">{joint ? nb.date.fitsJoint(age, why) : nb.date.fits(age, why)}</Text>
+                ) : null}
               </View>
               <Pill
                 light

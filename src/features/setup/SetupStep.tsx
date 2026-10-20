@@ -2,7 +2,8 @@ import { View } from 'react-native';
 import { Button, Screen, Text, TopBar } from '../../ui';
 import { nb } from '../../i18n/nb';
 
-export const SETUP_STEPS = 5;
+/** who · when · how many · where (the theme is optional, later, on Planen). */
+export const SETUP_STEPS = 4;
 
 interface Props {
   step: number;

@@ -4,12 +4,15 @@ import {
   EMPTY_DRAFT,
   todayOslo,
   toggleHome as toggleHomeRule,
+  normalizeDraft,
   toggleTask as toggleTaskRule,
+  withTheme,
   type HomeItemId,
   type ISODate,
   type Party,
   type PartyRepository,
   type SetupDraft,
+  type ThemeId,
 } from '../core';
 import { partyRepository } from './storage';
 
@@ -23,6 +26,8 @@ interface PartyState {
   finishSetup: () => Promise<Party>;
   toggleTask: (id: string, done: boolean) => void;
   toggleHome: (id: HomeItemId) => boolean;
+  /** «Velg tema» on Planen: a theme, or null for the neutral look. Saved like any change. */
+  setTheme: (id: ThemeId | null) => void;
   /** «Ny fest»: removes the active party and starts a fresh setup. */
   startOver: () => Promise<void>;
 }
@@ -60,7 +65,7 @@ export function PartyProvider({
       const d = await repository.loadDraft();
       if (!alive) return;
       setParty(p);
-      if (d) setDraft({ ...EMPTY_DRAFT, ...d });
+      if (d) setDraft(normalizeDraft(d));
       setReady(true);
     })();
     return () => {
@@ -125,6 +130,8 @@ export function PartyProvider({
     [party, update],
   );
 
+  const setTheme = useCallback((id: ThemeId | null) => update((p) => withTheme(p, id)), [update]);
+
   const startOver = useCallback(async () => {
     if (party) await repository.remove(party.id);
     await repository.saveDraft(null);
@@ -133,8 +140,8 @@ export function PartyProvider({
   }, [party, repository]);
 
   const value = useMemo<PartyState>(
-    () => ({ ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, startOver }),
-    [ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, startOver],
+    () => ({ ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, setTheme, startOver }),
+    [ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, setTheme, startOver],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -17,7 +17,7 @@ export default function Welcome() {
   if (!ready) return <Loading />;
   if (party) return <Redirect href="/plan" />;
 
-  const start = () => router.push('/ny/navn');
+  const start = () => router.push('/ny/hvem');
   const heroHeight = isWide ? Math.min(620, Math.max(460, height - 160)) : Math.min(600, Math.max(430, height * 0.62));
 
   const copy = (

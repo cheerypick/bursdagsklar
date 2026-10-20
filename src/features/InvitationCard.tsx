@@ -1,15 +1,17 @@
 import { Image, StyleSheet, View } from 'react-native';
-import { invitationCard, themeById, type Party } from '../core';
-import { colors, fonts, radii, themeImages } from '../theme';
+import { BRAND_PALETTE, invitationCard, themeById, type Party } from '../core';
+import { colors, fonts, images, radii, themeImages } from '../theme';
 import { Text } from '../ui';
 
 /**
- * The themed invitation card preview («Festen er klar»). Colours, picture, motif and headline all
- * come from the party's theme in core/themes.ts; the rest from the pre-written templates.
+ * The invitation card preview («Festen er klar»). With a theme, colours, picture, motif and headline
+ * come from core/themes.ts; without one, the neutral brand look. The rest is the pre-written templates.
  */
 export function InvitationCard({ party }: { party: Party }) {
-  const theme = themeById(party.theme);
-  const { inviteTint, inviteInk } = theme.palette;
+  // no theme chosen: the neutral brand card, our own picture and a neutral headline
+  const theme = party.theme ? themeById(party.theme) : null;
+  const { inviteTint, inviteInk } = theme ? theme.palette : BRAND_PALETTE;
+  const art = party.theme ? themeImages[party.theme] : images.hero;
   const card = invitationCard(party);
   return (
     <View
@@ -19,9 +21,9 @@ export function InvitationCard({ party }: { party: Party }) {
       accessibilityLabel={`Invitasjon: ${card.headline} ${card.name} ${card.line}. ${card.when}. ${card.rsvp}.`}
     >
       <View style={styles.art}>
-        <Image source={themeImages[party.theme]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <Image source={art} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         <View style={[styles.motif, { backgroundColor: inviteTint }]}>
-          <Text style={styles.motifText}>{theme.emoji}</Text>
+          <Text style={styles.motifText}>{theme ? theme.emoji : '🎈'}</Text>
         </View>
       </View>
       <View style={styles.text}>

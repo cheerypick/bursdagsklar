@@ -5,21 +5,21 @@ import { SetupStep } from '../../features/setup/SetupStep';
 import { Stepper, Text } from '../../ui';
 import { radii, useColors } from '../../theme';
 import { nb } from '../../i18n/nb';
-import { MAX_KIDS, MIN_KIDS } from '../../core';
+import { draftNames, draftYoungest, MAX_KIDS, MIN_KIDS } from '../../core';
 
 export default function KidsStep() {
   const colors = useColors();
   const { draft, updateDraft } = useParty();
   const router = useRouter();
-  const name = draft.name.trim() || 'bursdagsbarnet';
-  const hint = (draft.age ?? 5) <= 5 ? nb.kids.hintSmall : nb.kids.hintSchool;
+  const name = draftNames(draft) || 'bursdagsbarnet';
+  const hint = (draftYoungest(draft) ?? 5) <= 5 ? nb.kids.hintSmall : nb.kids.hintSchool;
   return (
     <SetupStep
-      step={4}
+      step={3}
       title={nb.kids.title}
       lede={nb.kids.lede(name)}
       onBack={() => router.back()}
-      onNext={() => router.push('/ny/tema')}
+      onNext={() => router.push('/ny/hvor')}
       testID="step-kids"
     >
       <Stepper

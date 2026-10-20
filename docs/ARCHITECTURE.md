@@ -17,18 +17,20 @@ The rule that keeps this maintainable: **screens never calculate anything**. Eve
 
 ### src/core
 
-| File                         | Spec     | What                                                                                                                                  |
-| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `model.ts`                   | §4       | `Party`, `Guest`, `Task`, `MenuChoice`, `ShoppingItem`, …                                                                             |
-| `rules/dates.ts`             | §6.3     | Date picker bounds, nb-NO formatting, weekday/weekend, Oslo «today». No day is preferred over another.                                |
-| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 16.30–18.30, Sat–Sun 12.00–14.00; follows the date until edited.                                                |
-| `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                          |
-| `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                      |
-| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, egen meny, extras and the allergy additions. The Mat screen comes in milestone 2. |
-| `rules/constants.ts`         | §5–6     | Every number in one place; values marked (I) in the spec are our defaults.                                                            |
-| `texts/`                     | §7       | The pre-written template library (`templates.json`) and its renderer. No AI.                                                          |
-| `party.ts`                   |          | Creating a party from the setup, updates, and the summary numbers screens show.                                                       |
-| `storage/PartyRepository.ts` | §9       | The storage interface and its key-value implementation.                                                                               |
+| File                         | Spec     | What                                                                                                                                                           |
+| ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model.ts`                   | §4       | `Party`, `Guest`, `Task`, `MenuChoice`, `ShoppingItem`, …                                                                                                      |
+| `rules/dates.ts`             | §6.3     | Date picker bounds, nb-NO formatting, weekday/weekend, Oslo «today». No day is preferred over another.                                                         |
+| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 16.30–18.30, Sat–Sun 12.00–14.00; follows the date until edited.                                                                         |
+| `rules/celebrants.ts`        | —        | Joint birthdays (1–3 children): «Emma, Jonas og Ali», «fyller 5 og 7»; ages 3–10. Portions use the OLDEST child's band, the time reason and cake the YOUNGEST. |
+| `rules/calendar.ts`          | —        | Our own month calendar: Monday-first grid, leap years, past days disabled, a year ahead, keyboard moves.                                                       |
+| `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                                                   |
+| `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                                               |
+| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, egen meny, extras and the allergy additions. The Mat screen comes in milestone 2.                          |
+| `rules/constants.ts`         | §5–6     | Every number in one place; values marked (I) in the spec are our defaults.                                                                                     |
+| `texts/`                     | §7       | The pre-written template library (`templates.json`) and its renderer. No AI.                                                                                   |
+| `party.ts`                   |          | Creating a party from the setup, updates, and the summary numbers screens show.                                                                                |
+| `storage/PartyRepository.ts` | §9       | The storage interface and its key-value implementation.                                                                                                        |
 
 Emma's worked example from the spec is the test fixture (`src/core/__fixtures__/emma.ts`); the tests assert the spec's numbers and dates exactly (test vectors A–D, all food amounts).
 
@@ -37,7 +39,7 @@ Emma's worked example from the spec is the test fixture (`src/core/__fixtures__/
 Each party is **one self-contained record**:
 
 ```ts
-{ id: '7d0c…', schemaVersion: 1, createdAt, updatedAt, plannedFrom, child, date, start, end, theme, kidsInvited, …, taskState, haveAtHome }
+{ id: '7d0c…', schemaVersion: 2, createdAt, updatedAt, plannedFrom, celebrants: [{ id, name, age }], date, start, end, theme | null, home, kidsInvited, …, taskState, haveAtHome }
 ```
 
 - `id` is a uuid (`crypto.randomUUID`), stable forever.
@@ -55,15 +57,15 @@ Each party is **one self-contained record**:
 ## Design system
 
 - Tokens in `src/theme/tokens.ts` come from the approved prototype's CSS (spec §11): cream background, deep green primary, blush/butter/sage/lilac surfaces, radii 28/20/14, Bricolage Grotesque for headings and Figtree for body text (loaded with `expo-font` from `@expo-google-fonts`).
-- Screens are built only from `src/ui`: `Screen`, `Text` (type scale), `Button`/`Pill`, `PhotoCard`, `Surface`, `ThemeTile`, `TaskRow`/`HomeToggle`, `Stepper`, `TopBar`, `NavBar`, `Grid`, `Toast`.
+- Screens are built only from `src/ui`: `Screen`, `Text` (type scale), `Button`/`Pill`, `PhotoCard`, `Surface`, `ThemeTile`, `TaskRow`/`HomeToggle`, `Stepper`, `Calendar` (our own date picker, the same on iOS, Android and web), `TopBar`, `NavBar`, `Grid`, `Toast`.
 - Accessibility: touch targets ≥ 48 px, `accessibilityLabel`/roles on every control, headings marked as headings, safe areas respected.
 - Responsive: `useLayout()` (`src/theme/useLayout.ts`). Under 768 px: one column, full-width buttons, bottom tabs. From 768 px: centred column up to 1100 px, 2–3 column grids, a top navigation bar, buttons sized to their label.
-- Themes: the six original themes plus Pokémon, Paw Patrol and Frost, all in **one list**, `src/core/themes.ts`. Each entry carries a palette (primary, hover, text on primary, accent, background tint, card tint, soft fill, invitation tint/ink), a motif emoji, and our own Norwegian copy (Planen greeting, invitation headline, cake idea, invitation texts). `ThemeProvider` (`src/theme/ThemeProvider.tsx`) applies the chosen theme app-wide — buttons, tabs, progress ring, cards, the «Festen er klar» screen and invitation card, the Planen hero, the page background — and the neutral brand palette is used until a theme is picked. Components read colours with `useColors()` / `themedStyles()`, never the static brand `colors`. Unit tests check that every palette is complete and that every text/background pair reaches WCAG AA (4.5:1); an e2e test picks Frost and checks its colour on «Festen er klar» and Planen in WebKit and Chromium. **Adding a theme** = its id in `ThemeId` (model.ts), one entry in `themes.ts`, and its picture in `themeImages` (`src/theme/images.ts`); TypeScript and the tests catch anything missing.
+- Themes: the six original themes plus Pokémon, Paw Patrol and Frost, all in **one list**, `src/core/themes.ts`. Each entry carries a palette (primary, hover, text on primary, accent, background tint, card tint, soft fill, invitation tint/ink), a motif emoji, and our own Norwegian copy (Planen greeting, invitation headline, cake idea, invitation texts). `ThemeProvider` (`src/theme/ThemeProvider.tsx`) applies the chosen theme app-wide — buttons, tabs, progress ring, cards, the «Festen er klar» screen and invitation card, the Planen hero, the page background — and the neutral brand palette (and neutral words: «Bli med på bursdagsfest!») is used when no theme is picked. The theme is **optional** and chosen after setup, from the «Velg tema (valgfritt)» card on Planen (`/tema`); no rule or to-do depends on it — a themed extra (e.g. «Bestill snøkrystall-piñata») only appears when a theme is chosen and that activity is on. Components read colours with `useColors()` / `themedStyles()`, never the static brand `colors`. Unit tests check that every palette is complete and that every text/background pair reaches WCAG AA (4.5:1); an e2e test checks the neutral look without a theme, then picks Frost from the Planen card and checks its colour on Planen and «Festen er klar» in WebKit and Chromium. **Adding a theme** = its id in `ThemeId` (model.ts), one entry in `themes.ts`, and its picture in `themeImages` (`src/theme/images.ts`); TypeScript and the tests catch anything missing.
 - Licensed names: the three licensed brands appear **only as words**; their tiles are our own watercolour mood illustrations (lightning and stars; a toy fire truck and paw prints; snowflakes and a tiara). No characters, logos, official art or brand fonts, and all copy is our own (no quotes or catchphrases). Wherever a licensed name appears (the theme picker, and «Festen er klar»/Planen for a licensed theme) a small line says «Bursdagsklar er ikke tilknyttet Disney, Spin Master eller The Pokémon Company.»
 
 ## Routes
 
-`/` (welcome, or straight to the plan if a party exists) · `/ny/navn` `/ny/alder` `/ny/dato` `/ny/barn` `/ny/tema` · `/klar` · `/plan` · `/gjoremal` · `/festdagen` · placeholders for later milestones: `/invitasjon` `/mat` `/kake` `/program`.
+`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/festdagen` · placeholders for later milestones: `/invitasjon` `/mat` `/kake` `/program`.
 
 ## Web vs native: what differs
 

@@ -148,3 +148,20 @@ describe('ticking and groups', () => {
     expect(progress(p, buildTasks(p).tasks, '2026-10-22').overdue).toBe(3);
   });
 });
+
+describe('to-dos never depend on a theme', () => {
+  it('without a theme the plan is the same; the piñata to-do is neutral', () => {
+    const themed = buildTasks(emma());
+    const plain = buildTasks(emma({ theme: null }));
+    expect(plain.tasks.map((t) => t.id)).toEqual(themed.tasks.map((t) => t.id));
+    expect(plain.tasks.find((t) => t.id === 'orderPinata')?.title).toBe('Bestill piñata');
+    expect(themed.tasks.find((t) => t.id === 'orderPinata')?.title).toBe('Bestill enhjørning-piñata');
+  });
+  it('a themed piñata only when a theme is chosen AND the piñata is on', () => {
+    const off = buildTasks(emma({ theme: 'frost', programme: { includePinata: false, includeSkattejakt: false } }));
+    expect(off.tasks.map((t) => t.id)).not.toContain('orderPinata');
+    expect(JSON.stringify(off.tasks)).not.toMatch(/piñata/i);
+    const on = buildTasks(emma({ theme: 'frost' }));
+    expect(on.tasks.find((t) => t.id === 'orderPinata')?.title).toBe('Bestill snøkrystall-piñata');
+  });
+});

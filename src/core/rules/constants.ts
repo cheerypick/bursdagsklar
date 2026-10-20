@@ -5,7 +5,10 @@
 
 export type Band = 'A' | 'B' | 'C' | 'D';
 
-/** Age bands (§4.2): 1–4 A · 5–6 B · 7–9 C · 10–12 D (D is I). */
+/**
+ * Age bands (§4.2): 3–4 A · 5–6 B · 7–9 C · 10 D (D is I). The app plans for ages 3–10.
+ * A joint birthday uses the OLDEST child's band for portions (it feeds the most).
+ */
 export function band(age: number): Band {
   if (age <= 4) return 'A';
   if (age <= 6) return 'B';
@@ -15,7 +18,7 @@ export function band(age: number): Band {
 
 /** Share of not-yet-answered families where one adult stays (§4.1, I). */
 export function stayRate(age: number): number {
-  if (age <= 3) return 0.5;
+  if (age <= 3) return 0.5; // 3-year-olds: often one adult stays
   if (age <= 5) return 0.15;
   return 0;
 }

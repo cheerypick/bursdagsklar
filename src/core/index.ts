@@ -3,6 +3,8 @@ export * from './themes';
 export * from './party';
 export * from './rules/constants';
 export * from './rules/dates';
+export * from './rules/celebrants';
+export * from './rules/calendar';
 export * from './rules/partyTime';
 export * from './rules/people';
 export * from './rules/food';

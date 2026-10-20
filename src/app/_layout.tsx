@@ -66,10 +66,10 @@ export default function RootLayout() {
   );
 }
 
-/** The chosen theme (saved party, or the one picked during setup) paints the whole app; brand look before that. */
+/** A chosen theme (picked on Planen, optional) paints the whole app; the neutral brand look otherwise. */
 function PartyTheme({ children }: { children: React.ReactNode }) {
-  const { party, draft } = useParty();
-  return <ThemeProvider themeId={party?.theme ?? draft.theme ?? null}>{children}</ThemeProvider>;
+  const { party } = useParty();
+  return <ThemeProvider themeId={party?.theme ?? null}>{children}</ThemeProvider>;
 }
 
 function ThemedStack() {

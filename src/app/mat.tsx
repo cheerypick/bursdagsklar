@@ -12,6 +12,8 @@ import {
   PIZZA_TOPPINGS,
   VISIBLE_MENU_CARDS,
   dishOn,
+  ALLOW_POLSER_AND_PIZZA,
+  cardsExcludedBy,
   dishShare,
   pizzaToppings,
   withDishOn,
@@ -88,16 +90,23 @@ export default function MatScreen() {
     annet: Boolean(annet),
   };
   const setDish = (card: MenuCardId, dish: Dish | null) => setMenu(withDishOn(menu, card, dish));
-  const shared = dishShare(menu) < 1;
+  // «Halvparten pølser, halvparten pizza» only when both may be picked (off for the MVP)
+  const shared = ALLOW_POLSER_AND_PIZZA && dishShare(menu) < 1;
 
+  // Pølser and Pizza work like a radio (cardsExcludedBy): picking one unpicks the other; Noe annet goes with either
   const toggleCard = (id: MenuCardId) => {
     if (id === 'polser') {
       if (picked.polser) {
         setPolserPending(false);
         setDish('polser', null);
-      } else setPolserPending(true);
-    } else if (id === 'pizza') setDish('pizza', pizza ? null : DEFAULT_PIZZA);
-    else if (id === 'annet') setDish('annet', annet ? null : { kind: 'annet', text: '' });
+      } else {
+        setPolserPending(true);
+        if (pizza && cardsExcludedBy('polser').includes('pizza')) setDish('pizza', null);
+      }
+    } else if (id === 'pizza') {
+      if (!pizza && cardsExcludedBy('pizza').includes('polser')) setPolserPending(false);
+      setDish('pizza', pizza ? null : DEFAULT_PIZZA);
+    } else if (id === 'annet') setDish('annet', annet ? null : { kind: 'annet', text: '' });
   };
   const setPizza = (patch: Partial<PizzaDish>) => pizza && setDish('pizza', { ...pizza, ...patch });
   const toppings = pizza ? pizzaToppings(pizza.toppings) : [];

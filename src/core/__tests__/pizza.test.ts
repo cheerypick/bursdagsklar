@@ -9,7 +9,8 @@ import {
   withoutHiddenDishes,
 } from '../rules/dishes';
 import { foodCardSummary, isMainSection, menuTitle, partyFoodPlan, type FoodPlan } from '../rules/menu';
-import { sausages, shoppingList } from '../rules/food';
+import { roundBases, sausages, shoppingList } from '../rules/food';
+import { ALLOW_POLSER_AND_PIZZA } from '../rules/constants';
 import { migrate } from '../storage/PartyRepository';
 import { withMenu } from '../party';
 import type { Dish, MenuChoice, Party } from '../model';
@@ -53,11 +54,37 @@ describe('homemade pizza for Emma (13 barn, 4 voksne, 5 år)', () => {
     expect(has(plan, 'hvetemel')).toBe(false);
     expect(has(plan, 'gjaer')).toBe(false);
   });
-  it('the other bases: ferdigstekte bunner, pizzamiks, lag deigen selv', () => {
+  it('ferdigstekte bunner: 1 per 4 small children + 1 per 2 adults → Emma 6 bunner, 3 pk', () => {
     const rounds = planFor({ ...PIZZA, dough: 'ferdigstekt' });
-    expect(line(rounds, 'langpanner')).toMatchObject({ name: 'Pizza', amount: '8 bunner' });
-    expect(line(rounds, 'pizzabunner')).toMatchObject({ amount: '4 pk', packs: 'à 2 bunner' });
+    // ceil(13 / 4) = 4 + ceil(4 / 2) = 2 → 6 bunner → 3 pk à 2
+    expect(line(rounds, 'langpanner')).toMatchObject({
+      name: 'Pizza',
+      amount: '6 bunner',
+      why: '13 barn ÷ 4 + 4 voksne ÷ 2 = 6 bunner, rundet opp. 3 pk à 2',
+    });
+    expect(line(rounds, 'pizzabunner')).toMatchObject({ amount: '3 pk', packs: 'à 2 bunner' });
+    // saus, ost and fyll follow the bunner: 1 bunn ≈ ½ langpanne → 6 bunner = 3 langpanner' worth
+    expect(line(rounds, 'pizzasaus')).toMatchObject({ amount: '2 glass' });
     expect(line(rounds, 'pizzasaus').why).toContain('per 2 bunner');
+    expect(line(rounds, 'pizzaost')).toMatchObject({ amount: '2 poser' });
+    expect(line(rounds, 'pizzaskinke')).toMatchObject({ amount: '2 pk' });
+    expect(roundBases({ kidsComing: 13, adultsEating: 4, age: 5 })).toMatchObject({ bases: 6, packs: 3 });
+  });
+  it('ferdigstekte bunner: 1 per 3 older children (7–10 år, the oldest decides), whole packs', () => {
+    const p = emma({ menu: { ...PIZZA, dough: 'ferdigstekt' }, celebrants: [{ id: 'c1', name: 'Emma', age: 8 }] });
+    const plan = partyFoodPlan(p)!;
+    // 8 år: fewer adults stay (2). ceil(13 / 3) = 5 + ceil(2 / 2) = 1 → 6 bunner → 3 pk
+    expect(line(plan, 'langpanner')).toMatchObject({
+      amount: '6 bunner',
+      why: '13 barn ÷ 3 + 2 voksne ÷ 2 = 6 bunner, rundet opp. 3 pk à 2',
+    });
+    expect(line(plan, 'pizzabunner').amount).toBe('3 pk');
+    expect(roundBases({ kidsComing: 13, adultsEating: 4, age: 8 })).toMatchObject({ bases: 7, packs: 4 });
+    // no adults eating: only the children
+    expect(roundBases({ kidsComing: 8, adultsEating: 0, age: 4 })).toMatchObject({ bases: 2, packs: 1 });
+    expect(roundBases({ kidsComing: 1, adultsEating: 1, age: 3 })).toMatchObject({ bases: 2, packs: 1 });
+  });
+  it('the other bases: pizzamiks, lag deigen selv', () => {
     const mix = planFor({ ...PIZZA, dough: 'miks' });
     expect(line(mix, 'pizzamiks')).toMatchObject({ amount: '4 pk' });
     expect(line(mix, 'pizzamiks').why).toContain('Toro Pizzabunn Familiepakke 370 g');
@@ -121,7 +148,40 @@ describe('glutenfri', () => {
   });
 });
 
-describe('pølser and pizza together', () => {
+describe('pølser OR pizza (MVP)', () => {
+  it('both together is switched off', () => {
+    expect(ALLOW_POLSER_AND_PIZZA).toBe(false);
+  });
+  it('picking Pizza unpicks Pølser and the other way round; Noe annet stays with either', () => {
+    let m = withDishOn(null, 'polser', { kind: 'grillpolser' });
+    m = withDishOn(m, 'annet', { kind: 'annet', text: 'Vårruller' });
+    m = withDishOn(m, 'pizza', PIZZA);
+    expect(menuDishes(m).map((d) => d.kind)).toEqual(['pizza', 'annet']);
+    m = withDishOn(m, 'polser', { kind: 'wienerpolser' });
+    expect(menuDishes(m).map((d) => d.kind)).toEqual(['wienerpolser', 'annet']);
+    m = withDishOn(m, 'annet', null);
+    expect(m).toEqual({ kind: 'wienerpolser' }); // one dish is stored as before
+    expect(withDishOn(m, 'polser', null)).toBeNull();
+    // unpicking (null) never touches the other card
+    expect(withDishOn(PIZZA, 'polser', null)).toEqual(PIZZA);
+  });
+  it('old saved data with both pølser and pizza opens with pølser (+ noe annet), without crashing', () => {
+    const base = { ...emma(), menu: null };
+    expect(migrate({ ...base, menu: BOTH })!.menu).toEqual({ kind: 'grillpolser' });
+    expect(
+      migrate({
+        ...base,
+        menu: { kind: 'flere', dishes: [PIZZA, { kind: 'annet', text: 'Vårruller' }, { kind: 'grillpolser' }] },
+      })!.menu,
+    ).toEqual({ kind: 'flere', dishes: [{ kind: 'grillpolser' }, { kind: 'annet', text: 'Vårruller' }] });
+    const plan = partyFoodPlan(migrate({ ...base, menu: BOTH })!)!;
+    expect(plan.sections.filter((s) => isMainSection(s.id)).map((s) => s.id)).toEqual(['main-polser']);
+    expect(line(plan, 'grillpolser').amount).toBe('50 stk');
+  });
+});
+
+// The halving code is kept for later (ALLOW_POLSER_AND_PIZZA): a menu built with both still computes halves.
+describe('pølser and pizza together (kept for later, hidden in the MVP)', () => {
   it('both sections show, and each covers about half of the portions', () => {
     const plan = planFor(BOTH);
     expect(plan.title).toBe('Grillpølser og hjemmelaget pizza');
@@ -168,16 +228,8 @@ describe('pølser and pizza together', () => {
     expect(list.find((i) => i.id === 'grillpolser')!.packs).toBe(half.packs);
     expect(list.find((i) => i.id === 'pizzadeig')!.packs).toBe(2);
   });
-  it('one dish per card: picking and unpicking cards keeps the others', () => {
-    let m = withDishOn(null, 'polser', { kind: 'grillpolser' });
-    m = withDishOn(m, 'pizza', PIZZA);
-    expect(menuDishes(m).map((d) => d.kind)).toEqual(['grillpolser', 'pizza']);
-    m = withDishOn(m, 'polser', { kind: 'wienerpolser' });
-    expect(menuDishes(m).map((d) => d.kind)).toEqual(['wienerpolser', 'pizza']);
-    m = withDishOn(m, 'polser', null);
-    expect(m).toEqual(PIZZA); // one dish is stored as before
-    expect(withDishOn(m, 'pizza', null)).toBeNull();
-    expect(menuFromDishes([PIZZA, { kind: 'grillpolser' }])).toEqual(BOTH); // card order
+  it('menuFromDishes keeps card order', () => {
+    expect(menuFromDishes([PIZZA, { kind: 'grillpolser' }])).toEqual(BOTH);
   });
 });
 

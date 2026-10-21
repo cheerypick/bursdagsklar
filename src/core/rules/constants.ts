@@ -99,6 +99,13 @@ export const CRISPY_ONION_PER_EATERS = 10;
 
 // ---- pizza (§6.5, reworked 21 Oct 2026) ----
 /**
+ * Pølser AND pizza at the same party (each covering half the portions) is switched off for the MVP
+ * (Ekaterina, 21 Oct 2026): the two cards work like a radio, picking one unpicks the other. The halving
+ * code (rules/dishes.ts `dishShare`, the «halvparten» reason lines) stays; set this to true to bring it
+ * back. «Noe annet» can always be added on top of either, it never halved anything.
+ */
+export const ALLOW_POLSER_AND_PIZZA = false;
+/**
  * Ekaterina's rule (21 Oct 2026): 1 langpanne = 12 biter; 2 biter per barn, 3 per voksen. For 7–10 år we use
  * 3 per barn, following the OLDEST birthday child like every other portion. No extra percentage on top:
  * the rounding up to whole langpanner is the margin. Emma (13 barn, 4 voksne, 5 år): 26 + 12 = 38 biter
@@ -124,8 +131,8 @@ export const PIZZA_UNITS_PER = { frossen: 8, bestilt30: 8, bestilt40: 14 }; // (
  * - Ferdigstekte bunner: Staur Fjellbakeri Pizzabunn hvete ca. 29 cm 2 stk (360 g)
  *   https://oda.com/no/products/36162-staur-fjellbakeri-pizzabunn-hvete-ca-29cm-2stk/ , Villa Paradiso Pronto
  *   italienske pizzabunner 2 stk (500 g) https://oda.com/no/products/63698-villa-paradiso-pronto-italienske-pizzabunner-2stk/ .
- *   ASSUMPTION: 2 round bases of ca. 29 cm (ca. 2 × 660 cm²) ≈ one langpanne (ca. 30 × 40 cm), so
- *   1 pk à 2 = 1 langpanne = 12 biter (6 per bunn).
+ *   Counted per person (KIDS_PER_ROUND_BASE below), not per biter. ASSUMPTION: 2 round bases of ca. 29 cm
+ *   (ca. 2 × 660 cm²) ≈ one langpanne (ca. 30 × 40 cm), used for saus, ost and fyll.
  * - Pizzamiks: Toro Pizzabunn Familiepakke 370 g https://oda.com/no/products/6307-toro-pizzabunn-familiepakke/ ,
  *   just add water. toro.no: «melmiks til en langpannepizza» → 1 pk = 1 langpanne.
  * - Lag deigen selv: Norgesmøllene siktet hvetemel 1 kg https://oda.com/no/products/35-norgesmollene-siktet-hvetemel/ +
@@ -157,6 +164,21 @@ export const PIZZA_DOUGH_PRODUCT = {
 } as const;
 /** Ferdigstekte bunner: round bases per langpanne's worth (12 biter). ASSUMPTION. */
 export const PIZZA_ROUND_BASES_PER_LANGPANNE = 2;
+/**
+ * Ferdigstekte (ready-baked, round ca. 29 cm) bunner, counted per person instead of per biter
+ * (Ekaterina, 21 Oct 2026): 1 bunn per 4 small children (3–6 år) and 1 per 3 older children (7–10 år),
+ * following the OLDEST birthday child like every other portion. Adults: 1 bunn per 2 voksne is an
+ * ASSUMPTION of ours. Children and adults are each rounded up to whole bunner, then whole packs
+ * (Staur / Villa Paradiso, 2 per pk). Emma (13 barn, 4 voksne, 5 år): ceil(13/4) + ceil(4/2) = 4 + 2
+ * = 6 bunner → 3 pk.
+ */
+export const KIDS_PER_ROUND_BASE: Record<Band, number> = { A: 4, B: 4, C: 3, D: 3 };
+export const ADULTS_PER_ROUND_BASE = 2; // ASSUMPTION
+/**
+ * Saus, ost and fyll on ready-baked bunner: 1 bunn ≈ ½ langpanne (ASSUMPTION), so the «per langpanne»
+ * amounts above are scaled per bunn (6 bunner = toppings for 3 langpanner).
+ */
+export const LANGPANNE_PER_ROUND_BASE = 0.5;
 /** Lag deigen selv, per langpanne (ASSUMPTION). */
 export const PIZZA_SELF_FLOUR_DL = 8;
 export const PIZZA_SELF_FLOUR_G = 480;

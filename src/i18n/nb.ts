@@ -152,7 +152,8 @@ export const nb = {
   food: {
     eyebrow: 'Mat',
     title: 'Hva skal dere spise?',
-    lede: (forWhom: string) => `Velg én eller flere. Vi regner ut mengdene ${forWhom}.`,
+    lede: (forWhom: string) =>
+      `Velg pølser eller pizza, og legg gjerne til noe annet. Vi regner ut mengdene ${forWhom}.`,
     step1: 'Hovedrett',
     cards: {
       polser: { label: 'Pølser', sub: 'Med lompe og brød' },
@@ -197,7 +198,7 @@ export const nb = {
         rommedressing: 'Rømmedressing',
       },
     },
-    /** Pølser and pizza both picked. */
+    /** Pølser and pizza both picked: only shown when ALLOW_POLSER_AND_PIZZA is true (off for the MVP). */
     shareNote: 'Halvparten pølser, halvparten pizza. Mengdene under er regnet ut for det.',
     annetLabel: 'Hva skal dere servere?',
     annetPlaceholder: 'F.eks. kyllingsuppe eller wraps',

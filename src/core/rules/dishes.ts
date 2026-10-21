@@ -3,6 +3,7 @@
  * «Noe annet»); `MenuChoice` stores several as `{ kind: 'flere', dishes }`. Pure, no UI.
  */
 import type { Dish, MenuChoice } from '../model';
+import { ALLOW_POLSER_AND_PIZZA } from './constants';
 
 /** The Mat cards. Taco and pasta keep their rules but are hidden for now (see HIDDEN_MENU_CARDS). */
 export type MenuCardId = 'polser' | 'pizza' | 'taco' | 'pasta' | 'annet';
@@ -15,7 +16,10 @@ export const MENU_CARDS: readonly MenuCardId[] = ['polser', 'pizza', 'taco', 'pa
  * (`withoutHiddenDishes`, run when a party is loaded).
  */
 export const HIDDEN_MENU_CARDS: readonly MenuCardId[] = ['taco', 'pasta'];
-/** The cards the Mat screen shows: Pølser, Pizza, Noe annet. Any of them can be picked together. */
+/**
+ * The cards the Mat screen shows: Pølser, Pizza, Noe annet. Pølser and Pizza exclude each other while
+ * ALLOW_POLSER_AND_PIZZA is false (EXCLUSIVE_MENU_CARDS); «Noe annet» goes with either.
+ */
 export const VISIBLE_MENU_CARDS: readonly MenuCardId[] = MENU_CARDS.filter((c) => !HIDDEN_MENU_CARDS.includes(c));
 
 export function dishCard(d: Dish): MenuCardId {
@@ -57,10 +61,37 @@ export function dishOn(menu: MenuChoice | null | undefined, card: MenuCardId): D
   return menuDishes(menu).find((d) => dishCard(d) === card);
 }
 
-/** The menu with one card's dish replaced (or removed with `null`). */
+/**
+ * Cards that cannot be picked together (one main dish that is calculated): Pølser and Pizza, while
+ * ALLOW_POLSER_AND_PIZZA is false (MVP, Ekaterina 21 Oct 2026). Empty when it is true.
+ */
+export const EXCLUSIVE_MENU_CARDS: readonly MenuCardId[] = ALLOW_POLSER_AND_PIZZA ? [] : ['polser', 'pizza'];
+
+/** The cards picking `card` unpicks (Pizza unpicks Pølser and the other way round). */
+export function cardsExcludedBy(card: MenuCardId): MenuCardId[] {
+  return EXCLUSIVE_MENU_CARDS.includes(card) ? EXCLUSIVE_MENU_CARDS.filter((c) => c !== card) : [];
+}
+
+/** The menu with one card's dish replaced (or removed with `null`). Picking Pizza unpicks Pølser (and vice versa). */
 export function withDishOn(menu: MenuChoice | null, card: MenuCardId, dish: Dish | null): MenuChoice | null {
-  const rest = menuDishes(menu).filter((d) => dishCard(d) !== card);
+  const drop = new Set<MenuCardId>([card, ...(dish ? cardsExcludedBy(card) : [])]);
+  const rest = menuDishes(menu).filter((d) => !drop.has(dishCard(d)));
   return menuFromDishes(dish ? [...rest, dish] : rest);
+}
+
+/**
+ * Only one of the exclusive cards kept: the first in card order (Pølser before Pizza), plus everything
+ * else (Noe annet). Old saved data with both pølser and pizza opens with pølser (+ noe annet).
+ */
+export function withExclusiveDishes(dishes: readonly Dish[]): Dish[] {
+  const sorted = [...dishes].sort((a, b) => MENU_CARDS.indexOf(dishCard(a)) - MENU_CARDS.indexOf(dishCard(b)));
+  let taken = false;
+  return sorted.filter((d) => {
+    if (!EXCLUSIVE_MENU_CARDS.includes(dishCard(d))) return true;
+    if (taken) return false;
+    taken = true;
+    return true;
+  });
 }
 
 /** Dishes whose amounts are calculated (everything but «Noe annet»): they share the portions. */
@@ -80,6 +111,7 @@ export function dishShare(menu: MenuChoice | null | undefined): number {
 /**
  * A saved menu without the hidden dishes (taco, pasta): they are dropped, and a menu that was only a
  * hidden dish becomes «not chosen» (null). Anything malformed also becomes null instead of crashing.
+ * Pølser + pizza saved together (before 21 Oct 2026) keep only pølser, while ALLOW_POLSER_AND_PIZZA is false.
  */
 export function withoutHiddenDishes(menu: unknown): MenuChoice | null {
   if (!menu || typeof menu !== 'object' || typeof (menu as { kind?: unknown }).kind !== 'string') return null;
@@ -94,5 +126,5 @@ export function withoutHiddenDishes(menu: unknown): MenuChoice | null {
       return false;
     }
   });
-  return menuFromDishes(kept);
+  return menuFromDishes(withExclusiveDishes(kept));
 }

@@ -13,6 +13,7 @@ import {
   withTicksCleared,
 } from '../rules/shopping';
 import { withFoodItem, withGuestCounts } from '../party';
+import { shoppingList } from '../rules/food';
 import { createPartyRepository, memoryStore, migrate } from '../storage/PartyRepository';
 import type { Party } from '../model';
 
@@ -222,6 +223,9 @@ describe('Handleliste with homemade pizza and with pølser + pizza (PR #5)', () 
   it('the other bases: ferdigstekte bunner by the bread, pizzamiks and flour with the dry goods', () => {
     const rounds = emma({ menu: { kind: 'pizza', style: 'hjemmelaget', dough: 'ferdigstekt' } });
     expect(groupOf(rounds, 'pizzabunner')).toBe('brod');
+    // Emma: 6 bunner (13 ÷ 4 + 4 ÷ 2, rounded up) → 3 pk à 2
+    expect(item(rounds, 'pizzabunner')).toMatchObject({ qty: '3 pk', text: '3 pk ferdigstekte pizzabunner' });
+    expect(shoppingList(rounds).find((i) => i.id === 'pizzabunner')).toMatchObject({ need: 6, packs: 3, packSize: 2 });
     expect(groupOf(emma({ menu: { kind: 'pizza', style: 'hjemmelaget', dough: 'miks' } }), 'pizzamiks')).toBe(
       'torrvarer',
     );

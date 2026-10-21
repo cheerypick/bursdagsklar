@@ -240,18 +240,21 @@ export function toppingPacks(t: PizzaTopping, trays: number, eaters: number): nu
  */
 export function homemadePizza(
   trays: number,
-  opts: { dough?: PizzaDough; toppings?: readonly PizzaTopping[]; eaters?: number } = {},
+  opts: { dough?: PizzaDough; toppings?: readonly PizzaTopping[]; eaters?: number; roundBases?: number } = {},
 ) {
   const dough = opts.dough ?? 'ferdigdeig';
+  // ferdigstekte bunner: counted per person (roundBases), `trays` is then their langpanne-worth for the toppings
+  const bases = opts.roundBases ?? trays * C.PIZZA_ROUND_BASES_PER_LANGPANNE;
+  const doughPacks = dough === 'ferdigstekt' ? packs(bases, C.PIZZA_DOUGH_PRODUCT.ferdigstekt.perPack) : trays;
   const toppings = pizzaToppings(opts.toppings);
   const eaters = opts.eaters ?? 0;
   return {
     trays,
     slices: trays * C.PIZZA_SLICES_PER_LANGPANNE,
     dough,
-    /** Ferdig pizzadeig, ferdigstekte bunner (packs of 2) or pizzamiks: one pack per langpanne. */
-    doughPacks: trays,
-    roundBases: trays * C.PIZZA_ROUND_BASES_PER_LANGPANNE,
+    /** Ferdig pizzadeig or pizzamiks: one pack per langpanne. Ferdigstekte bunner: packs of 2. */
+    doughPacks,
+    roundBases: bases,
     flourDl: trays * C.PIZZA_SELF_FLOUR_DL,
     flourG: trays * C.PIZZA_SELF_FLOUR_G,
     flourPacks: packs(trays * C.PIZZA_SELF_FLOUR_G, 1000),
@@ -264,12 +267,39 @@ export function homemadePizza(
   };
 }
 
-/** Homemade pizza for one party: N langpanner from the pieces, then homemadePizza. */
+/**
+ * Ferdigstekte (ready-baked, round) bunner, counted per person (Ekaterina, 21 Oct 2026): 1 bunn per 4
+ * children 3–6 år, 1 per 3 children 7–10 år (the oldest birthday child decides), 1 per 2 adults
+ * (ASSUMPTION). Children and adults each rounded up to whole bunner, then whole packs of 2.
+ * Emma (13 barn, 4 voksne, 5 år): 4 + 2 = 6 bunner → 3 pk.
+ */
+export function roundBases(p: People) {
+  const kidsPer = C.KIDS_PER_ROUND_BASE[band(p.age)];
+  const adultsPer = C.ADULTS_PER_ROUND_BASE;
+  const share = p.share ?? 1;
+  const kidBases = p.kidsComing > 0 ? ceilSafe(p.kidsComing / kidsPer) : 0;
+  const adultBases = p.adultsEating > 0 ? ceilSafe(p.adultsEating / adultsPer) : 0;
+  const all = Math.max(1, kidBases + adultBases);
+  const bases = Math.max(1, ceilSafe(all * share));
+  const perPack = C.PIZZA_DOUGH_PRODUCT.ferdigstekt.perPack;
+  return { kidsPer, adultsPer, share, kidBases, adultBases, all, bases, perPack, packs: packs(bases, perPack) };
+}
+
+/**
+ * Homemade pizza for one party: N langpanner from the pieces, then homemadePizza. Ferdigstekte bunner
+ * are counted per person instead (roundBases); saus, ost and fyll then follow the bunner, 1 bunn ≈ ½
+ * langpanne (ASSUMPTION, constants.ts LANGPANNE_PER_ROUND_BASE).
+ */
 export function homemadeFor(m: Extract<Dish, { kind: 'pizza' }>, p: People) {
   const sl = pizzaSlices(p);
-  const trays = Math.max(1, pizzaCount(sl.slices, 'hjemmelaget'));
   const eaters = ceilSafe((p.kidsComing + p.adultsEating) * sl.share);
-  return { sl, h: homemadePizza(trays, { dough: m.dough, toppings: m.toppings, eaters }) };
+  if (m.dough === 'ferdigstekt') {
+    const rb = roundBases(p);
+    const trays = rb.bases * C.LANGPANNE_PER_ROUND_BASE;
+    return { sl, rb, h: homemadePizza(trays, { dough: m.dough, toppings: m.toppings, eaters, roundBases: rb.bases }) };
+  }
+  const trays = Math.max(1, pizzaCount(sl.slices, 'hjemmelaget'));
+  return { sl, rb: undefined, h: homemadePizza(trays, { dough: m.dough, toppings: m.toppings, eaters }) };
 }
 
 /** Names and ids of the homemade pizza lines (Mat screen and shopping list use the same ids). */
@@ -331,16 +361,17 @@ function pizzaShoppingLines(m: Extract<Dish, { kind: 'pizza' }>, p: People) {
       trip: 'ferskvarer',
     });
   } else {
-    const packSize = h.dough === 'ferdigstekt' ? C.PIZZA_ROUND_BASES_PER_LANGPANNE : undefined;
+    const rounds = h.dough === 'ferdigstekt';
+    const perPack = C.PIZZA_DOUGH_PRODUCT.ferdigstekt.perPack;
     out.push({
       ...base,
       id: d.id,
       name: d.name,
-      need: h.doughPacks,
-      unit: 'pk',
-      packSize,
+      need: rounds ? h.roundBases : h.doughPacks,
+      unit: rounds ? 'stk' : 'pk',
+      packSize: rounds ? perPack : undefined,
       packs: h.doughPacks,
-      display: `${h.doughPacks} pk`,
+      display: rounds ? `${h.doughPacks} pk à ${perPack}` : `${h.doughPacks} pk`,
       trip: h.dough === 'miks' ? 'torrvarer' : 'ferskvarer',
     });
   }

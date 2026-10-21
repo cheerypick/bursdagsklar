@@ -26,6 +26,7 @@ import {
   pizzaSlices,
   polsebrodWhy,
   shareLead,
+  shareWord,
   toppingAmount,
   sausages,
   sausageWhy,
@@ -379,10 +380,23 @@ const TOPPING_RATE: Record<PizzaTopping, string> = {
   rommedressing: 'Én flaske per ca. 15 personer',
 };
 
+/**
+ * Ferdigstekte bunner in words: «13 barn ÷ 4 + 4 voksne ÷ 2 = 6 bunner, rundet opp. 3 pk à 2». Each part
+ * is rounded up to whole bunner (so 13 ÷ 4 counts as 4).
+ */
+export function roundBasesWhy(rb: NonNullable<ReturnType<typeof homemadeFor>['rb']>, people: People): string {
+  const parts: string[] = [];
+  if (people.kidsComing > 0) parts.push(`${people.kidsComing} barn ÷ ${rb.kidsPer}`);
+  if (people.adultsEating > 0) parts.push(`${plural(people.adultsEating, 'voksen', 'voksne')} ÷ ${rb.adultsPer}`);
+  const sum = `${parts.join(' + ')} = ${plural(rb.all, 'bunn', 'bunner')}, rundet opp`;
+  const head = rb.share < 1 ? `${shareLead(rb.share)}: ${sum}, ${shareWord(rb.share)} er ${rb.bases}` : sum;
+  return `${head}. ${rb.packs} pk à ${rb.perPack}`;
+}
+
 /** Homemade pizza: the trays, the base she picked, sauce and cheese (always), then one line per topping chip. */
 function homemadeLines(menu: Extract<Dish, { kind: 'pizza' }>, people: People, calc: string): RawLine[] {
-  const { h } = homemadeFor(menu, people);
-  const rounds = h.dough === 'ferdigstekt';
+  const { h, rb } = homemadeFor(menu, people);
+  const rounds = h.dough === 'ferdigstekt' && rb !== undefined;
   // ready-baked round bases: 2 bunner are about one langpanne, so «per langpanne» reads «per 2 bunner»
   const per = (t: string) =>
     rounds ? t.replace('per 2 langpanner', 'per 4 bunner').replace('per langpanne', 'per 2 bunner') : t;
@@ -391,8 +405,8 @@ function homemadeLines(menu: Extract<Dish, { kind: 'pizza' }>, people: People, c
       ? {
           id: 'langpanner',
           name: 'Pizza',
-          amount: plural(h.roundBases, 'bunn', 'bunner'),
-          why: `${calc}. Ca. ${C.PIZZA_SLICES_PER_LANGPANNE / C.PIZZA_ROUND_BASES_PER_LANGPANNE} biter per bunn`,
+          amount: plural(rb.bases, 'bunn', 'bunner'),
+          why: roundBasesWhy(rb, people),
         }
       : {
           id: 'langpanner',

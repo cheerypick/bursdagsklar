@@ -1,0 +1,647 @@
+{
+  "meta": {
+    "name": "Kakeklar tekstmaler",
+    "version": "1.0",
+    "date": "2026-10-19",
+    "language": "nb-NO",
+    "note": "All text is written in advance. The app fills in slots and picks a template by text kind, tone or variant, theme and age group. No runtime AI calls."
+  },
+  "syntax": {
+    "slot": "{navn}: replaced by the slot's value. A missing slot is a bug (tests fail on any '{' left in the output).",
+    "section": "{#flagg}…{/flagg}: kept only when the flag is true. {^flagg}…{/flagg}: kept only when it is false. No nesting of the same flag.",
+    "newline": "\\n in a template is a line break. After rendering: lines that are empty are removed, double spaces become one, and a space before . , ! ? is removed.",
+    "selection": "text = texts[kind].tones|variants[tone]; apning = themes[tema].apning[sma|store] for varm, themes[tema].leken for leken; gavelinje = texts.gift.modes[mode][variant of the message]."
+  },
+  "slots": {
+    "barn": "Bursdagsbarnets fornavn, eller navnene slått sammen ved felles bursdag. «Emma», «Emma og Jonas», «Emma, Jonas og Ali»",
+    "barns": "Genitiv: navnet + s; navn som slutter på s, x eller z får apostrof (Hans → Hans'). «Emmas»",
+    "alder": "Alderen barnet fyller; ved felles bursdag alle aldrene, samme alder bare én gang. «5», «5 og 7»",
+    "dato": "Ukedag + dato, små bokstaver. «lørdag 7. november»",
+    "dag": "Bare ukedagen for festen. «lørdag»",
+    "tid": "Start–slutt. Hele timer uten minutter, ellers med punktum. «12–14», «12.30–14.30»",
+    "slutt": "Sluttid, samme format. «14»",
+    "adresse": "Fra skjemaet. «Bjerkeveien 12»",
+    "kontakt": "Fornavn på den som tar imot svar. «Ekaterina»",
+    "telefon": "Formatert nb-NO. «900 00 000»",
+    "svarfrist": "Ukedag + dato for svarfristen (D − R, spec §6.1). «lørdag 31. oktober»",
+    "svarfrist_ord": "«i morgen» hvis fristen er i morgen, «i dag» hvis i dag, ellers {svarfrist}.",
+    "gruppe": "Gruppenavnet hvis oppgitt, ellers «avdelingen» (alder ≤ 5) / «klassen» (alder ≥ 6). «Maurtua»",
+    "avsendere": "Fra skjemaet. «Ekaterina og Maxim»",
+    "tema_fest": "themes[tema].fest. «enhjørningfest»",
+    "tema_fargelegging": "themes[tema].fargelegging. «enhjørninger»",
+    "tema_emoji": "themes[tema].emoji. Brukes bare i den lekne invitasjonen.",
+    "apning": "themes[tema].apning[sma|store] (varm) eller themes[tema].leken (leken).",
+    "hoydepunkter": "Liste satt sammen i kode: hovedrett-ordet (texts.menuWords), «kake», «skattejakt» hvis på, «piñata» hvis på; «a, b, c og d». «grillpølser, kake, skattejakt og piñata»",
+    "mat": "texts.menuWords[meny]. «grillpølser»",
+    "belop": "Beløp per barn. «100 kr»",
+    "vipps": "Navn og nummer for Vipps. «Ekaterina (900 00 000)»",
+    "spleislenke": "Lenke til en innsamling på spleis.no, hvis valgt i stedet for Vipps.",
+    "spleisfrist": "Ukedag + dato; standard D − 3. «onsdag 4. november»",
+    "onske": "Valgfritt ønske. «en sparkesykkel»",
+    "gavelinje": "Ferdig gavelinje fra texts.gift[modus][variant]; tom hvis modus er «ikke-nevn».",
+    "allergier": "Allergi- og kosttagger fra svarene, uten navn, med «og». «nøtter og svinekjøtt»",
+    "gjest": "Gjestebarnets navn hvis det finnes i svarlisten (M4), ellers «[navn]» som forelderen fyller inn.",
+    "matlinje": "programme.mealLines[meny] (programmet og festdagskortet).",
+    "egen_rett": "Navnet forelderen skrev på egen meny. «lasagne»",
+    "dato_en": "English date for the English versions. «Saturday 7 November»",
+    "svarfrist_en": "English RSVP date. «Saturday 31 October»",
+    "spleisfrist_en": "English gift deadline. «Wednesday 4 November»",
+    "gavelinje_en": "texts.gift.english[mode]"
+  },
+  "flags": {
+    "sma": "alder ≤ 6",
+    "store": "alder ≥ 7",
+    "ute": "hage = ja og festmåned april–september (deler av festen er ute)",
+    "foreldre": "invitation.parentsWelcome (standard på for alder ≤ 6)",
+    "hente": "alder ≥ 7, eller parentsWelcome = av",
+    "laan": "saftdispenser er ikke krysset av under «Har dere dette hjemme?»",
+    "onske": "et ønske er fylt inn",
+    "allergier": "minst én allergi eller kosttagg er meldt (M4; før det er flagget av)",
+    "spleis": "gavemodus er «spleis-vipps» eller «spleis-lenke»",
+    "gjenglemt": "forelderen slår på «Noen glemte noe?» på Etter-skjermen",
+    "flere": "mer enn ett bursdagsbarn (felles bursdag)"
+  },
+  "texts": {
+    "invitation": {
+      "purpose": "Invitasjonen til barnet. Limes inn i Spond, WhatsApp eller SMS, eller står på kortet.",
+      "default": "varm",
+      "tones": {
+        "varm": "{apning}\n{barn} fyller {alder} år, og vi feirer {dato} kl. {tid} hjemme hos oss i {adresse}. Det blir {hoydepunkter}.{#ute} Vi er ute en stund, så kle dere etter været.{/ute}{#hente} Henting kl. {slutt}.{/hente}\nSvar til {kontakt} på {telefon} innen {svarfrist}, og si gjerne fra om allergier.\nVi gleder oss!\nHilsen {barn}",
+        "kort": "{barn} fyller {alder}! Bursdag {dato} kl. {tid} i {adresse}. Svar til {kontakt} på {telefon} innen {svarfrist}, og si fra om allergier. Velkommen!",
+        "leken": "{apning} {tema_emoji}\n{barn} fyller {alder} år, og det blir {hoydepunkter}.\nNår: {dato} kl. {tid}\nHvor: {adresse}\nSvar til {kontakt} på {telefon} innen {svarfrist}. Si fra om allergier, så fikser vi det.\nHipp hipp hurra!\nHilsen {barn}"
+      },
+      "card": {
+        "overskrift": "Bli med på {tema_fest}!",
+        "navn": "{barn}",
+        "linje": "fyller {alder}",
+        "naar": "{dato} kl. {tid}",
+        "hvor": "{adresse}",
+        "svar": "Svar til {kontakt} innen {svarfrist}"
+      },
+      "english": "{barn} is turning {alder} and would love you to come to the party! {dato_en}, {tid}, at our place: {adresse}. Please reply to {kontakt} on {telefon} by {svarfrist_en}, and let us know about any allergies. Looking forward to seeing you!"
+    },
+    "parentMessage": {
+      "purpose": "Meldingen til foreldregruppa, med svar, allergier og gave.",
+      "default": "standard",
+      "defaultByChannel": {
+        "spond": "standard",
+        "whatsapp": "standard",
+        "facebook": "standard",
+        "sms": "kort",
+        "vigilo": "formell"
+      },
+      "variants": {
+        "standard": "Hei alle sammen!\n{barn} fyller {alder} år, og vi vil gjerne invitere hele {gruppe} i bursdag {dato} kl. {tid}, hjemme hos oss i {adresse}.\n{gavelinje}\nGi beskjed til {kontakt} på {telefon} innen {svarfrist} om dere kommer, og si fra om allergier eller noe barnet ikke spiser.\n{#foreldre}Foreldre er hjertelig velkomne til å bli, det blir kaffe.{/foreldre}{#hente}Henting kl. {slutt}.{/hente}{#laan} Har noen en saftdispenser vi kan låne?{/laan}\nHilsen {avsendere}",
+        "kort": "Hei alle! {barn} fyller {alder} og inviterer hele {gruppe} i bursdag {dato} kl. {tid} i {adresse}. {gavelinje} Svar til {kontakt} på {telefon} innen {svarfrist}, og si fra om allergier. Hilsen {avsendere}",
+        "formell": "Hei,\n{barn} fyller {alder} år, og vi inviterer hele {gruppe} til bursdagsfeiring {dato} kl. {tid} i {adresse}.\n{gavelinje}\nVi ber om svar til {kontakt} på {telefon} innen {svarfrist}. Gi også beskjed om allergier eller andre hensyn vi bør ta.\n{#foreldre}Foreldre er velkomne til å bli.{/foreldre}{#hente}Henting kl. {slutt}.{/hente}\nVennlig hilsen {avsendere}"
+      },
+      "english": "Hi everyone! {barn} is turning {alder}, and we'd love to invite all of {gruppe} to the party on {dato_en}, {tid}, at our place: {adresse}. {gavelinje_en} Please let {kontakt} know on {telefon} by {svarfrist_en} whether you can come, and tell us about any allergies. Best wishes, {avsendere}"
+    },
+    "gift": {
+      "purpose": "Gavelinjen ({gavelinje}) i foreldremeldingen. Modus velges i skjemaet, variant følger meldingen.",
+      "modes": {
+        "spleis-vipps": {
+          "standard": "Vi foreslår en felles gave{#flere} til hver av bursdagsbarna{/flere}: {belop} per barn på Vipps til {vipps} innen {spleisfrist}.{#onske} {barn} ønsker seg {onske}.{/onske}",
+          "kort": "Felles gave{#flere} til hver{/flere}: {belop} på Vipps til {vipps}.",
+          "formell": "Vi foreslår en frivillig felles gave{#flere} til hver av bursdagsbarna{/flere} på {belop} per barn, som kan betales med Vipps til {vipps} innen {spleisfrist}."
+        },
+        "spleis-lenke": {
+          "standard": "Vi foreslår en felles gave{#flere} til hver av bursdagsbarna{/flere}, {belop} per barn. Bidra her innen {spleisfrist}: {spleislenke}{#onske} ({barn} ønsker seg {onske}.){/onske}",
+          "kort": "Felles gave{#flere} til hver{/flere}: {belop} her: {spleislenke}",
+          "formell": "Vi foreslår en frivillig felles gave{#flere} til hver av bursdagsbarna{/flere} på {belop} per barn. Bidrag kan gis innen {spleisfrist} her: {spleislenke}"
+        },
+        "maks": {
+          "standard": "Vil dere gi gave, holder det godt med noe til rundt {belop}{#flere}, en gave til hver{/flere}.",
+          "kort": "Gave: maks {belop}{#flere} til hver{/flere}.",
+          "formell": "Dersom dere ønsker å gi gave, foreslår vi en ramme på {belop}{#flere} per bursdagsbarn{/flere}."
+        },
+        "ingen-gaver": {
+          "standard": "Ikke tenk på gave, vi gleder oss bare til å se dere!",
+          "kort": "Ingen gaver, takk!",
+          "formell": "Vi ber om at dere ikke tar med gave."
+        },
+        "ikke-nevn": {
+          "standard": "",
+          "kort": "",
+          "formell": ""
+        }
+      },
+      "english": {
+        "spleis-vipps": "We suggest a joint gift: {belop} per child via Vipps to {vipps} by {spleisfrist_en}.",
+        "spleis-lenke": "We suggest a joint gift, {belop} per child: {spleislenke}",
+        "maks": "If you'd like to bring a gift, around {belop}{#flere} for each birthday child{/flere} is plenty.",
+        "ingen-gaver": "No gifts, please, just come!",
+        "ikke-nevn": ""
+      },
+      "default": {
+        "mode": "spleis-vipps",
+        "belop": "100 kr"
+      }
+    },
+    "rsvpReminder": {
+      "purpose": "Svarpåminnelse til én familie som ikke har svart. Oppgaven rsvpReminder (R + 1).",
+      "default": "standard",
+      "variants": {
+        "standard": "Hei! Bare en liten påminnelse om {barns} bursdag {dato} kl. {tid}. Kommer {gjest}? Svarfristen er {svarfrist_ord}. Si gjerne fra om allergier også. Tusen takk!",
+        "kort": "Hei! Kommer {gjest} i {barns} bursdag {dato}? Gi gjerne beskjed innen {svarfrist_ord}. Takk!",
+        "formell": "Hei, vi minner om {barns} bursdag {dato} kl. {tid}. Vi ber om svar innen {svarfrist_ord} om {gjest} kommer, og om eventuelle allergier. Tusen takk."
+      }
+    },
+    "partyReminder": {
+      "purpose": "Påminnelse til alle som kommer, to dager før (ny oppgave partyReminder, D − 2).",
+      "default": "standard",
+      "variants": {
+        "standard": "Hei alle sammen! Vi gleder oss til {barns} bursdag på {dag} kl. {tid} i {adresse}.{#ute} Vi er ute en stund, så kle barna etter været.{/ute}{#allergier} Vi har notert det dere har sagt fra om ({allergier}), så det blir mat alle kan spise.{/allergier}{#hente} Henting kl. {slutt}.{/hente}\nRing {kontakt} på {telefon} hvis dere ikke finner fram. Hilsen {avsendere}",
+        "kort": "Påminnelse: {barns} bursdag på {dag} kl. {tid} i {adresse}. Vi gleder oss! Hilsen {avsendere}",
+        "formell": "Hei, en påminnelse om {barns} bursdag {dato} kl. {tid} i {adresse}.{#hente} Henting kl. {slutt}.{/hente} Ta kontakt med {kontakt} på {telefon} ved spørsmål. Vennlig hilsen {avsendere}"
+      }
+    },
+    "thankYou": {
+      "purpose": "Takkemelding til foreldregruppa dagen etter (oppgaven thanks, D + 1).",
+      "default": "standard",
+      "variants": {
+        "standard": "Tusen takk for at dere kom i {barns} bursdag i går!{#spleis} Og takk for den fine gaven, {barn} ble så glad.{/spleis}{^spleis} Og takk for gavene, {barn} ble så glad.{/spleis} Det var en skikkelig fin dag.{#gjenglemt} PS: Noen har glemt igjen ting hos oss. Si fra hvis dere savner noe!{/gjenglemt}\nHilsen {barn}, {avsendere}",
+        "kort": "Takk for i går! {barn} hadde en kjempedag.{#gjenglemt} Si fra hvis noen savner noe, vi har noen gjenglemte ting.{/gjenglemt} Hilsen {avsendere}",
+        "formell": "Hei, tusen takk for at dere kom i {barns} bursdag.{#spleis} Takk også for den felles gaven.{/spleis}{#gjenglemt} Vi har noen gjenglemte ting, så gi beskjed hvis dere savner noe.{/gjenglemt} Vennlig hilsen {avsendere}"
+      }
+    },
+    "menuWords": {
+      "grillpolser": "grillpølser",
+      "wienerpolser": "pølser",
+      "pizza": "pizza",
+      "taco": "taco",
+      "egen": "{egen_rett}"
+    }
+  },
+  "programme": {
+    "purpose": "Faste tidsblokker per aldersgruppe og lengde. Ingen omskriving i appen.",
+    "rules": [
+      "Velg gruppe etter alder (3–6, 7–9, 10) og lengde etter festens varighet i minutter. Ved felles bursdag gjelder det yngste barnet.",
+      "Hvis varigheten ikke finnes i gruppen: ta nærmeste lengde (likt: den korteste), skaler starttidene proporsjonalt og rund av til 5 minutter. Mat og kake beholdes alltid.",
+      "Piñata av: blokken byttes med blokkens «erstatning» (ballongdans), samme minutter. Skattejakt av: byttes med «sangleker» (3–6) eller «gjemsel» (7–9).",
+      "Blokker med ute = true viser «Plan B inne: {planB}» når festen er i oktober–mars eller dere ikke har hage.",
+      "Klokkeslett = festens start + blokkens start. Siste blokk (takk) står på sluttiden."
+    ],
+    "bands": {
+      "3-6": {
+        "ages": [
+          3,
+          6
+        ],
+        "default": {
+          "helg": 120,
+          "hverdag": 120
+        },
+        "lengths": {
+          "90": [
+            [
+              "velkommen_sma",
+              0
+            ],
+            [
+              "lek_sma",
+              10
+            ],
+            [
+              "mat",
+              20
+            ],
+            [
+              "skattejakt_sma",
+              40
+            ],
+            [
+              "kake",
+              60
+            ],
+            [
+              "pinata",
+              75
+            ],
+            [
+              "fiskedam",
+              85
+            ],
+            [
+              "takk_sma",
+              90
+            ]
+          ],
+          "120": [
+            [
+              "velkommen_sma",
+              0
+            ],
+            [
+              "lek_sma",
+              15
+            ],
+            [
+              "mat",
+              35
+            ],
+            [
+              "skattejakt_sma",
+              60
+            ],
+            [
+              "kake",
+              85
+            ],
+            [
+              "pinata",
+              100
+            ],
+            [
+              "fiskedam",
+              110
+            ],
+            [
+              "takk_sma",
+              120
+            ]
+          ],
+          "150": [
+            [
+              "velkommen_sma",
+              0
+            ],
+            [
+              "lek_sma",
+              15
+            ],
+            [
+              "mat",
+              40
+            ],
+            [
+              "skattejakt_sma",
+              65
+            ],
+            [
+              "rolig_sma",
+              90
+            ],
+            [
+              "kake",
+              110
+            ],
+            [
+              "pinata",
+              125
+            ],
+            [
+              "fiskedam",
+              140
+            ],
+            [
+              "takk_sma",
+              150
+            ]
+          ]
+        }
+      },
+      "7-9": {
+        "ages": [
+          7,
+          9
+        ],
+        "default": {
+          "helg": 120,
+          "hverdag": 120
+        },
+        "lengths": {
+          "120": [
+            [
+              "velkommen_store",
+              0
+            ],
+            [
+              "lek_store",
+              10
+            ],
+            [
+              "mat",
+              30
+            ],
+            [
+              "skattejakt_store",
+              55
+            ],
+            [
+              "kake",
+              75
+            ],
+            [
+              "lagkonkurranse",
+              90
+            ],
+            [
+              "pinata",
+              105
+            ],
+            [
+              "godteposer",
+              115
+            ],
+            [
+              "takk_store",
+              120
+            ]
+          ],
+          "150": [
+            [
+              "velkommen_store",
+              0
+            ],
+            [
+              "lek_store",
+              15
+            ],
+            [
+              "mat",
+              35
+            ],
+            [
+              "skattejakt_store",
+              60
+            ],
+            [
+              "lagkonkurranse",
+              85
+            ],
+            [
+              "kake",
+              105
+            ],
+            [
+              "pinata",
+              120
+            ],
+            [
+              "fiskedam",
+              135
+            ],
+            [
+              "takk_store",
+              150
+            ]
+          ],
+          "180": [
+            [
+              "velkommen_store",
+              0
+            ],
+            [
+              "lek_store",
+              15
+            ],
+            [
+              "mat",
+              40
+            ],
+            [
+              "skattejakt_store",
+              70
+            ],
+            [
+              "verksted",
+              95
+            ],
+            [
+              "kake",
+              120
+            ],
+            [
+              "lagkonkurranse",
+              135
+            ],
+            [
+              "pinata",
+              155
+            ],
+            [
+              "godteposer",
+              170
+            ],
+            [
+              "takk_store",
+              180
+            ]
+          ]
+        }
+      },
+      "10": {
+        "ages": [
+          10,
+          10
+        ],
+        "default": {
+          "helg": 150,
+          "hverdag": 150
+        },
+        "lengths": {
+          "150": [
+            [
+              "velkommen_10_12",
+              0
+            ],
+            [
+              "quiz",
+              15
+            ],
+            [
+              "mat",
+              45
+            ],
+            [
+              "fri_store",
+              75
+            ],
+            [
+              "kake",
+              105
+            ],
+            [
+              "utfordring",
+              120
+            ],
+            [
+              "godteposer",
+              145
+            ],
+            [
+              "takk_store",
+              150
+            ]
+          ],
+          "180": [
+            [
+              "velkommen_10_12",
+              0
+            ],
+            [
+              "quiz",
+              15
+            ],
+            [
+              "mat",
+              50
+            ],
+            [
+              "fri_store",
+              80
+            ],
+            [
+              "kake",
+              120
+            ],
+            [
+              "utfordring",
+              140
+            ],
+            [
+              "godteposer",
+              175
+            ],
+            [
+              "takk_store",
+              180
+            ]
+          ]
+        }
+      }
+    },
+    "blocks": {
+      "velkommen_sma": {
+        "tittel": "Velkommen",
+        "tekst": "Ta imot gjestene og gavene i gangen. Legg fram fargeleggingsark med {tema_fargelegging}, så de som kommer først har noe å gjøre."
+      },
+      "velkommen_store": {
+        "tittel": "Velkommen",
+        "tekst": "Ta imot gjestene og gavene. Ha noe klart på bordet, for eksempel perler eller fargelegging med {tema_fargelegging}."
+      },
+      "velkommen_10_12": {
+        "tittel": "Velkommen",
+        "tekst": "Ta imot gjestene. Sett på musikk og ha noe å småspise mens alle kommer."
+      },
+      "lek_sma": {
+        "tittel": "Leker",
+        "tekst": "Stoppdans og «Haien kommer». Velg leker der ingen ryker ut, så blir ingen lei seg."
+      },
+      "lek_store": {
+        "tittel": "Leker",
+        "tekst": "Stoppdans, limbo og stolleken der ingen ryker ut. En voksen styrer musikken."
+      },
+      "mat": {
+        "tittel": "Mat",
+        "tekst": "{matlinje} Alle sitter ved bordet, og en voksen hjelper med ketchup og saft."
+      },
+      "skattejakt_sma": {
+        "tittel": "Skattejakt",
+        "tekst": "Gi barna den første lappen. En voksen går med og hjelper. Skatten ligger på det siste stedet.",
+        "ute": true,
+        "planB": "Siste lapp under spisebordet i stedet for i hagen.",
+        "erstatning": "sangleker"
+      },
+      "skattejakt_store": {
+        "tittel": "Skattejakt",
+        "tekst": "Del barna i to lag og gi hvert lag den første lappen. De leser lappene selv.",
+        "ute": true,
+        "planB": "Siste lapp under spisebordet i stedet for i hagen.",
+        "erstatning": "gjemsel"
+      },
+      "kake": {
+        "tittel": "Kake og bursdagssang",
+        "tekst": "Tenn lysene, syng «Hurra for deg» og la {barn} blåse. Muffins til de som vil ha."
+      },
+      "pinata": {
+        "tittel": "Piñata",
+        "tekst": "Yngste først, tre slag hver. En voksen holder snora, og de andre står bak en strek.",
+        "ute": true,
+        "planB": "Heng den i en døråpning inne og flytt møblene unna.",
+        "erstatning": "ballongdans"
+      },
+      "fiskedam": {
+        "tittel": "Fiskedam",
+        "tekst": "Heng opp et laken. Barna fisker én og én, og alle får en pose de kan ta med hjem."
+      },
+      "rolig_sma": {
+        "tittel": "Rolig stund",
+        "tekst": "Ansiktsmaling, eller en kort tegnefilm i sofaen for de som er slitne."
+      },
+      "lagkonkurranse": {
+        "tittel": "Lagkonkurranse",
+        "tekst": "Stafett og potetløp i to lag. Alle får en premie til slutt.",
+        "ute": true,
+        "planB": "Stafett i gangen: bær en ballong mellom knærne."
+      },
+      "verksted": {
+        "tittel": "Pynt din egen muffins",
+        "tekst": "Sett fram muffins, glasur og strøssel. Barna pynter hver sin."
+      },
+      "quiz": {
+        "tittel": "Quiz i lag",
+        "tekst": "Lag på tre eller fire. Spørsmål om musikk, film, spill og klassen. Premie til alle."
+      },
+      "fri_store": {
+        "tittel": "Fri lek, film eller spill",
+        "tekst": "La dem bestemme selv. Ha en film eller et spill klart for de som vil."
+      },
+      "utfordring": {
+        "tittel": "Hinderløype eller karaoke",
+        "tekst": "Hinderløype i hagen eller karaoke i stua. De voksne tar tiden.",
+        "ute": true,
+        "planB": "Karaoke eller «Just Dance» inne."
+      },
+      "godteposer": {
+        "tittel": "Godteposer",
+        "tekst": "Alle får med seg en godtepose når de går."
+      },
+      "takk_sma": {
+        "tittel": "Takk for i dag",
+        "tekst": "Alle får med seg posen sin hjem. Husk luer og votter."
+      },
+      "takk_store": {
+        "tittel": "Takk for i dag",
+        "tekst": "Henting kl. {slutt}. Husk posene og gjenglemte luer."
+      },
+      "ballongdans": {
+        "tittel": "Ballongdans",
+        "tekst": "Hold ballongen i lufta uten å bruke hendene. Musikk på!"
+      },
+      "sangleker": {
+        "tittel": "Sangleker",
+        "tekst": "Sangleker i ring: «Bjørnen sover» og «Bro, bro brille»."
+      },
+      "gjemsel": {
+        "tittel": "Gjemsel",
+        "tekst": "Gjemsel inne eller i hagen. En voksen teller og passer på at ingen gjemmer seg ute alene."
+      }
+    },
+    "mealLines": {
+      "grillpolser": "Grillpølser med lomper og brød. Tenn grillen 20 minutter før.",
+      "wienerpolser": "Pølser med lomper og brød. Sett på vannet 15 minutter før. Pølsene skal trekke, ikke koke.",
+      "pizza-hjemmelaget": "Pizza fra langpanna. Sett den i ovnen 25 minutter før.",
+      "pizza-frossen": "Pizza. Sett den i ovnen 20 minutter før.",
+      "pizza-bestilt": "Pizza. Hent den, eller få den levert, 15 minutter før.",
+      "taco": "Taco. Sett alt fram i skåler, så bygger barna sin egen.",
+      "egen": "{egen_rett}."
+    }
+  },
+  "skattejakt": {
+    "status": "PENDING: Ekaterina chooses the clue format (see KAKEKLAR_SKATTEJAKT_FORSLAG.md). Do not build clue texts until she has chosen.",
+    "formats": [
+      "rim",
+      "enkel",
+      "bilde"
+    ],
+    "recommendation": {
+      "3-4": "bilde",
+      "5-6": "bilde+enkel",
+      "7-9": "enkel",
+      "10-12": "enkel (vanskeligere gåter, senere)"
+    },
+    "locationsRef": "spec §6.10"
+  }
+}

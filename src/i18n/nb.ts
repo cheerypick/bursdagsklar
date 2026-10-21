@@ -1,0 +1,168 @@
+/**
+ * All Norwegian UI strings (spec §10). Screens import from here; nothing is hard-coded in screens.
+ * To add a language later, add a file with the same shape and switch on locale.
+ */
+export const BRAND = 'bursdagsklar';
+
+export const nb = {
+  brand: BRAND,
+  common: {
+    next: 'Neste',
+    back: 'Tilbake',
+    change: 'Endre',
+    done: 'Ferdig',
+    step: (n: number, of: number) => `Steg ${n} av ${of}`,
+  },
+  welcome: {
+    title: 'Hele bursdagen, klar.',
+    lede: 'Fortell oss hvem som har bursdag. Vi lager invitasjonen, maten, kaken og programmet – og minner deg på resten.',
+    cta: 'Planlegg bursdagen',
+    note: 'Tar under ett minutt. Ingen innlogging.',
+    heroAlt: 'Et pyntet bursdagsbord hjemme med kake, ballonger og pastellfarger',
+    continueDraft: 'Fortsett der du slapp',
+  },
+  who: {
+    title: 'Hvem har bursdag?',
+    lede: 'Fornavn og alder. Feirer dere sammen? Legg til opptil tre barn.',
+    placeholder: 'Fornavn',
+    nameLabel: (n: number) => (n === 1 ? 'Fornavn på bursdagsbarnet' : `Fornavn på barn ${n}`),
+    child: (n: number) => `Barn ${n}`,
+    ageQuestion: (navn: string) => `Hvor gammel blir ${navn}?`,
+    ageGroup: (navn: string) => `Alder for ${navn}`,
+    ageLabel: (n: number) => `${n} år`,
+    add: '+ Legg til et barn til',
+    remove: (navn: string) => `Fjern ${navn}`,
+  },
+  date: {
+    title: 'Når er festen?',
+    lede: 'Vi regner ut fristene bakover fra datoen.',
+    placeholder: 'Velg en dag i kalenderen',
+    label: 'Dato for festen',
+    show: 'Vis kalenderen',
+    hide: 'Skjul kalenderen',
+    time: (range: string) => `Kl. ${range}`,
+    fits: (alder: number, tekst: string) => `Passer for ${alder}-åringer: ${tekst}`,
+    fitsJoint: (alder: number, tekst: string) => `Passer for de minste (${alder} år): ${tekst}`,
+    start: 'Start',
+    end: 'Slutt',
+    shortNotice: 'Det er kort tid, men det går. Vi lager en kortere plan.',
+  },
+  kids: {
+    title: 'Hvor mange barn inviterer dere?',
+    lede: (navn: string) => `Uten ${navn}. Voksne teller vi når svarene kommer.`,
+    unit: 'barn',
+    fewer: 'Færre barn',
+    more: 'Flere barn',
+    hintSmall:
+      'Hele avdelingen? Mange barnehager har som regel at alle i gruppa, eller alle jentene eller guttene, blir invitert.',
+    hintSchool:
+      'Hele klassen? Mange skoler har som regel at alle i klassen, eller alle jentene eller guttene, blir invitert.',
+  },
+  place: {
+    title: 'Hvor blir festen?',
+    lede: 'Da passer tipsene om plass, leker og rydding.',
+    cta: 'Lag planen',
+    options: {
+      hus: { label: 'Hjemme i hus', sub: 'Med plass inne, kanskje en hage' },
+      leilighet: { label: 'Hjemme i leilighet', sub: 'Leker som passer for mindre plass' },
+      lokale: { label: 'Leid lokale', sub: 'Grendehus, kirkesal eller lignende' },
+      ute: { label: 'Ute', sub: 'I parken, i skogen eller på stranda' },
+    },
+    eyebrow: {
+      hus: 'Hjemmebursdag',
+      leilighet: 'Hjemmebursdag',
+      lokale: 'Bursdag i lokale',
+      ute: 'Bursdag ute',
+      none: 'Bursdag',
+    },
+  },
+  theme: {
+    title: 'Velg tema',
+    lede: 'Valgfritt. Temaet farger appen og invitasjonen og gir en kakeidé. Du kan bytte når som helst.',
+    none: 'Uten tema',
+    noneSub: 'Nøytrale farger',
+    done: 'Ferdig',
+    card: { title: 'Velg tema (valgfritt)', sub: 'Farger, invitasjon og kakeidé' },
+    cardChosen: { title: (tema: string) => `Tema: ${tema}`, sub: 'Trykk for å bytte eller fjerne' },
+  },
+  ready: {
+    lede: (dager: number, n: number) =>
+      `Alt det tunge er gjort. Du har ${dager} ${dager === 1 ? 'dag' : 'dager'} og ${n} ${n === 1 ? 'ting' : 'ting'} å gjøre denne uka.`,
+    invite: 'Invitasjon og melding til foreldrene',
+    todos: 'Gjøremål med datoer',
+    cta: 'Se planen din 🎉',
+  },
+  /** «Start på nytt»: deletes everything stored on this device, after a confirm dialog. */
+  startOver: {
+    action: 'Start på nytt',
+    title: 'Vil du starte på nytt?',
+    /** names = «Emma» or «Emma og Jonas» */
+    message: (names: string) => `Planen for ${names} slettes.`,
+    messageDraft: 'Det du har fylt inn så langt slettes.',
+    confirm: 'Slett og start på nytt',
+    cancel: 'Avbryt',
+  },
+  plan: {
+    greeting: 'Alt er planlagt. Nå blir det fest!',
+    meta: (dato: string, tid: string, barn: number) => `${dato} · kl. ${tid} · ${barn} barn`,
+    section: 'Alt til festen',
+    allDone: 'Alt er gjort. Kos dere på festen!',
+    cards: {
+      invite: { title: 'Invitasjon', sub: 'Kort, tekst og melding til foreldrene', badge: 'Klar til å sendes' },
+      food: { title: 'Mat', sub: 'Hovedrett, saft, frukt og kake – mengder som holder', badgeChoose: 'Velg meny' },
+      cake: { title: 'Kake' },
+      programme: { title: 'Program og leker' },
+      todo: { title: 'Gjøremål', sub: 'Alt du må huske, med datoer', badge: (n: number) => `${n} denne uka` },
+    },
+  },
+  todo: {
+    title: 'Gjøremål',
+    lede: 'Alt du må huske på, i riktig rekkefølge. Handling er bare to av punktene.',
+    counter: (x: number, y: number) => `${x} av ${y} gjort`,
+    markDone: (t: string) => `Marker som gjort: ${t}`,
+    markUndone: (t: string) => `Marker som ikke gjort: ${t}`,
+    deadline: 'Frist',
+    homeTitle: 'Har dere dette hjemme?',
+    homeLede: 'Trykk på det dere har. Da forsvinner det fra handlelista.',
+    removed: 'Fjernet fra handlelista',
+    added: 'Lagt til på handlelista',
+  },
+  home: {
+    grill: 'Grill',
+    langpanne: 'Langpanne',
+    bursdagskrone: 'Bursdagskrone',
+    'laken-fiskedam': 'Laken til fiskedam',
+    fiskestang: 'Fiskestang',
+    muffinsformer: 'Muffinsformer',
+    saftdispenser: 'Saftdispenser',
+    kakelys: 'Kakelys',
+    'pappkrus-og-fat': 'Pappkrus og fat',
+    ballonger: 'Ballonger',
+    pizzahjul: 'Pizzahjul',
+    'stor-kjele': 'Stor kjele',
+  },
+  tabs: { plan: 'Planen', todo: 'Gjøremål', day: 'Festdagen' },
+  soon: {
+    eyebrow: 'Kommer snart',
+    invite: {
+      title: 'Invitasjon',
+      text: 'Her kommer det ferdige invitasjonskortet, teksten til foreldregruppa og påminnelsene. Alt er skrevet på forhånd og fylles ut med navn, dato og adresse.',
+    },
+    food: {
+      title: 'Mat',
+      text: 'Her velger du hovedrett: grillpølser, wienerpølser, pizza, taco eller din egen rett. Vi regner ut mengdene med litt ekstra, og lager handlelista.',
+    },
+    cake: { title: 'Kake', text: 'Her kommer kaken, med oppskrift tilpasset antall gjester.' },
+    programme: {
+      title: 'Program og leker',
+      text: 'Her kommer et ferdig program med klokkeslett og leker dere velger selv.',
+    },
+    day: {
+      title: 'Festdagen',
+      text: 'På selve dagen samler vi alt i riktig rekkefølge: når du skal starte, hva som må være klart og hvem som har allergier.',
+    },
+    backToPlan: 'Tilbake til planen',
+  },
+  notFound: { title: 'Denne siden finnes ikke', cta: 'Til forsiden' },
+  loading: 'Laster …',
+};

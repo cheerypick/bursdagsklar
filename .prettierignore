@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-*
+.expo
+package-lock.json
+assets
+src/core/texts/templates.json

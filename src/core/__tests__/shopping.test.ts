@@ -40,16 +40,28 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
   });
 
   it('has the Mat lines with the same amounts and pack sizes', () => {
-    // (13 × 2 + 4 × 2) × 1,35 = 45,9 → 46 → 5 pk à 10
+    // 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50; lomper and pølsebrød ca. 30 each
     expect(item(emma(), 'grillpolser')).toMatchObject({
       group: 'kjott',
       qty: '5 pk',
       detail: 'à 10, 50 stk i alt',
       text: '5 pk grillpølser',
     });
-    expect(item(emma(), 'lomper')).toMatchObject({ group: 'brod', text: expect.stringMatching(/^\d+ pk lomper$/) });
-    expect(item(emma(), 'polsebrod')).toMatchObject({ group: 'brod' });
-    expect(item(emma(), 'ketchup')?.text).toBe('Ketchup, sennep og sprøstekt løk: 1 av hver');
+    expect(item(emma(), 'lomper')).toMatchObject({
+      group: 'brod',
+      qty: '3 pk',
+      detail: 'à 10, 30 stk i alt',
+      text: '3 pk lomper',
+    });
+    expect(item(emma(), 'polsebrod')).toMatchObject({
+      group: 'brod',
+      qty: '4 pk',
+      detail: 'à 8, 32 stk i alt',
+      text: '4 pk pølsebrød',
+    });
+    expect(item(emma(), 'ketchup')).toMatchObject({ group: 'torrvarer', text: 'Ketchup og sennep: 1 av hver' });
+    expect(item(emma(), 'lok')).toMatchObject({ group: 'torrvarer', text: '2 poser sprøstekt løk' });
+    expect(item(emma(), 'saft')?.detail).toBe('Eller jus. Se Mat for mengden');
     expect(item(emma(), 'saft')).toMatchObject({
       group: 'drikke',
       name: 'Saft',
@@ -92,9 +104,9 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
   });
 
   it('counts the items for the Planen card', () => {
-    expect(list.count).toBe(11);
-    expect(shoppingCardLine(list)).toBe('11 varer');
-    expect(shoppingCardLine(handleliste(withTick(emma(), 'saft', true)))).toBe('11 varer · 1 kjøpt');
+    expect(list.count).toBe(12);
+    expect(shoppingCardLine(list)).toBe('12 varer');
+    expect(shoppingCardLine(handleliste(withTick(emma(), 'saft', true)))).toBe('12 varer · 1 kjøpt');
   });
 
   it('without a main dish: drinks, fruit and party things only', () => {
@@ -178,7 +190,7 @@ describe('Handleliste follows the Mat screen and the party', () => {
     p = withoutCustomItem(p, 'egen-1');
     expect(p.shopping).toEqual({ ticked: [], custom: [{ id: 'egen-2', text: 'Sugerør' }] });
     expect(nextCustomId(p.shopping.custom)).toBe('egen-3');
-    expect(handleliste(p).count).toBe(12);
+    expect(handleliste(p).count).toBe(13);
   });
 });
 
@@ -203,7 +215,8 @@ describe('shareText', () => {
         '☐ ca. 2,3 kg frukt og grønt',
         '',
         'Tørrvarer',
-        '☐ Ketchup, sennep og sprøstekt løk: 1 av hver',
+        '☐ Ketchup og sennep: 1 av hver',
+        '☐ 2 poser sprøstekt løk',
         '',
         'Fest og pynt',
         '☐ 1 sett kakelys',
@@ -226,7 +239,7 @@ describe('shareText', () => {
     let p = emma();
     for (const id of handleliste(p).groups.flatMap((g) => g.items.map((i) => i.id))) p = withTick(p, id, true);
     expect(shareText(handleliste(p))).toBe('Handleliste – Emmas bursdag 7. nov\n\nAlt er handlet.');
-    expect(shoppingCardLine(handleliste(p))).toBe('Alt er handlet · 11 varer');
+    expect(shoppingCardLine(handleliste(p))).toBe('Alt er handlet · 12 varer');
   });
 });
 

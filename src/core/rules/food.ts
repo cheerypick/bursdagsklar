@@ -35,28 +35,127 @@ export interface People {
 
 // ---------------- sausages ----------------
 
-export function sausages(kind: 'grillpolser' | 'wienerpolser', p: People) {
-  const base = C.SAUSAGE_PER_CHILD[band(p.age)];
-  const raw = (p.kidsComing * base + p.adultsEating * C.SAUSAGE_PER_ADULT) * (1 + C.SAUSAGE_BUFFER[kind]);
+/**
+ * Sausages in whole real packs (constants.ts names them), and the bread for them.
+ * 3 per child and 2 per grown-up, up to whole packs (Emma: 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50).
+ * Bread: lomper and pølsebrød both on → each covers about 60 % of the sausages, up to whole packs, so there is
+ * some to spare (Emma: 30 lomper, 32 pølsebrød). With one of them left out, the other covers them all.
+ */
+export function sausages(
+  kind: 'grillpolser' | 'wienerpolser',
+  p: People,
+  opts: { withLomper?: boolean; withPolsebrod?: boolean } = {},
+) {
+  const withLomper = opts.withLomper ?? true;
+  const withPolsebrod = opts.withPolsebrod ?? true;
+  const both = withLomper && withPolsebrod;
+  const perChild = C.SAUSAGE_PER_CHILD[band(p.age)];
+  const raw = p.kidsComing * perChild + p.adultsEating * C.SAUSAGE_PER_ADULT;
+  /** Sausages the per-person rule asks for, before rounding up to packs. */
   const need = ceilSafe(raw);
   const pack = C.SAUSAGE_PACK[kind];
   const sausagePacks = packs(need, pack);
-  const lomperPacks = packs(need, C.LOMPER_PACK);
-  const buns = ceilSafe(need / 2);
+  const bought = sausagePacks * pack;
+  /** Both breads on: about 60 % of the sausages each («ca. 30 av hver»). */
+  const share = ceilSafe(bought * C.BREAD_SHARE_WHEN_BOTH);
+  const lomperNeed = both ? share : bought;
+  const lomperPacks = packs(lomperNeed, C.LOMPER_PACK);
+  const buns = both ? share : bought;
   const bunPacks = packs(buns, C.POLSEBROD_PACK);
   const eaters = p.kidsComing + p.adultsEating;
   const condiments = packs(eaters, C.CONDIMENT_PER_EATERS);
+  const onionBags = packs(eaters, C.CRISPY_ONION_PER_EATERS);
   return {
     raw,
+    perChild,
     need,
     pack,
     packs: sausagePacks,
+    /** Sausages bought: whole packs. */
+    bought,
+    /** Each bread's share when both are on (about 60 % of the sausages). */
+    share,
+    lomperNeed,
     lomper: lomperPacks * C.LOMPER_PACK,
     lomperPacks,
     buns,
     bunPacks,
+    /** Pølsebrød bought: whole packs. */
+    bunsBought: bunPacks * C.POLSEBROD_PACK,
+    withLomper,
+    withPolsebrod,
+    eaters,
+    /** Bottles of ketchup, and of sennep. */
     condiments,
+    /** 100 g bags of sprøstekt løk. */
+    onionBags,
   };
+}
+
+const persons = (k: number) => `${k} ${k === 1 ? 'person' : 'personer'}`;
+
+/**
+ * «13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk»
+ */
+export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<typeof sausages>, p: People): string {
+  const product = C.SAUSAGE_PRODUCT[kind];
+  const kids = `${p.kidsComing} barn × ${nb.format(s.perChild)}`;
+  const adults = `${p.adultsEating} ${p.adultsEating === 1 ? 'voksen' : 'voksne'} × ${nb.format(C.SAUSAGE_PER_ADULT)}`;
+  const sum = p.adultsEating > 0 ? `${kids} + ${adults}` : kids;
+  const line = `${sum} = ${s.need}. ${s.packs} pk ${product.name} à ${product.count} = ${s.bought}`;
+  const big = Math.floor(s.packs / C.GRILL_STORPAKNING_PACKS);
+  if (kind !== 'grillpolser' || big < 1) return line;
+  const rest = s.packs - big * C.GRILL_STORPAKNING_PACKS;
+  const bigWords = big === 1 ? '1 storpakning' : `${big} storpakninger`;
+  return `${line}, eller ${bigWords} (3 × 10)${rest > 0 ? ` og ${rest} pk` : ''}`;
+}
+
+/** Both breads on: «Ca. 30 av hver – noen vil ha lompe, noen brød». One left out: the other covers every sausage. */
+export function lomperWhy(s: ReturnType<typeof sausages>): string {
+  return s.withPolsebrod
+    ? `Ca. ${s.share} av hver – noen vil ha lompe, noen brød. Tar du bort det ene, dekker det andre alle pølsene`
+    : 'Uten pølsebrød: én lompe per pølse';
+}
+
+export function polsebrodWhy(s: ReturnType<typeof sausages>): string {
+  return s.withLomper
+    ? `Ca. ${s.share} av hver – noen vil ha lompe, noen brød`
+    : 'Uten lomper: ett pølsebrød per pølse';
+}
+
+/** «1 av hver» (ketchup and sennep) */
+export function condimentAmount(s: ReturnType<typeof sausages>): string {
+  return `${s.condiments} av hver`;
+}
+
+/** «Til 17 personer. Én flaske av hver holder til ca. 25» */
+export function condimentWhy(s: ReturnType<typeof sausages>): string {
+  return `Til ${persons(s.eaters)}. Én flaske av hver holder til ca. ${C.CONDIMENT_PER_EATERS}`;
+}
+
+/** «2 poser» */
+export function onionAmount(s: ReturnType<typeof sausages>): string {
+  return `${s.onionBags} ${s.onionBags === 1 ? 'pose' : 'poser'}`;
+}
+
+/** «Til 17 personer. Én pose (100 g) holder til ca. 10» */
+export function onionWhy(s: ReturnType<typeof sausages>): string {
+  return `Til ${persons(s.eaters)}. Én pose (100 g) holder til ca. ${C.CRISPY_ONION_PER_EATERS}`;
+}
+
+/**
+ * Plain words for «one of X is enough for about N people»: with one, «Én flaske holder til 17 personer»;
+ * with more, «2 flasker til 17 personer. Én holder til ca. 12».
+ */
+export function enoughFor(
+  count: number,
+  eaters: number,
+  per: number,
+  one: string,
+  many: (count: number) => string,
+): string {
+  if (count <= 1) return `${one} holder til ${persons(eaters)}`;
+  return `${many(count)} til ${persons(eaters)}. ${one} holder til ca. ${per}`;
 }
 
 // ---------------- pizza ----------------
@@ -194,9 +293,10 @@ export function extras(p: People, opts: { muffins: boolean; candleAges?: number[
 
 // ---------------- allergies (§6.8, the parts milestone 1 needs) ----------------
 
-export function extraSausagesFor(kind: 'grillpolser' | 'wienerpolser', affectedKids: number, age: number): number {
+/** Kyllingpølser for children who don't eat pork: the same per-child rule, plus one to spare. */
+export function extraSausagesFor(_kind: 'grillpolser' | 'wienerpolser', affectedKids: number, age: number): number {
   if (affectedKids <= 0) return 0;
-  return ceilSafe(affectedKids * C.SAUSAGE_PER_CHILD[band(age)] * (1 + C.SAUSAGE_BUFFER[kind]));
+  return ceilSafe(affectedKids * C.SAUSAGE_PER_CHILD[band(age)]) + 1;
 }
 
 export function allergyUnion(party: Pick<Party, 'guests'>): AllergyTag[] {
@@ -255,7 +355,10 @@ export function shoppingList(party: Party): ShoppingItem[] {
   if (!m) {
     // no menu chosen yet: only the extras below
   } else if (m.kind === 'grillpolser' || m.kind === 'wienerpolser') {
-    const s = sausages(m.kind, p);
+    const s = sausages(m.kind, p, {
+      withLomper: party.foodItems?.lomper?.included !== false,
+      withPolsebrod: party.foodItems?.polsebrod?.included !== false,
+    });
     out.push(
       item({
         id: m.kind,
@@ -266,20 +369,20 @@ export function shoppingList(party: Party): ShoppingItem[] {
         packs: s.packs,
         trip: 'ferskvarer',
         ruleRef: 'menu.sausage',
-        why: 'Med litt ekstra. Den siste pakken kan gå i fryseren.',
+        why: sausageWhy(m.kind, s, p),
       }),
     );
     out.push(
       item({
         id: 'lomper',
         name: 'Lomper',
-        need: s.need,
+        need: s.lomperNeed,
         unit: 'stk',
         packSize: C.LOMPER_PACK,
         packs: s.lomperPacks,
         trip: 'torrvarer',
         ruleRef: 'menu.sausage',
-        why: 'En til hver pølse',
+        why: lomperWhy(s),
       }),
     );
     out.push(
@@ -292,18 +395,31 @@ export function shoppingList(party: Party): ShoppingItem[] {
         packs: s.bunPacks,
         trip: 'ferskvarer',
         ruleRef: 'menu.sausage',
-        why: 'Ett til annenhver pølse',
+        why: polsebrodWhy(s),
       }),
     );
     out.push(
       item({
         id: 'ketchup',
-        name: 'Ketchup, sennep og sprøstekt løk',
+        name: 'Ketchup og sennep',
         need: s.condiments,
         unit: 'stk',
-        display: `${s.condiments} av hver`,
+        display: condimentAmount(s),
         trip: 'torrvarer',
         ruleRef: 'menu.sausage',
+        why: condimentWhy(s),
+      }),
+    );
+    out.push(
+      item({
+        id: 'lok',
+        name: 'Sprøstekt løk',
+        need: s.onionBags,
+        unit: 'pose',
+        display: onionAmount(s),
+        trip: 'torrvarer',
+        ruleRef: 'menu.sausage',
+        why: onionWhy(s),
       }),
     );
     const noPork = party.guests.filter((g) => g.status !== 'no' && g.allergies.includes('ikke-svin')).length;

@@ -96,6 +96,8 @@ const LINE_GROUP: Record<string, ShopGroupId> = {
   isberg: 'frukt',
   pastagront: 'frukt',
   saft: 'drikke',
+  ketchup: 'torrvarer',
+  lok: 'torrvarer',
   frossenpizza: 'frys',
 };
 
@@ -124,7 +126,7 @@ function dietShopGroup(tag: string, g: DietGroup): ShopGroupId | null {
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
-/** «5 pk grillpølser», «2 flasker saft», «Ketchup, sennep og sprøstekt løk: 2 av hver». */
+/** «5 pk grillpølser», «2 flasker saft», «Ketchup og sennep: 1 av hver», «2 poser sprøstekt løk». */
 function phrase(qty: string, name: string): string {
   if (!qty) return name;
   if (/av hver$/.test(qty) || /^til /.test(qty)) return /^til /.test(qty) ? `${name} ${qty}` : `${name}: ${qty}`;
@@ -138,7 +140,7 @@ function fromFoodLine(l: FoodLine): Omit<ShopItem, 'ticked'> | null {
   if (l.id === 'saft') {
     // «2 flasker saft» → «Saft» · «2 flasker»
     const qty = l.amount.replace(/ saft$/, '');
-    return { id: l.id, group, name: 'Saft', qty, detail: 'Eller juice. Se Mat for mengden', text: phrase(qty, 'saft') };
+    return { id: l.id, group, name: 'Saft', qty, detail: 'Eller jus. Se Mat for mengden', text: phrase(qty, 'saft') };
   }
   const m = l.packs ? /^(\d+ pk) à (.+)$/.exec(l.packs) : null;
   if (m) {

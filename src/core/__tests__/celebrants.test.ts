@@ -53,9 +53,9 @@ describe('joint birthday: the rules', () => {
     const list = shoppingList(jointEmmaJonas());
     const grill = list.find((i) => i.id === 'grillpolser')!;
     const asOldest = sausages('grillpolser', { kidsComing: 14, adultsEating: 4, age: 7 });
-    const asYoungest = sausages('grillpolser', { kidsComing: 14, adultsEating: 4, age: 5 });
     expect(grill.need).toBe(asOldest.need);
-    expect(asOldest.need).toBeGreaterThan(asYoungest.need);
+    // sausages are 3 per child at every age 3–10 (her rule, 21 Oct 2026): 14 × 3 + 4 × 2 = 50
+    expect(asOldest.need).toBe(50);
   });
   it('the time reason uses the YOUNGEST child', () => {
     expect(defaultPartyTime(youngestAge(jointEmmaJonas().celebrants), false).why).toBe(

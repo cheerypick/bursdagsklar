@@ -36,14 +36,66 @@ export function clampChildren(n: number, celebrants: number): number {
   return Math.min(MAX_CHILDREN, Math.max(minChildren(celebrants), Math.round(n)));
 }
 
-// ---- sausages (§6.4) ----
-export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 1.5, B: 2, C: 2.5, D: 3 };
-export const SAUSAGE_PER_ADULT = 2; // (I)
-export const SAUSAGE_BUFFER = { grillpolser: 0.35, wienerpolser: 0.25 }; // (I)
-export const SAUSAGE_PACK = { grillpolser: 10, wienerpolser: 8 }; // (I) grill pack count unconfirmed
-export const LOMPER_PACK = 10;
-export const POLSEBROD_PACK = 8;
-export const CONDIMENT_PER_EATERS = 20; // 1 ketchup/sennep/løk per started 20 eaters (I)
+// ---- sausages (§6.4, reworked 21 Oct 2026) ----
+/**
+ * Context: en ekte fest med 15 barn (Ekaterina's, KIWI 26.08.2026) kjøpte 60 grillpølser og hadde ~20 til
+ * overs; the bread was lomper and pølsebrød. On 21 Oct 2026 she chose the more generous amounts (Emma: 50
+ * grillpølser, ca. 30 lomper and 30 pølsebrød) over a tighter rule that gave 40 / 20 / 24.
+ *
+ * Packs read on Oda (oda.com) on 21 Oct 2026, the «Wienerpølser» and «Grillpølser» categories
+ * (https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3044-wienerpolser/ and
+ * https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3004-grillpolser/) and Oda search:
+ * - Gilde Grillpølser, 600 g = 10 stk. Oda lists it as «600 g»; the 10 stk is on Gilde's pack.
+ *   The 3 × 600 g storpakning is not on Oda. https://oda.com/no/products/957-gilde-grillpolser/
+ * - Gilde Wienerpølse, 8 stk, 520 g. https://oda.com/no/products/956-gilde-wienerpolse-8-stk/
+ * - Buer Lomper Original, 10 stk, 290 g. https://oda.com/no/products/69345-buer-lomper-original-10-stk/
+ * - Pølsebrød: packs of 8 (Bakehuset pølsebrød 8 stk, what she buys; not sold on Oda). On Oda: Hatting Høvding fine
+ *   pølsebrød 10 × 50 g, Hatting Grove pølsebrød 10 stk 440 g, Prima Lavpris Pølsebrød 12 stk 396 g,
+ *   Mesterbakeren Brioche pølsebrød 4 stk.
+ * Also on Oda that day: Gilde Favorittwiener 24 stk (ca. 1,56 kg), Strøm-Larsen Wienerpølser 8 stk 520 g,
+ * Leiv Vidar Wienerpølser 14 stk 770 g, Gilde Ostegrill 6 stk 480 g, Strøm-Larsen Grillpølser 400 g and
+ * 1 kg; Ola Lompa Store lomper 290 g, Buer/Ola Lompa Store speltlomper 8 stk, frosne lomper 10 stk.
+ */
+export const SAUSAGE_PRODUCT = {
+  grillpolser: { name: 'Gilde Grillpølser', count: 10, grams: 600 },
+  wienerpolser: { name: 'Gilde Wienerpølse', count: 8, grams: 520 },
+} as const;
+/**
+ * Gilde Grillpølse «storpakning»: 3 × 10 stk (3 × 600 g), sold in stores (she bought it at KIWI). Not listed on
+ * Oda on 21 Oct 2026 (only the single 600 g / 10 stk pack), so the single pack is the rounding unit and the
+ * grill line mentions the storpakning as an alternative from 3 packs up.
+ */
+export const GRILL_STORPAKNING_PACKS = 3;
+export const LOMPER_PRODUCT = { name: 'lomper', count: 10 } as const;
+export const POLSEBROD_PRODUCT = { name: 'pølsebrød', count: 8 } as const;
+
+/**
+ * Sausages to buy per person (Ekaterina, 21 Oct 2026): 3 per child, every age 3–10, and 2 per grown-up, then up to
+ * whole packs. No extra percentage: rounding up to packs is the margin. Emma (13 barn, 4 voksne):
+ * 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50 grillpølser (wienerpølser: 6 pk à 8 = 48).
+ * Kept per age band so a band can differ later; today they are all 3.
+ */
+export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 3, B: 3, C: 3, D: 3 };
+export const SAUSAGE_PER_ADULT = 2;
+export const SAUSAGE_PACK = {
+  grillpolser: SAUSAGE_PRODUCT.grillpolser.count,
+  wienerpolser: SAUSAGE_PRODUCT.wienerpolser.count,
+};
+export const LOMPER_PACK = LOMPER_PRODUCT.count;
+export const POLSEBROD_PACK = POLSEBROD_PRODUCT.count;
+/**
+ * Lomper and pølsebrød both on: each covers about 60 % of the sausages, up to whole packs, so together there is
+ * some bread to spare (people mix, and nobody knows in advance who wants which). Emma: 60 % of 50 = 30 →
+ * lomper 3 pk à 10 = 30, pølsebrød 4 pk à 8 = 32. One left out: the other covers every sausage.
+ */
+export const BREAD_SHARE_WHEN_BOTH = 0.6;
+/**
+ * One bottle of ketchup (ca. 500 g), and one of sennep, for ca. 25 people: ca. 2 pølser each, and not all
+ * children take both (I).
+ */
+export const CONDIMENT_PER_EATERS = 25;
+/** Sprøstekt løk, 100 g bags: ca. 5 g per pølse, ca. 2 pølser per person → one bag per ca. 10 people (I). */
+export const CRISPY_ONION_PER_EATERS = 10;
 
 // ---- pizza (§6.5) ----
 export const PIZZA_SLICES_PER_CHILD: Record<Band, number> = { A: 1.5, B: 2, C: 2.5, D: 3 };
@@ -80,7 +132,7 @@ export const PASTA_SAUCE_PER_PORTIONS = 6; // 1 glass ≈ 6 barneporsjoner; an a
 export const PASTA_CHEESE_PER_EATERS = 15; // 1 pose revet ost
 
 // ---- drinks on the Mat screen (I) ----
-export const JUICE_DL_CHILD = 5; // juice instead of saft: the same volume as ready-mixed saft
+export const JUICE_DL_CHILD = 5; // jus (juice) instead of saft: the same volume as ready-mixed saft
 export const WATER_DL_PER_PERSON = 2;
 
 // ---- extras (§6.7) ----

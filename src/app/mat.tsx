@@ -268,7 +268,7 @@ export default function MatScreen() {
       </PillRow>
       {dietSection ? (
         <View style={{ marginTop: 14, gap: 10 }}>
-          <SectionCard section={dietSection} />
+          <SectionCard section={dietSection} hideTitle />
           <Text variant="small" testID="diet-note">
             {nb.food.dietNote}
           </Text>
@@ -345,15 +345,17 @@ export default function MatScreen() {
   );
 }
 
-function SectionCard({ section }: { section: FoodSection }) {
+function SectionCard({ section, hideTitle }: { section: FoodSection; hideTitle?: boolean }) {
   const styles = useStyles();
   const colors = useColors();
   const tint = section.id === 'hensyn' ? colors.butter : section.id === 'kake' ? colors.blush : colors.card;
   return (
     <Surface testID={`food-section-${section.id}`} style={{ backgroundColor: tint, paddingVertical: 8 }}>
-      <Text variant="eyebrow" style={{ marginTop: 8, marginBottom: 2 }}>
-        {section.title}
-      </Text>
+      {hideTitle ? null : (
+        <Text variant="eyebrow" style={{ marginTop: 8, marginBottom: 2 }}>
+          {section.title}
+        </Text>
+      )}
       {section.lines.map((l, i) =>
         section.id === 'hensyn' ? (
           <DietLine key={l.id} line={l} first={i === 0} styles={styles} />

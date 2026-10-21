@@ -156,7 +156,7 @@ export default function PlanScreen() {
             {theme ? `${theme.emoji} ` : ''}
             {place}
           </Text>
-          <Text variant="h1Small" color={colors.onPrimary} style={{ marginTop: 6 }}>
+          <Text variant="h1Small" color={colors.onPrimary} style={{ marginTop: 6 }} testID="plan-title">
             {planTitle(party)}
           </Text>
           <Text style={styles.greeting} testID="plan-greeting">

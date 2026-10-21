@@ -1,5 +1,5 @@
 import { Image, StyleSheet, View } from 'react-native';
-import { BRAND_PALETTE, invitationCard, themeById, type Party } from '../core';
+import { BRAND_PALETTE, invitationCard, inviteNameLayout, themeById, type Party } from '../core';
 import { colors, fonts, images, radii, themeImages } from '../theme';
 import { Text } from '../ui';
 
@@ -14,6 +14,9 @@ export function InvitationCard({ party, compact }: { party: Party; compact?: boo
   const { inviteTint, inviteInk } = theme ? theme.palette : BRAND_PALETTE;
   const art = party.theme ? themeImages[party.theme] : images.hero;
   const card = invitationCard(party);
+  // long names (joint birthdays) wrap onto balanced lines and step down in size; never truncated
+  const big = inviteNameLayout(`${card.name} ${card.line}`);
+  const size = compact ? Math.round(big.fontSize * (36 / 44)) : big.fontSize;
   return (
     <View
       testID="invitation-card"
@@ -32,11 +35,18 @@ export function InvitationCard({ party, compact }: { party: Party; compact?: boo
           {card.headline}
         </Text>
         <Text
-          style={[styles.big, { color: inviteInk }, compact && { fontSize: 36, lineHeight: 40 }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
+          testID="invitation-name"
+          style={[
+            styles.big,
+            {
+              color: inviteInk,
+              fontSize: size,
+              lineHeight: Math.round(size * 1.08),
+              letterSpacing: size >= 38 ? -1.2 : -0.6,
+            },
+          ]}
         >
-          {card.name} {card.line}
+          {big.text}
         </Text>
         <Text style={styles.sub}>{card.when}</Text>
         <Text style={styles.meta}>{card.rsvp}</Text>
@@ -62,12 +72,12 @@ const styles = StyleSheet.create({
   text: { paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26, alignItems: 'center' },
   big: {
     fontFamily: fonts.displayHeavy,
-    fontSize: 44,
-    lineHeight: 46,
-    letterSpacing: -1.2,
     textAlign: 'center',
     marginTop: 6,
-  },
+    alignSelf: 'stretch',
+    // let a single very long word break rather than run off the card
+    overflowWrap: 'anywhere',
+  } as object,
   sub: { fontFamily: fonts.displaySemi, fontSize: 19, color: colors.ink, textAlign: 'center', marginTop: 6 },
   meta: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 8, textAlign: 'center' },
 });

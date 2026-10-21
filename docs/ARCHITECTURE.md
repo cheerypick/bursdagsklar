@@ -56,6 +56,37 @@ Each party is **one self-contained record**:
 - **One source of truth for the guest count.** The party's own numbers (`children`, `hostAdults`, plus the RSVPs in `guests`) give the head-count (`rules/people.ts`), and Planen, the food, the to-dos and the shopping list all read it. The Mat screen shows «For 12 barn og 4 voksne» with «Endre», an inline editor that writes to the party (`withGuestCounts` in `party.ts`): children as the one children number, adults («Voksne som spiser») as the adults eating, applied through `hostAdults` (the RSVP'd and expected parents are the floor).
 - **Food item toggles.** Every quantity line on the Mat screen (main dish, drinks, fruit) has a tap toggle. `foodItems[lineId] = { included: false }` keeps a deselected line visible (greyed, struck through) and leaves it out of the Mat card on Planen, the shopping list (`shoppingList`) and the «Handle tørrvarer» to-do. Missing entry = included. The Mat lines and shopping items share ids (`polsebrod`, `saft`, `pizzaost` …), and a test checks that. Not toggleable: «Til kaken» (a pointer to Kake), the diet lines (their chip is the toggle), «Din egen» and the frozen pizza's oven time. Swipe-to-remove on iOS/Android is a possible later nicety; the tap toggle works everywhere.
 
+### Sausages: real packs, one real-party sanity check (21 Oct 2026)
+
+The sausage amounts follow a per-person rule (our own reasoning) and are rounded to real packs. All numbers live in `rules/constants.ts` (the same facts are in a comment there). No prices are stored or shown anywhere.
+
+**Sanity check, not the source of the rule:** en ekte fest med 15 barn (Ekaterina's, KIWI 26.08.2026) kjøpte 60 grillpølser (2 × Gilde storpakning 3 × 10) og hadde ~20 til overs, so ~40 were eaten by 15 children and the parents who stayed. The bread was lomper and pølsebrød, about half each. In her words it was just an example. The rule below gives that party 40.
+
+**The rule:**
+
+- Per person (what is eaten): 3–4 år 1,5 · 5–6 år 2 · 7–10 år 2,5 · a grown-up 1,5. Portions follow the oldest birthday child. Then 2 extra, then up to whole packs. The sanity check: 15 × 2 + 5 × 1,5 = 37,5 → 38 + 2 = 40 → 4 pk à 10.
+- Lomper and pølsebrød both on: together they cover the sausages, about half each, each up to whole packs. One left out: the other covers every sausage. A greyed-out bread line shows what it comes back as.
+- Ketchup and sennep (one line, «1 av hver»): one bottle each (ca. 500 g) per ca. 25 people. Sprøstekt løk (its own line, id `lok`): ca. 5 g per pølse, so one 100 g bag per ca. 10 people.
+- The grillpølse line names the pack («4 pk Gilde Grillpølser (10 stk) = 40») and, from 3 packs up, the storpakning («eller 1 storpakning (3 × 10) og 1 pk»).
+
+**Packs read on Oda, 21 Oct 2026** ([Wienerpølser](https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3044-wienerpolser/), [Grillpølser](https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3004-grillpolser/), Oda search):
+
+| Product                        | Count / weight     | Used for                | Link                                                                     |
+| ------------------------------ | ------------------ | ----------------------- | ------------------------------------------------------------------------ |
+| Gilde Grillpølser              | 10 stk / 600 g (¹) | grillpølser, pack of 10 | https://oda.com/no/products/957-gilde-grillpolser/                       |
+| Gilde Wienerpølse              | 8 stk / 520 g      | wienerpølser, pack of 8 | https://oda.com/no/products/956-gilde-wienerpolse-8-stk/                 |
+| Buer Lomper Original           | 10 stk / 290 g     | lomper, pack of 10      | https://oda.com/no/products/69345-buer-lomper-original-10-stk/           |
+| Hatting Høvding fine pølsebrød | 10 × 50 g / 500 g  | (not used, see ²)       | https://oda.com/no/products/67045-hatting-hovding-fine-polsebrod-10x50g/ |
+| Hatting Grove pølsebrød        | 10 stk / 440 g     | (not used, see ²)       | https://oda.com/no/products/4204-hatting-grove-polsebrod-10stk/          |
+| Prima Lavpris Pølsebrød        | 12 stk / 396 g     | (not used, see ²)       | https://oda.com/no/products/8342-prima-lavpris-polsebrod-12-stk/         |
+
+Also on Oda that day: Gilde Favorittwiener 24 stk (ca. 1,56 kg), Strøm-Larsen Wienerpølser 8 stk 520 g, Leiv Vidar Wienerpølser 14 stk 770 g, Gilde Ostegrill 6 stk 480 g, Strøm-Larsen Grillpølser 400 g and 1 kg, Mesterbakeren Brioche pølsebrød 4 stk, Ola Lompa Store lomper 290 g, Buer/Ola Lompa Store speltlomper 8 stk, frosne lomper 10 stk.
+
+¹ Oda lists Gilde Grillpølser as «600 g» without a count; 10 stk is printed on the pack. The 3 × 600 g storpakning (in stores, e.g. KIWI) is not on Oda.
+² Pølsebrød are counted in packs of 8 (Bakehuset pølsebrød 8 stk, what she buys; not sold on Oda).
+
+**Before → after, Emma (13 barn, 4 voksne, 5 år):** grillpølser 50 (5 pk) → 40 (4 pk); wienerpølser 48 (6 pk à 8) → 40 (5 pk); lomper 50 (5 pk) → 20 (2 pk); pølsebrød 24 (3 pk à 8) → 24 (3 pk à 8); «Ketchup, sennep og sprøstekt løk: 1 av hver» → «Ketchup og sennep: 1 av hver» + «Sprøstekt løk: 2 poser».
+
 ### Later: godteposer (goodie bags)
 
 Candy is **not food**: it is not on the Mat screen, in `extras()` or in the shopping list. It belongs to the goodie bags, which come in their own PR:

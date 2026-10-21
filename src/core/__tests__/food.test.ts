@@ -12,7 +12,7 @@ import {
   taco,
 } from '../rules/food';
 import { headCount } from '../rules/people';
-import { ceilSafe } from '../rules/constants';
+import { ceilSafe, LOMPER_PACK, POLSEBROD_PACK, SAUSAGE_PACK } from '../rules/constants';
 import { partyFoodPlan } from '../rules/menu';
 import type { Guest, Party } from '../model';
 
@@ -42,29 +42,68 @@ describe('ceilSafe', () => {
   });
 });
 
-describe('sausages (spec §6.4)', () => {
-  it('grill: 46 → 5 pk à 10, lomper 50, pølsebrød 23 → 3 pk', () => {
-    expect(sausages('grillpolser', P)).toMatchObject({ need: 46, packs: 5, lomper: 50, buns: 23, bunPacks: 3 });
+describe('sausages (spec §6.4, recalibrated 21 Oct 2026)', () => {
+  // Emma: 13 children (5 år: 2 each) + 4 adults (1,5 each) = 32 eaten, + 2 extra = 34
+  it('grill: 34 → 4 pk Gilde à 10 = 40; lomper and pølsebrød half each: 20 → 2 pk à 10, 20 → 3 pk à 8', () => {
+    expect(sausages('grillpolser', P)).toMatchObject({
+      eaten: 32,
+      need: 34,
+      packs: 4,
+      bought: 40,
+      lomperNeed: 20,
+      lomper: 20,
+      lomperPacks: 2,
+      buns: 20,
+      bunPacks: 3,
+      bunsBought: 24,
+      condiments: 1,
+      onionBags: 2,
+    });
   });
-  it('wiener: 43 → 6 pk à 8, lomper 50, pølsebrød 22 → 3 pk', () => {
-    expect(sausages('wienerpolser', P)).toMatchObject({ need: 43, packs: 6, lomper: 50, buns: 22, bunPacks: 3 });
+  it('wiener: 34 → 5 pk Gilde à 8 = 40, lomper 20, pølsebrød 20 → 3 pk', () => {
+    expect(sausages('wienerpolser', P)).toMatchObject({
+      need: 34,
+      packs: 5,
+      bought: 40,
+      lomper: 20,
+      buns: 20,
+      bunPacks: 3,
+    });
   });
-  it('wiener with 0 adults: 33 → 5 pk, lomper 40, pølsebrød 17 → 3 pk', () => {
+  it('wiener with 0 adults: 26 + 2 = 28 → 4 pk = 32; 16 lomper → 2 pk, 16 pølsebrød → 2 pk', () => {
     expect(sausages('wienerpolser', { ...P, adultsEating: 0 })).toMatchObject({
-      need: 33,
-      packs: 5,
-      lomper: 40,
-      buns: 17,
-      bunPacks: 3,
+      need: 28,
+      packs: 4,
+      bought: 32,
+      lomper: 20,
+      buns: 16,
+      bunPacks: 2,
     });
   });
-  it('two declines: (22 + 8) × 1.35 = 40.5 → 41 → 5 pk; pølsebrød 21 → 3 pk', () => {
+  it('11 children: 22 + 6 + 2 = 30 → 3 pk; pølsebrød 15 → 2 pk', () => {
     expect(sausages('grillpolser', { ...P, kidsComing: 11 })).toMatchObject({
-      need: 41,
-      packs: 5,
-      buns: 21,
-      bunPacks: 3,
+      need: 30,
+      packs: 3,
+      buns: 15,
+      bunPacks: 2,
     });
+  });
+  it('sanity check, a real party with 15 children (~40 eaten): 40 pølser, bread ≈ the pølser', () => {
+    const s = sausages('grillpolser', { kidsComing: 15, adultsEating: 5, age: 5 });
+    expect(s).toMatchObject({ eaten: 38, packs: 4, bought: 40, condiments: 1, onionBags: 2 });
+    expect(s.lomper + s.bunsBought).toBeGreaterThanOrEqual(s.bought);
+    expect(s.lomper + s.bunsBought).toBeLessThanOrEqual(s.bought + 8);
+  });
+  it('lomper left out: one pølsebrød per sausage, not half', () => {
+    expect(sausages('grillpolser', P, { withLomper: false })).toMatchObject({ buns: 40, bunPacks: 5, bunsBought: 40 });
+  });
+  it('pølsebrød left out: one lompe per sausage', () => {
+    expect(sausages('grillpolser', P, { withPolsebrod: false })).toMatchObject({ lomperNeed: 40, lomperPacks: 4 });
+  });
+  it('the pack sizes are the real Oda packs', () => {
+    expect(SAUSAGE_PACK).toEqual({ grillpolser: 10, wienerpolser: 8 });
+    expect(LOMPER_PACK).toBe(10);
+    expect(POLSEBROD_PACK).toBe(8);
   });
   it('one child who eats no pork → 3 kyllingpølser', () => {
     expect(extraSausagesFor('grillpolser', 1, 5)).toBe(3);
@@ -154,8 +193,10 @@ describe('shopping list for Emma (spec §6.9)', () => {
   it('grill menu lines', () => {
     const list = shoppingList(emma());
     const by = Object.fromEntries(list.map((i) => [i.id, i]));
-    expect(by.grillpolser).toMatchObject({ need: 46, packs: 5, display: '50 (5 pk à 10)' });
-    expect(by.lomper).toMatchObject({ packs: 5 });
+    expect(by.grillpolser).toMatchObject({ need: 34, packs: 4, display: '40 (4 pk à 10)' });
+    expect(by.lomper).toMatchObject({ packs: 2 });
+    expect(by.ketchup).toMatchObject({ name: 'Ketchup og sennep', display: '1 av hver' });
+    expect(by.lok).toMatchObject({ name: 'Sprøstekt løk', display: '2 poser' });
     expect(by.polsebrod).toMatchObject({ packs: 3 });
     expect(by.saft.packs).toBe(2);
   });

@@ -1,5 +1,17 @@
+import { Platform } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { colors } from '../theme';
+
+/**
+ * Icons are decoration: hidden from screen readers. On the web, react-native-svg passes every prop
+ * straight to the DOM <svg>, so the native-only accessibility props (`importantForAccessibility`,
+ * `accessibilityElementsHidden`) made React warn «React does not recognize the `importantForAccessibility`
+ * prop on a DOM element». The web gets `aria-hidden` instead.
+ */
+const HIDDEN =
+  Platform.OS === 'web'
+    ? ({ 'aria-hidden': true } as const)
+    : ({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' } as const);
 
 type Name =
   'back' | 'forward' | 'close' | 'arrow' | 'check' | 'home' | 'list' | 'star' | 'plus' | 'minus' | 'calendar' | 'reset';
@@ -23,13 +35,7 @@ export function Icon({
     strokeLinejoin: 'round' as const,
   };
   return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
+    <Svg width={size} height={size} viewBox="0 0 24 24" {...HIDDEN}>
       {name === 'back' && <Path d="M15 18l-6-6 6-6" {...common} />}
       {name === 'forward' && <Path d="M9 18l6-6-6-6" {...common} />}
       {name === 'close' && <Path d="M6 6l12 12M18 6L6 18" {...common} />}

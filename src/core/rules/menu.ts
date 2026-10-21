@@ -1,6 +1,6 @@
 /**
  * The Mat screen's numbers: one main dish → amounts for N children + M adults, each with a short
- * reason line («ca. 2 per barn og 2 per voksen + 35 % ekstra»). Pure and deterministic: the amounts
+ * reason line («Ca. 2 per barn og 1,5 per voksen = 32 pølser, pluss et par ekstra. 4 pk Gilde Grillpølser (10 stk) = 40»). Pure and deterministic: the amounts
  * come from rules/food.ts and rules/constants.ts, the words are fixed templates. No AI.
  */
 import type { DietTag, FoodCounts, FoodItemState, MenuChoice, Party } from '../model';
@@ -8,7 +8,25 @@ import * as C from './constants';
 import { band } from './constants';
 import { oldestAge } from './celebrants';
 import { headCount } from './people';
-import { extras, formatGrams, homemadePizza, pasta, pizzaCount, pizzaUnits, sausages, taco, type People } from './food';
+import {
+  condimentAmount,
+  condimentWhy,
+  onionAmount,
+  onionWhy,
+  enoughFor,
+  extras,
+  formatGrams,
+  homemadePizza,
+  lomperWhy,
+  pasta,
+  pizzaCount,
+  pizzaUnits,
+  polsebrodWhy,
+  sausages,
+  sausageWhy,
+  taco,
+  type People,
+} from './food';
 
 const nb = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
 const n = (x: number) => nb.format(x);
@@ -141,40 +159,57 @@ function perPerson(child: number, adult: number, unit = '', c: FoodCounts): stri
   return c.adults > 0 ? `${kid} og ${n(adult)}${u} per voksen` : kid;
 }
 
-function mainLines(menu: MenuChoice, people: People, c: FoodCounts): RawLine[] {
+function mainLines(
+  menu: MenuChoice,
+  people: People,
+  c: FoodCounts,
+  items: Readonly<Record<string, FoodItemState>>,
+): RawLine[] {
   const b = band(people.age);
   switch (menu.kind) {
     case 'grillpolser':
     case 'wienerpolser': {
-      const s = sausages(menu.kind, people);
+      // both breads on → about half each; one left out → the other covers every sausage (food.ts)
+      const withLomper = items.lomper?.included !== false;
+      const withPolsebrod = items.polsebrod?.included !== false;
+      const s = sausages(menu.kind, people, { withLomper, withPolsebrod });
+      // a bread the parent left out shows (greyed) what it would be if she turned it back on: half each
+      const l = withLomper ? s : sausages(menu.kind, people, { withPolsebrod });
+      const pb = withPolsebrod ? s : sausages(menu.kind, people, { withLomper });
       const word = menu.kind === 'grillpolser' ? 'Grillpølser' : 'Wienerpølser';
       return [
         {
           id: menu.kind,
           name: word,
-          amount: `${s.packs * s.pack} stk`,
+          amount: `${s.bought} stk`,
           packs: `${s.packs} pk à ${s.pack}`,
-          why: `${perPerson(C.SAUSAGE_PER_CHILD[b], C.SAUSAGE_PER_ADULT, '', c)} + ${pct(C.SAUSAGE_BUFFER[menu.kind])} ekstra = ${s.need}, rundet opp til hele pakker`,
+          why: sausageWhy(menu.kind, s, people),
         },
         {
           id: 'lomper',
           name: 'Lomper',
-          amount: `${s.lomper} stk`,
-          packs: `${s.lomperPacks} pk à ${C.LOMPER_PACK}`,
-          why: 'Én til hver pølse',
+          amount: `${l.lomper} stk`,
+          packs: `${l.lomperPacks} pk à ${C.LOMPER_PACK}`,
+          why: lomperWhy(l),
         },
         {
           id: 'polsebrod',
           name: 'Pølsebrød',
-          amount: `${s.bunPacks * C.POLSEBROD_PACK} stk`,
-          packs: `${s.bunPacks} pk à ${C.POLSEBROD_PACK}`,
-          why: 'Ett til annenhver pølse, til dem som vil ha brød',
+          amount: `${pb.bunsBought} stk`,
+          packs: `${pb.bunPacks} pk à ${C.POLSEBROD_PACK}`,
+          why: polsebrodWhy(pb),
         },
         {
           id: 'ketchup',
-          name: 'Ketchup, sennep og sprøstekt løk',
-          amount: `${s.condiments} av hver`,
-          why: `Én av hver per påbegynte ${C.CONDIMENT_PER_EATERS} som spiser`,
+          name: 'Ketchup og sennep',
+          amount: condimentAmount(s),
+          why: condimentWhy(s),
+        },
+        {
+          id: 'lok',
+          name: 'Sprøstekt løk',
+          amount: onionAmount(s),
+          why: onionWhy(s),
         },
       ];
     }
@@ -251,6 +286,7 @@ function mainLines(menu: MenuChoice, people: People, c: FoodCounts): RawLine[] {
     case 'taco': {
       const t = taco(people);
       const buf = `+ ${pct(C.TACO_BUFFER)} ekstra`;
+      const isberg = Math.max(1, Math.ceil(t.isberg - 1e-9));
       return [
         {
           id: 'kjottdeig',
@@ -283,13 +319,25 @@ function mainLines(menu: MenuChoice, people: People, c: FoodCounts): RawLine[] {
           id: 'tacotilbehor',
           name: 'Mais, rømme og tacosaus',
           amount: `${t.mais} av hver`,
-          why: `Én av hver per påbegynte ${C.TACO_SIDES_PER_EATERS} som spiser`,
+          why: enoughFor(
+            t.mais,
+            people.kidsComing + people.adultsEating,
+            C.TACO_SIDES_PER_EATERS,
+            'Én boks mais, ett beger rømme og ett glass tacosaus',
+            (k) => `${k} av hver`,
+          ),
         },
         {
           id: 'isberg',
           name: 'Isbergsalat, agurk og tomat',
-          amount: `${Math.max(1, Math.ceil(t.isberg - 1e-9))} av hver`,
-          why: `Én av hver per påbegynte ${C.TACO_SIDES_PER_EATERS * 2} som spiser`,
+          amount: `${isberg} av hver`,
+          why: enoughFor(
+            isberg,
+            people.kidsComing + people.adultsEating,
+            C.TACO_SIDES_PER_EATERS * 2,
+            'Ett isbergsalathode, én agurk og et par tomater',
+            (k) => `${k} av hver`,
+          ),
         },
       ];
     }
@@ -316,13 +364,19 @@ function mainLines(menu: MenuChoice, people: People, c: FoodCounts): RawLine[] {
             id: 'pastagront',
             name: 'Mais, cherrytomater og agurk',
             amount: `${x.veg} av hver`,
-            why: `Én boks, ett beger og én agurk per påbegynte ${C.PASTA_VEG_PER_EATERS} som spiser`,
+            why: enoughFor(
+              x.veg,
+              x.eaters,
+              C.PASTA_VEG_PER_EATERS,
+              'Én boks mais, ett beger cherrytomater og én agurk',
+              (k) => `${k} av hver`,
+            ),
           },
           {
             id: 'dressing',
             name: 'Dressing',
             amount: plural(x.dressing, 'flaske', 'flasker'),
-            why: `Én flaske per påbegynte ${C.PASTA_DRESSING_PER_EATERS} som spiser`,
+            why: enoughFor(x.dressing, x.eaters, C.PASTA_DRESSING_PER_EATERS, 'Én flaske', (k) => `${k} flasker`),
           },
         ];
       return [
@@ -337,7 +391,7 @@ function mainLines(menu: MenuChoice, people: People, c: FoodCounts): RawLine[] {
           id: 'pastaost',
           name: 'Revet ost',
           amount: plural(x.cheesePacks, 'pose', 'poser'),
-          why: `Én pose per påbegynte ${C.PASTA_CHEESE_PER_EATERS} som spiser`,
+          why: enoughFor(x.cheesePacks, x.eaters, C.PASTA_CHEESE_PER_EATERS, 'Én pose', (k) => `${k} poser`),
         },
       ];
     }
@@ -436,16 +490,16 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
   const juiceL = Math.round(((c.kids * C.JUICE_DL_CHILD + c.adults * C.SAFT_DL_ADULT) / 10) * 10) / 10;
   const waterL = Math.max(1, Math.ceil(((c.kids + c.adults) * C.WATER_DL_PER_PERSON) / 10 - 1e-9));
   const raw: { id: FoodSectionId; title: string; lines: RawLine[] }[] = [
-    { id: 'main', title: 'Hovedrett', lines: mainLines(input.menu, people, c) },
+    { id: 'main', title: 'Hovedrett', lines: mainLines(input.menu, people, c, input.items ?? {}) },
     {
       id: 'drikke',
       title: 'Drikke',
       lines: [
         {
           id: 'saft',
-          name: 'Saft eller juice',
+          name: 'Saft eller jus',
           amount: plural(e.saftBottles, 'flaske saft', 'flasker saft'),
-          why: `${perPerson(C.SAFT_DL_CHILD, C.SAFT_DL_ADULT, 'dl', c)} = ca. ${n(e.saftLitres)} liter. Juice i stedet: ca. ${n(juiceL)} liter`,
+          why: `${perPerson(C.SAFT_DL_CHILD, C.SAFT_DL_ADULT, 'dl', c)} = ca. ${n(e.saftLitres)} liter. Jus i stedet: ca. ${n(juiceL)} liter`,
         },
         {
           id: 'vann',

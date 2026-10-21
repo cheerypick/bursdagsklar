@@ -18,7 +18,11 @@ export default function Welcome() {
   if (party) return <Redirect href="/plan" />;
 
   const start = () => router.push('/ny/hvem');
-  const heroHeight = isWide ? Math.min(620, Math.max(460, height - 160)) : Math.min(600, Math.max(430, height * 0.62));
+  // Phones: the photo gives way so the title, the text and «Planlegg bursdagen» fit above Safari's
+  // toolbar (≈ 400 px for the copy); never smaller than 240 px, never taller than 62 % or 600 px.
+  const heroHeight = isWide
+    ? Math.min(620, Math.max(460, height - 160))
+    : Math.max(240, Math.min(600, height * 0.62, height - 400));
 
   const copy = (
     <View style={{ paddingHorizontal: isWide ? 0 : gutter, paddingTop: 28, paddingBottom: 32, gap: 0 }}>

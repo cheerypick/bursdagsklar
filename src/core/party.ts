@@ -121,7 +121,7 @@ export function draftYoungest(d: Pick<SetupDraft, 'celebrants'>): number | null 
   return a.length ? Math.min(...a) : null;
 }
 
-/** The default time (weekday 16.30–18.30, weekend 12.00–14.00) unless the parent has set their own. */
+/** The default time (weekday 17.00–19.00, weekend 12.00–14.00 or 14.00–16.00 by the youngest age) unless the parent has set their own. */
 function defaultTimePatch(d: SetupDraft, age: number | null, date: ISODate | null): Partial<SetupDraft> {
   if (!date || (d.timeEdited && d.start && d.end)) return {};
   const t = defaultPartyTime(age ?? 5, isWeekend(date));

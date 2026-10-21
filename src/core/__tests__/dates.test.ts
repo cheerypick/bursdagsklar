@@ -55,23 +55,29 @@ describe('formatting', () => {
   });
 });
 
-describe('default party time (spec §6.2, revised: weekdays are normal)', () => {
-  it('weekday: 16.30–18.30, after barnehage', () => {
-    expect(defaultPartyTime(5, false)).toEqual({ start: '16:30', end: '18:30', why: 'etter barnehagen, før leggetid' });
+describe('default party time (spec §6.2, revised 21 Oct 2026: weekdays are normal)', () => {
+  it('weekday: 17.00–19.00 for every age, the food is dinner', () => {
+    expect(defaultPartyTime(5, false)).toEqual({
+      start: '17:00',
+      end: '19:00',
+      why: 'etter barnehagen – maten blir middag',
+    });
+    for (let age = 3; age <= 10; age++)
+      expect(defaultPartyTime(age, false)).toMatchObject({ start: '17:00', end: '19:00' });
   });
-  it('weekend: 12.00–14.00, etter lunsj, før middag', () => {
-    expect(defaultPartyTime(5, true)).toEqual({ start: '12:00', end: '14:00', why: 'etter lunsj, før middag' });
+  it('weekend, 3–6 years: 12.00–14.00, the food is lunch', () => {
+    expect(defaultPartyTime(5, true)).toEqual({
+      start: '12:00',
+      end: '14:00',
+      why: 'midt på dagen – maten blir lunsj',
+    });
+    for (const age of [3, 4, 6]) expect(defaultPartyTime(age, true)).toMatchObject({ start: '12:00', end: '14:00' });
   });
-  it('the same times for every age; only the reason changes', () => {
-    for (let age = 3; age <= 10; age++) {
-      expect(defaultPartyTime(age, false)).toMatchObject({ start: '16:30', end: '18:30' });
-      expect(defaultPartyTime(age, true)).toMatchObject({ start: '12:00', end: '14:00' });
-    }
-    expect(defaultPartyTime(3, false).why).toBe('etter barnehagen, før leggetid');
-    expect(defaultPartyTime(8, false).why).toBe('etter skole og SFO');
-    expect(defaultPartyTime(10, false).why).toBe('etter skolen, før leggetid');
+  it('weekend, 7–10 years: 14.00–16.00, after lunch', () => {
+    expect(defaultPartyTime(8, true)).toEqual({ start: '14:00', end: '16:00', why: 'etter lunsj, før middag' });
+    for (const age of [7, 9, 10]) expect(defaultPartyTime(age, true)).toMatchObject({ start: '14:00', end: '16:00' });
   });
-  it('a weekday party is dinner itself: no weekday reason says «før middag»', () => {
-    for (let age = 3; age <= 10; age++) expect(defaultPartyTime(age, false).why).not.toContain('middag');
+  it('school children are not told «barnehagen»', () => {
+    for (let age = 7; age <= 10; age++) expect(defaultPartyTime(age, false).why).not.toContain('barnehage');
   });
 });

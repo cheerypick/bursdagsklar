@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nowMinutesOslo, partyNotice } from '../rules/partyTime';
+import { dateNotes, nowMinutesOslo, partyNotice, partyTips } from '../rules/partyTime';
 import { todayOslo } from '../rules/dates';
 
 // A fixed clock: Wednesday 21 October 2026, 21.01 in Oslo (summer time, UTC+2).
@@ -43,5 +43,62 @@ describe('the soft note on the date step looks at the time of day too', () => {
   });
   it('no time yet: only the date counts', () => {
     expect(partyNotice(TODAY, null, TODAY, nowMinutesOslo(EVENING))).toBe('short');
+  });
+});
+
+// 2026-10-21 is a Wednesday. Far enough ahead for no short-notice note: Mon 9 Nov … Sun 15 Nov 2026.
+const MON = '2026-11-09';
+const WED = '2026-11-11';
+const FRI = '2026-11-13';
+const SAT = '2026-11-14';
+const SUN = '2026-11-15';
+
+describe('soft tips under the time (suggestions, never rules)', () => {
+  it('weekday start before 17.00: the barnehage pickup tip', () => {
+    expect(partyTips(WED, '16:00', 5)).toEqual(['pickup']);
+    expect(partyTips(MON, '16:45', 3)).toEqual(['pickup']);
+  });
+  it('weekday at 17.00 or later: no tip at all (no bias against weekdays)', () => {
+    expect(partyTips(WED, '17:00', 5)).toEqual([]);
+    expect(partyTips(MON, '18:00', 5)).toEqual([]);
+  });
+  it('Friday, Saturday and Sunday: «send the invitation early»', () => {
+    expect(partyTips(FRI, '17:00', 5)).toEqual(['busy']);
+    expect(partyTips(SAT, '12:00', 5)).toEqual(['busy']);
+    expect(partyTips(SUN, '14:00', 8)).toEqual(['busy']);
+  });
+  it('Friday at 16.00: both tips', () => {
+    expect(partyTips(FRI, '16:00', 5)).toEqual(['pickup', 'busy']);
+  });
+  it('school children get no barnehage tip', () => {
+    expect(partyTips(WED, '16:00', 8)).toEqual([]);
+  });
+  it('no start time yet: no pickup tip', () => {
+    expect(partyTips(WED, null, 5)).toEqual([]);
+  });
+});
+
+describe('the notes under the time: the urgent one first, at most two', () => {
+  const NOW = nowMinutesOslo(EVENING);
+  it('far ahead: only the tips', () => {
+    expect(dateNotes(WED, '17:00', 5, TODAY, NOW)).toEqual([]);
+    expect(dateNotes(SAT, '12:00', 5, TODAY, NOW)).toEqual(['busy']);
+    expect(dateNotes(FRI, '16:00', 5, TODAY, NOW)).toEqual(['pickup', 'busy']);
+  });
+  it('the time has been today: only that note, no tips', () => {
+    expect(dateNotes(TODAY, '16:00', 5, TODAY, NOW)).toEqual(['past']);
+  });
+  it('starts within the hour: only that note', () => {
+    expect(dateNotes(TODAY, '16:30', 5, TODAY, 16 * 60)).toEqual(['soon']);
+  });
+  it('short notice: that note first, the pickup tip after it, no «send early»', () => {
+    // Friday 23 Oct at 16.00, seen on Wednesday morning
+    expect(dateNotes('2026-10-23', '16:00', 5, TODAY, nowMinutesOslo(MORNING))).toEqual(['short', 'pickup']);
+    expect(dateNotes('2026-10-24', '12:00', 5, TODAY, nowMinutesOslo(MORNING))).toEqual(['short']);
+  });
+  it('never more than two', () => {
+    for (const d of [TODAY, '2026-10-23', '2026-10-24', MON, FRI, SAT, SUN])
+      for (const s of ['09:00', '16:00', '17:00', '20:00'])
+        for (const now of [0, 10 * 60, NOW]) expect(dateNotes(d, s, 4, TODAY, now).length).toBeLessThanOrEqual(2);
   });
 });

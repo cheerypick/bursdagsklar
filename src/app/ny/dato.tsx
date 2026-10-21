@@ -15,10 +15,12 @@ import {
   draftYoungest,
   formatRange,
   fromMinutes,
+  BARNEHAGE_MAX_AGE,
+  dateNotes,
   isWeekend,
   minutesOf,
   nowMinutesOslo,
-  partyNotice,
+  type DateNote,
   type ISODate,
 } from '../../core';
 
@@ -35,8 +37,8 @@ export default function DateStep() {
   const { min, max } = dateBounds(today);
 
   const chosen = draft.date;
-  // a neutral picker: any day is fine. The default time follows the day (weekday 16.30–18.30,
-  // weekend 12.00–14.00) until the parent changes the time by hand.
+  // a neutral picker: any day is fine. The default time follows the day (weekday 17.00–19.00,
+  // weekend 12.00–14.00 or 14.00–16.00 by the youngest age) until the parent changes the time by hand.
   const why = chosen && !draft.timeEdited ? defaultPartyTime(age, isWeekend(chosen)).why : '';
   const pick = (date: ISODate) => updateDraft(draftWithDate(draft, date));
 
@@ -53,16 +55,11 @@ export default function DateStep() {
     updateDraft({ start: fromMinutes(s), end: fromMinutes(e), timeEdited: true });
   };
 
-  // the note looks at the time of day too: today at 16.30 when it is 21.01 has already been
-  const notice = chosen ? partyNotice(chosen, draft.start, today, nowMinutesOslo()) : null;
-  const noticeText =
-    notice === 'past'
-      ? nb.date.pastTime
-      : notice === 'soon'
-        ? nb.date.soonTime
-        : notice === 'short'
-          ? nb.date.shortNotice
-          : null;
+  // the notes look at the time of day too: today at 17.00 when it is 21.01 has already been.
+  // At most two, the urgent one first; the tips are soft suggestions, never rules.
+  const notes = chosen ? dateNotes(chosen, draft.start, age, today, nowMinutesOslo()) : [];
+  // the barnehage hint in the time editor: weekdays, barnehage age (a suggestion, never a rule)
+  const editHint = chosen && !isWeekend(chosen) && age <= BARNEHAGE_MAX_AGE;
 
   return (
     <SetupStep
@@ -125,16 +122,34 @@ export default function DateStep() {
             </View>
           ) : null}
 
-          {noticeText ? (
-            <Text style={[styles.hint]} testID="date-notice">
-              {noticeText}
+          {editTime && editHint ? (
+            <Text variant="small" style={styles.tip} testID="time-hint">
+              {nb.date.editHint}
             </Text>
           ) : null}
+
+          {notes.map((n) =>
+            n === 'pickup' || n === 'busy' ? (
+              <Text key={n} variant="small" style={styles.tip} testID={`date-tip-${n}`}>
+                {n === 'pickup' ? nb.date.tipPickup : nb.date.tipBusy}
+              </Text>
+            ) : (
+              <Text key={n} style={styles.hint} testID="date-notice">
+                {NOTICE_TEXT[n]}
+              </Text>
+            ),
+          )}
         </Surface>
       ) : null}
     </SetupStep>
   );
 }
+
+const NOTICE_TEXT: Record<Exclude<DateNote, 'pickup' | 'busy'>, string> = {
+  past: nb.date.pastTime,
+  soon: nb.date.soonTime,
+  short: nb.date.shortNotice,
+};
 
 function TimeShifter({
   label,
@@ -184,6 +199,7 @@ const useStyles = themedStyles((colors) => ({
     backgroundColor: colors.sage,
   },
   hint: { marginTop: 16, padding: 16, borderRadius: radii.md, backgroundColor: colors.lilac, fontSize: 16 },
+  tip: { marginTop: 12, paddingHorizontal: 4 },
   shifter: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   round: {
     width: TOUCH,

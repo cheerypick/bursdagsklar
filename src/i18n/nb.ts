@@ -48,6 +48,11 @@ export const nb = {
     shortNotice: 'Det er kort tid, men det går. Vi lager en kortere plan.',
     pastTime: 'Tidspunktet har allerede vært i dag. Velg gjerne en annen dag eller et senere klokkeslett.',
     soonTime: 'Festen starter om under en time. Velg gjerne et senere klokkeslett eller en annen dag.',
+    /** Soft tips (never rules: we don't know when each barnehage closes). */
+    tipPickup: 'Tips: Starter dere før barnehagen stenger, kan det være lurt å hente barna selv.',
+    tipBusy: 'Tips: Fredag og helg kan noen ha andre planer. Send gjerne invitasjonen tidlig.',
+    /** In the time editor on weekdays, for barnehage children. */
+    editHint: '16.30 kan passe hvis dere henter hele gjengen i barnehagen.',
   },
   kids: {
     title: 'Hvor mange barn blir det?',

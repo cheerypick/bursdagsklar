@@ -12,15 +12,7 @@ export type ISODate = string;
 export type HHMM = string;
 
 export type ThemeId =
-  | 'enhjorning'
-  | 'dinosaurer'
-  | 'verdensrommet'
-  | 'fotball'
-  | 'havfruer'
-  | 'dyr-i-skogen'
-  | 'pokemon'
-  | 'paw-patrol'
-  | 'frost';
+  'enhjorning' | 'dinosaurer' | 'verdensrommet' | 'fotball' | 'dyr-i-skogen' | 'pokemon' | 'paw-patrol' | 'frost';
 
 export type AllergyTag = 'notter' | 'peanott' | 'melk' | 'egg' | 'gluten' | 'ikke-svin' | 'vegetar' | 'annet';
 

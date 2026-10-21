@@ -93,3 +93,30 @@ test('a non-licensed theme shows no not-affiliated line on Planen', async ({ pag
   await expect(visible(page, 'plan-greeting')).toHaveText('Klar for en brølende god fest?');
   await expect(visible(page, 'license-note')).toHaveCount(0);
 });
+
+test('the picker offers Enhjørninger and no Havfruer; an old Havfruer party opens without a theme', async ({
+  page,
+}) => {
+  await setup(page);
+  await visible(page, 'see-plan').click();
+  await visible(page, 'theme-card').click();
+  await expect(page.getByRole('radio', { name: 'Enhjørninger' }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Havfru/ })).toHaveCount(0);
+  await visible(page, 'theme-done').click();
+  await page.waitForTimeout(600); // storage writes are debounced 300 ms
+
+  // a party saved while Havfruer still existed
+  await page.evaluate(() => {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)!;
+      if (!k.startsWith('bursdagsklar:party:')) continue;
+      const p = JSON.parse(localStorage.getItem(k)!);
+      localStorage.setItem(k, JSON.stringify({ ...p, theme: 'havfruer' }));
+    }
+  });
+  await page.reload();
+  const hero = visible(page, 'plan-hero');
+  await expect(hero).toContainText('Emmas 5-årsdag');
+  expect(await bg(hero)).toBe(BRAND_PRIMARY);
+  await expect(visible(page, 'theme-card')).toContainText('Velg tema (valgfritt)');
+});

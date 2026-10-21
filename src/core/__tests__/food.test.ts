@@ -13,7 +13,8 @@ import {
 } from '../rules/food';
 import { headCount } from '../rules/people';
 import { ceilSafe } from '../rules/constants';
-import type { Guest } from '../model';
+import { partyFoodPlan } from '../rules/menu';
+import type { Guest, Party } from '../model';
 
 const P = EMMA_PEOPLE;
 
@@ -130,7 +131,7 @@ describe('taco and egen meny (spec §6.6)', () => {
 });
 
 describe('extras (spec §6.7)', () => {
-  it('saft 8,9 l → 2 bottles; fruit ca. 2,3 kg; 1 cake; 12 muffins; 6 candles; 1,3 kg candy; 13 bags', () => {
+  it('saft 8,9 l → 2 bottles; fruit ca. 2,3 kg; 1 cake; 12 muffins; 6 candles; 13 bags', () => {
     expect(extras(P, { muffins: true })).toMatchObject({
       saftLitres: 8.9,
       saftBottles: 2,
@@ -140,13 +141,12 @@ describe('extras (spec §6.7)', () => {
       cakeBatches: 1,
       muffins: 12,
       candles: 6,
-      candyG: 1300,
-      candyDisplay: 'ca. 1,3 kg',
       goodyBags: 13,
     });
   });
-  it('nut allergy makes the candy nut-free', () => {
-    expect(extras(P, { muffins: true, nutFree: true }).candyName).toBe('Nøttefritt godteri');
+  it('has no candy: it belongs to the goodie bags (godteposer), a later PR', () => {
+    const e = extras(P, { muffins: true });
+    expect(Object.keys(e).some((k) => /candy/i.test(k))).toBe(false);
   });
 });
 
@@ -159,7 +159,7 @@ describe('shopping list for Emma (spec §6.9)', () => {
     expect(by.polsebrod).toMatchObject({ packs: 3 });
     expect(by.saft.packs).toBe(2);
   });
-  it('RSVPs: Nora (nøtter) and Adam (ikke svin) → +3 kyllingpølser, nut-free candy', () => {
+  it('RSVPs: Nora (nøtter) and Adam (ikke svin) → +3 kyllingpølser, and no candy line', () => {
     const g = (id: string, label: string, allergies: Guest['allergies']): Guest => ({
       id,
       label,
@@ -170,15 +170,41 @@ describe('shopping list for Emma (spec §6.9)', () => {
     const list = shoppingList(emma({ guests: [g('1', 'Nora', ['notter']), g('2', 'Adam', ['ikke-svin'])] }));
     const by = Object.fromEntries(list.map((i) => [i.id, i]));
     expect(by.kyllingpolser.need).toBe(3);
-    expect(by.godteri.name).toBe('Nøttefritt godteri');
+    expect(by.godteri).toBeUndefined();
+  });
+  it('a line deselected on the Mat screen (included: false) is left off the list, the rest stay', () => {
+    const list = shoppingList(emma({ foodItems: { polsebrod: { included: false }, lomper: { included: true } } }));
+    const ids = list.map((i) => i.id);
+    expect(ids).not.toContain('polsebrod');
+    expect(ids).toContain('lomper');
+    expect(ids).toContain('grillpolser');
+  });
+  it('Mat lines and shopping items share ids, so a toggle on one reaches the other', () => {
+    const menus: Party['menu'][] = [
+      { kind: 'grillpolser' },
+      { kind: 'pizza', style: 'hjemmelaget' },
+      { kind: 'pizza', style: 'frossen' },
+      { kind: 'taco' },
+      { kind: 'pasta', style: 'salat' },
+      { kind: 'pasta', style: 'varm' },
+    ];
+    for (const menu of menus) {
+      const p = emma({ menu });
+      const matIds = new Set(partyFoodPlan(p)!.sections.flatMap((s) => s.lines.map((l) => l.id)));
+      const shopFood = shoppingList(p).filter(
+        (i) => i.ruleRef.startsWith('menu.') || i.id === 'saft' || i.id === 'frukt',
+      );
+      for (const i of shopFood) expect(matIds, `${menu?.kind} ${i.id}`).toContain(i.id);
+    }
   });
   it('a «har dette hjemme» tick removes the line', () => {
     const list = shoppingList(emma({ haveAtHome: ['kakelys', 'ballonger'] }));
     expect(list.map((i) => i.id)).not.toContain('kakelys');
     expect(list.map((i) => i.id)).not.toContain('ballonger');
   });
-  it('no menu chosen: only drinks, fruit, candy and the party things', () => {
+  it('no menu chosen: only drinks, fruit and the party things (no candy)', () => {
     const ids = shoppingList(emma({ menu: null })).map((i) => i.id);
+    expect(ids).not.toContain('godteri');
     expect(ids).toContain('saft');
     expect(ids).toContain('frukt');
     expect(ids).not.toContain('grillpolser');

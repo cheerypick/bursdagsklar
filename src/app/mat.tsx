@@ -3,19 +3,17 @@ import { Image, Pressable, TextInput, View, type ImageSourcePropType } from 'rea
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
-import { Button, ChoiceTile, Grid, Pill, PillRow, Screen, Stepper, Surface, Text, TopBar } from '../ui';
+import { Button, CheckBox, ChoiceTile, Grid, Pill, PillRow, Screen, Stepper, Surface, Text, TopBar } from '../ui';
 import { fonts, images, radii, useColors, useLayout, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
 import {
   DIET_LABELS,
   DIET_TAGS,
-  FOOD_ADULTS_MAX,
-  FOOD_ADULTS_MIN,
-  FOOD_KIDS_MAX,
-  FOOD_KIDS_MIN,
   MENU_CARDS,
+  celebrantNames,
   foodCounts,
   forWhom,
+  guestBounds,
   headCount,
   menuCardOf,
   partyFoodPlan,
@@ -65,14 +63,21 @@ const sameMenu = (a: MenuChoice | null, b: MenuChoice) => JSON.stringify(a) === 
  * Mat (from the Mat card on Planen). Step 1: one main dish from big picture cards; nothing is
  * pre-picked. Step 2: amounts for N children + M adults, each with a short reason line. Every
  * number comes from src/core (rules/menu.ts); this screen only shows them.
+ *
+ * The guest count has ONE source of truth, the party: «For 13 barn og 4 voksne · Endre» edits the
+ * party's own numbers (the same ones Planen and the to-dos read). Every quantity line has a tap toggle
+ * (a checkbox): a deselected line stays visible, greyed and struck through, and is left out of the
+ * Mat card on Planen and the shopping list (party.foodItems[id].included).
  */
 export default function MatScreen() {
   const styles = useStyles();
-  const { ready, party, setMenu, toggleDiet, setFoodCounts } = useParty();
+  const colors = useColors();
+  const { ready, party, setMenu, toggleDiet, setFoodItem, setGuestCounts } = useParty();
   const router = useRouter();
   const { isWide, gutter } = useLayout();
   const [card, setCard] = useState<MenuCardId | null>(() => menuCardOf(party?.menu ?? null));
   const [picking, setPicking] = useState(false);
+  const [editingGuests, setEditingGuests] = useState(false);
   if (!ready) return <Loading />;
   if (!party) return <Redirect href="/" />;
 
@@ -83,6 +88,7 @@ export default function MatScreen() {
   const dietSection = plan?.sections.find((s) => s.id === 'hensyn');
   const counts = foodCounts(party);
   const hc = headCount(party);
+  const bounds = guestBounds(party);
   // the grid until a card is tapped; then one compact row (with the «how» pills when the dish needs them)
   const showGrid = picking || !activeCard;
 
@@ -192,53 +198,76 @@ export default function MatScreen() {
     </Surface>
   ) : null;
 
-  const countsBox = (
-    <View testID="food-counts">
-      <Text variant="h3" style={{ marginBottom: 10 }}>
-        {nb.food.countsTitle}
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+  const guestBox = (
+    <View testID="food-guests">
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1 }}>
-          <Stepper
-            compact
-            testID="food-kids"
-            value={counts.kids}
-            min={FOOD_KIDS_MIN}
-            max={FOOD_KIDS_MAX}
-            unit={nb.food.kids}
-            lessLabel={nb.food.lessKids}
-            moreLabel={nb.food.moreKids}
-            onChange={(kids) => setFoodCounts({ ...counts, kids })}
-          />
+          <Text variant="h3" testID="food-for-whom">
+            {nb.food.guests.forWhom(counts.kids, counts.adults)}
+          </Text>
+          <Text variant="small" style={{ marginTop: 2 }}>
+            {nb.food.guests.sub}
+          </Text>
         </View>
-        <View style={{ flex: 1 }}>
-          <Stepper
-            compact
-            testID="food-adults"
-            value={counts.adults}
-            min={FOOD_ADULTS_MIN}
-            max={FOOD_ADULTS_MAX}
-            unit={counts.adults === 1 ? nb.food.adultsOne : nb.food.adults}
-            lessLabel={nb.food.lessAdults}
-            moreLabel={nb.food.moreAdults}
-            onChange={(adults) => setFoodCounts({ ...counts, adults })}
-          />
-        </View>
+        {editingGuests ? null : (
+          <Pressable
+            testID="food-guests-edit"
+            accessibilityRole="button"
+            accessibilityLabel={nb.food.guests.editLabel}
+            accessibilityState={{ expanded: false }}
+            onPress={() => setEditingGuests(true)}
+            hitSlop={8}
+            style={styles.changeBtn}
+          >
+            <Text style={styles.changeText}>{nb.food.guests.edit}</Text>
+          </Pressable>
+        )}
       </View>
-      <Text variant="small" style={{ marginTop: 8 }}>
-        {nb.food.countsFromParty(hc.kidsComing, hc.adultsEating)}
-        {party.foodCounts ? ' ' : ''}
-      </Text>
-      {party.foodCounts ? (
-        <Pressable
-          testID="food-counts-reset"
-          accessibilityRole="button"
-          onPress={() => setFoodCounts(null)}
-          hitSlop={8}
-          style={{ alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }}
-        >
-          <Text style={styles.link}>{nb.food.countsReset}</Text>
-        </Pressable>
+      {editingGuests ? (
+        <View testID="food-guests-editor" style={styles.guestEditor}>
+          <View style={{ gap: 6 }}>
+            <Text style={styles.howTitle}>{nb.food.guests.kidsTitle}</Text>
+            <Stepper
+              compact
+              testID="guest-kids"
+              value={party.kidsInvited}
+              min={bounds.kidsMin}
+              max={bounds.kidsMax}
+              unit={nb.food.guests.kidsUnit}
+              lessLabel={nb.food.guests.lessKids}
+              moreLabel={nb.food.guests.moreKids}
+              onChange={(kidsInvited) => setGuestCounts({ kidsInvited })}
+            />
+            <Text variant="small" testID="guest-kids-total">
+              {nb.food.guests.kidsWithCelebrants(celebrantNames(party.celebrants), hc.kidsComing)}
+            </Text>
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={styles.howTitle}>{nb.food.guests.adultsTitle}</Text>
+            <Stepper
+              compact
+              testID="guest-adults"
+              value={hc.adultsEating}
+              min={bounds.adultsMin}
+              max={bounds.adultsMax}
+              unit={hc.adultsEating === 1 ? nb.food.guests.adultsUnitOne : nb.food.guests.adultsUnit}
+              lessLabel={nb.food.guests.lessAdults}
+              moreLabel={nb.food.guests.moreAdults}
+              onChange={(adults) => setGuestCounts({ adults })}
+            />
+            <Text variant="small">{nb.food.guests.adultsHint}</Text>
+          </View>
+          <Text variant="small" style={{ color: colors.ink }}>
+            {nb.food.guests.appliesToParty}
+          </Text>
+          <Button
+            compact
+            kind="light"
+            testID="food-guests-done"
+            label={nb.food.guests.done}
+            onPress={() => setEditingGuests(false)}
+          />
+        </View>
       ) : null}
     </View>
   );
@@ -281,14 +310,14 @@ export default function MatScreen() {
     <View style={{ gap: 14 }} testID="food-amounts">
       <View>
         <Text variant="h2Small">{nb.food.amountsTitle}</Text>
-        <Text variant="small" testID="food-for-whom" style={{ marginTop: 2 }}>
-          {plan.title} {plan.forWhom}
+        <Text variant="small" testID="food-toggle-hint" style={{ marginTop: 2 }}>
+          {nb.food.toggleHint}
         </Text>
       </View>
       {plan.sections
         .filter((s) => s.id !== 'hensyn')
         .map((s) => (
-          <SectionCard key={s.id} section={s} />
+          <SectionCard key={s.id} section={s} onToggle={setFoodItem} />
         ))}
     </View>
   ) : null;
@@ -319,14 +348,14 @@ export default function MatScreen() {
             }}
           >
             <View style={{ flex: 1, gap: 24 }}>
-              <Surface>{countsBox}</Surface>
+              <Surface>{guestBox}</Surface>
               <Surface>{dietBox}</Surface>
             </View>
             <View style={{ flex: 1.5 }}>{amounts}</View>
           </View>
         ) : (
           <View style={{ paddingHorizontal: gutter, marginTop: 22, gap: 22 }}>
-            {countsBox}
+            <Surface>{guestBox}</Surface>
             {amounts}
             {dietBox}
           </View>
@@ -345,7 +374,15 @@ export default function MatScreen() {
   );
 }
 
-function SectionCard({ section, hideTitle }: { section: FoodSection; hideTitle?: boolean }) {
+function SectionCard({
+  section,
+  hideTitle,
+  onToggle,
+}: {
+  section: FoodSection;
+  hideTitle?: boolean;
+  onToggle?: (id: string, included: boolean) => void;
+}) {
   const styles = useStyles();
   const colors = useColors();
   const tint = section.id === 'hensyn' ? colors.butter : section.id === 'kake' ? colors.blush : colors.card;
@@ -360,34 +397,75 @@ function SectionCard({ section, hideTitle }: { section: FoodSection; hideTitle?:
         section.id === 'hensyn' ? (
           <DietLine key={l.id} line={l} first={i === 0} styles={styles} />
         ) : (
-          <Line key={l.id} line={l} first={i === 0} styles={styles} />
+          <Line key={l.id} line={l} first={i === 0} styles={styles} onToggle={onToggle} />
         ),
       )}
     </Surface>
   );
 }
 
-function Line({ line, first, styles }: { line: FoodLine; first: boolean; styles: ReturnType<typeof useStyles> }) {
-  return (
-    <View
-      testID={`food-line-${line.id}`}
-      accessible
-      accessibilityLabel={`${line.name}: ${line.amount}${line.packs ? `, ${line.packs}` : ''}. ${line.why}`}
-      style={[styles.line, !first && styles.lineBorder]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.lineName}>{line.name}</Text>
+/**
+ * One quantity line. A toggleable line is a checkbox: tap anywhere on it to leave it out (greyed, struck
+ * through, «Ikke med på handlelista») or to take it back in. Works the same on web, iOS and Android.
+ */
+function Line({
+  line,
+  first,
+  styles,
+  onToggle,
+}: {
+  line: FoodLine;
+  first: boolean;
+  styles: ReturnType<typeof useStyles>;
+  onToggle?: (id: string, included: boolean) => void;
+}) {
+  const off = !line.included;
+  const label = `${line.name}: ${line.amount}${line.packs ? `, ${line.packs}` : ''}. ${off ? nb.food.excluded : line.why}`;
+  const body = (
+    <>
+      {line.toggleable && onToggle ? (
+        <View style={{ paddingTop: 1 }}>
+          <CheckBox checked={line.included} size={26} />
+        </View>
+      ) : null}
+      <View style={[{ flex: 1 }, off && styles.off]}>
+        <Text style={[styles.lineName, off && styles.struck]}>{line.name}</Text>
         <Text variant="small" style={{ marginTop: 2 }} testID={`food-why-${line.id}`}>
-          {line.why}
+          {off ? nb.food.excluded : line.why}
         </Text>
       </View>
-      <View style={{ alignItems: 'flex-end', maxWidth: '46%' }}>
-        <Text style={styles.amount} testID={`food-amount-${line.id}`}>
+      <View style={[{ alignItems: 'flex-end', maxWidth: '42%' }, off && styles.off]}>
+        <Text style={[styles.amount, off && styles.struck]} testID={`food-amount-${line.id}`}>
           {line.amount}
         </Text>
-        {line.packs ? <Text style={styles.packs}>{line.packs}</Text> : null}
+        {line.packs ? <Text style={[styles.packs, off && styles.struck]}>{line.packs}</Text> : null}
       </View>
-    </View>
+    </>
+  );
+  if (!line.toggleable || !onToggle)
+    return (
+      <View
+        testID={`food-line-${line.id}`}
+        accessible
+        accessibilityLabel={label}
+        style={[styles.line, !first && styles.lineBorder]}
+      >
+        {body}
+      </View>
+    );
+  return (
+    <Pressable
+      testID={`food-line-${line.id}`}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: line.included }}
+      aria-checked={line.included}
+      accessibilityLabel={label}
+      accessibilityHint={line.included ? undefined : nb.food.includeLabel(line.name)}
+      onPress={() => onToggle(line.id, !line.included)}
+      style={({ pressed }) => [styles.line, !first && styles.lineBorder, pressed && { opacity: 0.7 }]}
+    >
+      {body}
+    </Pressable>
   );
 }
 
@@ -433,8 +511,16 @@ const useStyles = themedStyles((colors) => ({
     justifyContent: 'center',
   },
   changeText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.green },
-  link: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.green, textDecorationLine: 'underline' },
-  line: { flexDirection: 'row', gap: 14, paddingVertical: 12, alignItems: 'flex-start' },
+  line: { flexDirection: 'row', gap: 12, paddingVertical: 12, alignItems: 'flex-start', minHeight: 44 },
+  off: { opacity: 0.45 },
+  struck: { textDecorationLine: 'line-through' },
+  guestEditor: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    gap: 16,
+  },
   lineBorder: { borderTopWidth: 1, borderTopColor: colors.line },
   lineName: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
   amount: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24, color: colors.ink, textAlign: 'right' },

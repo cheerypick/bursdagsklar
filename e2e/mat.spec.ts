@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 // Mat: from the Mat card on Planen → pick a main dish (nothing pre-picked) → amounts with a reason
-// per line → adjust the child count → a reload keeps it → «Start på nytt» clears it.
+// per line → «Endre» changes the party's own guest numbers → tap a line to leave it out → a reload
+// keeps it → «Start på nytt» clears it.
 // The default party is 10 invited + Emma = 11 children and 4 adults.
 const visible = (page: Page, testId: string) => page.getByTestId(testId).filter({ visible: true });
 const appKeys = (page: Page) =>
@@ -29,7 +30,7 @@ async function createParty(page: Page) {
   await expect(visible(page, 'plan-hero')).toBeVisible();
 }
 
-test('Mat: choose Pølser, see the amounts, change the child count, reload keeps it, reset clears it', async ({
+test('Mat: choose Pølser, see the amounts, change the guests (the party), reload keeps it, reset clears it', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -55,7 +56,7 @@ test('Mat: choose Pølser, see the amounts, change the child count, reload keeps
   await visible(page, 'menu-how-grillpolser').getByRole('button').click();
 
   await expect(visible(page, 'menu-chosen-title')).toHaveText('Grillpølser');
-  await expect(visible(page, 'food-for-whom')).toHaveText('Grillpølser for 11 barn og 4 voksne');
+  await expect(visible(page, 'food-for-whom')).toHaveText('For 11 barn og 4 voksne');
   // (11 × 2 + 4 × 2) × 1,35 = 40,5 → 41 → 5 pk à 10
   await expect(visible(page, 'food-amount-grillpolser')).toHaveText('50 stk');
   await expect(visible(page, 'food-line-grillpolser')).toContainText('5 pk à 10');
@@ -67,13 +68,30 @@ test('Mat: choose Pølser, see the amounts, change the child count, reload keeps
   await expect(visible(page, 'food-line-vann')).toBeVisible();
   await expect(visible(page, 'food-line-frukt')).toBeVisible();
   await expect(visible(page, 'food-section-kake')).toContainText('Kake senere');
+  // every quantity line is a checkbox, and all start included
+  for (const id of ['grillpolser', 'lomper', 'polsebrod', 'ketchup', 'saft', 'vann', 'frukt'])
+    await expect(visible(page, `food-line-${id}`)).toHaveAttribute('aria-checked', 'true');
+  // no candy in the food: it goes in the goodie bags later
+  await expect(visible(page, 'food-line-godteri')).toHaveCount(0);
+  await expect(visible(page, 'food-amounts')).not.toContainText('Godteri');
+  // one guest count: the old food-only steppers and «Bruk tallene fra festen» are gone
+  await expect(page.getByTestId('food-kids')).toHaveCount(0);
+  await expect(page.getByText('Bruk tallene fra festen')).toHaveCount(0);
 
-  // more children → more sausages: (15 × 2 + 8) × 1,35 = 51,3 → 52 → 6 pk = 60
-  await expect(visible(page, 'food-kids-value')).toHaveText('11');
-  for (let i = 0; i < 4; i++) await visible(page, 'food-kids-more').click();
-  await expect(visible(page, 'food-kids-value')).toHaveText('15');
+  // «Endre» edits the party: 10 → 14 invited = 15 children, and one more expected parent (15 % of 14 → 3)
+  await visible(page, 'food-guests-edit').click();
+  await expect(visible(page, 'food-guests-editor')).toBeVisible();
+  await expect(visible(page, 'guest-kids-value')).toHaveText('10');
+  await expect(visible(page, 'guest-kids-total')).toHaveText('Med Emma blir det 11 barn.');
+  for (let i = 0; i < 4; i++) await visible(page, 'guest-kids-more').click();
+  await expect(visible(page, 'guest-kids-value')).toHaveText('14');
+  await expect(visible(page, 'guest-kids-total')).toHaveText('Med Emma blir det 15 barn.');
+  await expect(visible(page, 'guest-adults-value')).toHaveText('5');
+  await expect(visible(page, 'food-for-whom')).toHaveText('For 15 barn og 5 voksne');
+  // (15 × 2 + 5 × 2) × 1,35 = 54 → 6 pk = 60
   await expect(visible(page, 'food-amount-grillpolser')).toHaveText('60 stk');
-  await expect(visible(page, 'food-counts')).toContainText('Fra festen: 11 barn og 4 voksne.');
+  await visible(page, 'food-guests-done').click();
+  await expect(visible(page, 'food-guests-editor')).toHaveCount(0);
 
   // a dietary chip adds a note line with an extra portion
   await visible(page, 'diet-ingen-svin').getByRole('button').click();
@@ -84,15 +102,17 @@ test('Mat: choose Pølser, see the amounts, change the child count, reload keeps
   await page.waitForTimeout(600); // storage writes are debounced 300 ms
   await page.reload();
   await expect(visible(page, 'menu-chosen-title')).toHaveText('Grillpølser');
-  await expect(visible(page, 'food-kids-value')).toHaveText('15');
+  await expect(visible(page, 'food-for-whom')).toHaveText('For 15 barn og 5 voksne');
   await expect(visible(page, 'food-amount-grillpolser')).toHaveText('60 stk');
   await expect(visible(page, 'food-line-diet-ingen-svin')).toBeVisible();
 
-  // Planen shows the menu on the Mat card
+  // Planen shows the menu on the Mat card, and the party's own numbers changed with it
   await visible(page, 'mat-back-to-plan').click();
+  await expect(visible(page, 'plan-hero')).toContainText('14 barn');
   const card = visible(page, 'plan-card-food');
   await expect(card).toContainText('Mat: Grillpølser');
-  await expect(card).toContainText('60 grillpølser · 2 flasker saft · for 15 barn og 4 voksne');
+  await expect(card).toContainText('60 grillpølser med lomper og pølsebrød');
+  await expect(card).toContainText('for 15 barn og 5 voksne');
   await expect(card).not.toContainText('Velg meny');
 
   // «Start på nytt» clears the menu with everything else
@@ -107,6 +127,72 @@ test('Mat: choose Pølser, see the amounts, change the child count, reload keeps
   await expect(visible(page, 'menu-card-polser')).not.toHaveAttribute('aria-checked', 'true');
   await expect(visible(page, 'food-amounts')).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('Mat: deselect pølsebrød → greyed and struck through, kept after a reload, left out of the Planen card', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await createParty(page);
+  await visible(page, 'plan-card-food').click();
+  await visible(page, 'menu-card-polser').click();
+  await visible(page, 'menu-how-grillpolser').getByRole('button').click();
+
+  const brod = visible(page, 'food-line-polsebrod');
+  await expect(brod).toHaveAttribute('role', 'checkbox');
+  await expect(brod).toHaveAttribute('aria-checked', 'true');
+  await brod.click();
+  await expect(brod).toHaveAttribute('aria-checked', 'false');
+  // still there, with its amount, but struck through and greyed
+  await expect(visible(page, 'food-amount-polsebrod')).toHaveText('24 stk');
+  await expect(visible(page, 'food-why-polsebrod')).toHaveText('Ikke med på handlelista');
+  const deco = await visible(page, 'food-amount-polsebrod').evaluate(
+    (el) => getComputedStyle(el).textDecorationLine || getComputedStyle(el).textDecoration,
+  );
+  expect(deco).toContain('line-through');
+  // the rest stay in
+  await expect(visible(page, 'food-line-lomper')).toHaveAttribute('aria-checked', 'true');
+
+  await page.waitForTimeout(600); // storage writes are debounced 300 ms
+  await page.reload();
+  await expect(visible(page, 'food-line-polsebrod')).toHaveAttribute('aria-checked', 'false');
+  await expect(visible(page, 'food-line-lomper')).toHaveAttribute('aria-checked', 'true');
+
+  await visible(page, 'mat-back-to-plan').click();
+  const card = visible(page, 'plan-card-food');
+  await expect(card).toContainText('50 grillpølser med lomper · 2 flasker saft');
+  await expect(card).not.toContainText('pølsebrød');
+
+  // and back in again
+  await card.click();
+  await visible(page, 'food-line-polsebrod').click();
+  await expect(visible(page, 'food-line-polsebrod')).toHaveAttribute('aria-checked', 'true');
+  await expect(visible(page, 'food-why-polsebrod')).not.toHaveText('Ikke med på handlelista');
+  await page.waitForTimeout(600);
+  await visible(page, 'mat-back-to-plan').click();
+  await expect(visible(page, 'plan-card-food')).toContainText('50 grillpølser med lomper og pølsebrød');
+  expect(errors).toEqual([]);
+});
+
+test('Mat: changing the children from the Mat screen changes the party, and Planen shows it', async ({ page }) => {
+  await createParty(page);
+  await expect(visible(page, 'plan-hero')).toContainText('10 barn');
+  await visible(page, 'plan-card-food').click();
+  await visible(page, 'menu-card-taco').click();
+  await expect(visible(page, 'food-for-whom')).toHaveText('For 11 barn og 4 voksne');
+  await visible(page, 'food-guests-edit').click();
+  for (let i = 0; i < 3; i++) await visible(page, 'guest-kids-more').click();
+  await visible(page, 'guest-kids-less').click();
+  await expect(visible(page, 'guest-kids-value')).toHaveText('12');
+  await expect(visible(page, 'food-for-whom')).toHaveText('For 13 barn og 4 voksne');
+  await visible(page, 'food-guests-done').click();
+  await page.waitForTimeout(600);
+  await visible(page, 'mat-back-to-plan').click();
+  await expect(visible(page, 'plan-hero')).toContainText('12 barn');
+  await expect(visible(page, 'plan-card-food')).toContainText('for 13 barn og 4 voksne');
+  await page.reload();
+  await expect(visible(page, 'plan-hero')).toContainText('12 barn');
 });
 
 test('Mat: «Noe annet» calculates only drinks, snacks and cake; switching dish works', async ({ page }) => {

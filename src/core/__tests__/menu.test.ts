@@ -11,7 +11,8 @@ import {
   partyFoodPlan,
   type FoodPlan,
 } from '../rules/menu';
-import { toggleDiet, withFoodCounts, withMenu } from '../party';
+import { guestBounds, toggleDiet, withFoodItem, withGuestCounts, withMenu } from '../party';
+import { buildTasks } from '../rules/todos';
 import { headCount } from '../rules/people';
 import type { MenuChoice } from '../model';
 
@@ -40,13 +41,15 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
       amount: '50 stk',
       packs: '5 pk à 10',
       why: 'ca. 2 per barn og 2 per voksen + 35 % ekstra = 46, rundet opp til hele pakker',
+      toggleable: true,
+      included: true,
     });
     expect(line(plan, 'lomper')).toMatchObject({ amount: '50 stk', packs: '5 pk à 10', why: 'Én til hver pølse' });
     expect(line(plan, 'polsebrod')).toMatchObject({ amount: '24 stk', packs: '3 pk à 8' });
     expect(line(plan, 'ketchup').amount).toBe('1 av hver');
   });
 
-  it('drinks, snacks and the cake note', () => {
+  it('drinks, fruit and the cake note (no candy: it goes in the goodie bags later)', () => {
     const plan = emmaPlan({ kind: 'grillpolser' });
     expect(plan.sections.map((s) => s.id)).toEqual(['main', 'drikke', 'snacks', 'kake']);
     expect(line(plan, 'saft')).toMatchObject({ amount: '2 flasker saft' });
@@ -55,7 +58,8 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     );
     expect(line(plan, 'vann').amount).toBe('ca. 4 liter'); // 17 × 2 dl = 3,4 → 4
     expect(line(plan, 'frukt').amount).toBe('ca. 2,3 kg');
-    expect(line(plan, 'godteri').amount).toBe('ca. 1,3 kg');
+    expect(() => line(plan, 'godteri')).toThrow();
+    expect(plan.sections.find((s) => s.id === 'snacks')!.lines.map((l) => l.id)).toEqual(['frukt']);
     expect(line(plan, 'kake')).toMatchObject({ amount: 'ca. 19 biter' });
     expect(line(plan, 'kake').why).toContain('Kake senere');
   });
@@ -200,21 +204,103 @@ describe('dietary chips', () => {
 });
 
 describe('the party record', () => {
-  it('a menu is null until picked; withMenu / toggleDiet / withFoodCounts update it', () => {
+  it('a menu is null until picked; withMenu / toggleDiet update it', () => {
     let p = emma({ menu: null });
     expect(partyFoodPlan(p)).toBeNull();
     expect(foodCardSummary(p)).toBeNull();
     p = withMenu(p, { kind: 'grillpolser' });
     expect(foodCardSummary(p)).toEqual({
       title: 'Grillpølser',
-      line: '50 grillpølser · 2 flasker saft · for 13 barn og 4 voksne',
+      line: '50 grillpølser med lomper og pølsebrød · 2 flasker saft · for 13 barn og 4 voksne',
     });
     p = toggleDiet(p, 'vegetar');
     expect(p.diets).toEqual(['vegetar']);
     expect(toggleDiet(p, 'vegetar').diets).toEqual([]);
-    p = withFoodCounts(p, { kids: 15, adults: 4 });
-    expect(foodCounts(p)).toEqual({ kids: 15, adults: 4 });
-    expect(withFoodCounts(p, null).foodCounts).toBeNull();
+  });
+});
+
+describe("item toggles (deselect what you don't need)", () => {
+  const grill = () => emma({ menu: { kind: 'grillpolser' } });
+  it('every quantity line in main, drinks and fruit is toggleable and starts included', () => {
+    const plan = partyFoodPlan(grill())!;
+    for (const s of plan.sections) {
+      for (const l of s.lines) {
+        expect(l.included, l.id).toBe(true);
+        expect(l.toggleable, l.id).toBe(['main', 'drikke', 'snacks'].includes(s.id));
+      }
+    }
+    // «Din egen» and the frozen pizza's oven time are not things to buy
+    expect(line(partyFoodPlan(emma({ menu: { kind: 'annet', text: 'Suppe' } }))!, 'egen').toggleable).toBe(false);
+    expect(line(partyFoodPlan(emma({ menu: { kind: 'pizza', style: 'frossen' } }))!, 'ovnstid').toggleable).toBe(false);
+  });
+  it('deselecting pølsebrød stores included: false, keeps the line (greyed) and can be undone', () => {
+    let p = withFoodItem(grill(), 'polsebrod', false);
+    expect(p.foodItems).toEqual({ polsebrod: { included: false } });
+    const l = line(partyFoodPlan(p)!, 'polsebrod');
+    expect(l).toMatchObject({ included: false, toggleable: true, amount: '24 stk' });
+    expect(line(partyFoodPlan(p)!, 'lomper').included).toBe(true);
+    p = withFoodItem(p, 'polsebrod', true);
+    expect(p.foodItems).toEqual({ polsebrod: { included: true } });
+    expect(line(partyFoodPlan(p)!, 'polsebrod').included).toBe(true);
+  });
+  it('the Mat card on Planen leaves out deselected lines', () => {
+    let p = withFoodItem(grill(), 'polsebrod', false);
+    expect(foodCardSummary(p)!.line).toBe('50 grillpølser med lomper · 2 flasker saft · for 13 barn og 4 voksne');
+    p = withFoodItem(p, 'lomper', false);
+    expect(foodCardSummary(p)!.line).toBe('50 grillpølser · 2 flasker saft · for 13 barn og 4 voksne');
+    p = withFoodItem(withFoodItem(p, 'saft', false), 'grillpolser', false);
+    expect(foodCardSummary(p)!.line).toBe('for 13 barn og 4 voksne');
+  });
+  it('the state is kept per line id when switching dish and back', () => {
+    let p = withFoodItem(grill(), 'polsebrod', false);
+    p = withMenu(p, { kind: 'taco' });
+    expect(line(partyFoodPlan(p)!, 'saft').included).toBe(true);
+    p = withMenu(p, { kind: 'grillpolser' });
+    expect(line(partyFoodPlan(p)!, 'polsebrod').included).toBe(false);
+  });
+  it('the shopping to-do skips a deselected item', () => {
+    const detail = (p: ReturnType<typeof emma>) => buildTasks(p).tasks.find((t) => t.id === 'buyDry')?.detail;
+    expect(detail(grill())).toBe('Lomper og saft');
+    expect(detail(withFoodItem(grill(), 'lomper', false))).toBe('Pølsebrød og saft');
+    expect(detail(emma({ menu: null }))).toBe('Saft');
+  });
+});
+
+describe('guest count: one source of truth (the party)', () => {
+  it("the food always follows the party's head-count", () => {
+    const hc = headCount(emma());
+    expect(foodCounts(emma())).toEqual({ kids: hc.kidsComing, adults: hc.adultsEating });
+    expect(partyFoodPlan(emma({ menu: { kind: 'grillpolser' } }))!.forWhom).toBe('for 13 barn og 4 voksne');
+  });
+  it("changing the invited children changes the party, the food, Planen's numbers and the to-dos", () => {
+    const before = emma({ menu: { kind: 'grillpolser' } });
+    const p = withGuestCounts(before, { kidsInvited: 14 });
+    expect(p.kidsInvited).toBe(14);
+    expect(headCount(p).kidsComing).toBe(15);
+    expect(foodCounts(p).kids).toBe(15);
+    expect(foodCardSummary(p)!.line).toContain('for 15 barn');
+    expect(line(partyFoodPlan(p)!, 'grillpolser').amount).not.toBe(line(partyFoodPlan(before)!, 'grillpolser').amount);
+    // the party-wide reminder that counts the goodie bags follows too
+    const fill = (q: typeof p) => buildTasks(q).tasks.find((t) => t.id === 'bakeMuffins')?.detail ?? '';
+    expect(fill(before)).toContain('13 godteposer');
+    expect(fill(p)).toContain('15 godteposer');
+  });
+  it('changing the adults sets hostAdults so the adults eating is exactly the number asked for', () => {
+    const p0 = emma();
+    const b = guestBounds(p0);
+    expect(b.adultsMin).toBe(headCount(p0).adultsEating - p0.hostAdults);
+    const p = withGuestCounts(p0, { adults: 7 });
+    expect(headCount(p).adultsEating).toBe(7);
+    expect(foodCounts(p).adults).toBe(7);
+    expect(p.hostAdults).toBe(p0.hostAdults + 3);
+    // clamped: never below the parents who are expected to stay, never negative host adults
+    const low = withGuestCounts(p0, { adults: 0 });
+    expect(low.hostAdults).toBe(0);
+    expect(headCount(low).adultsEating).toBe(b.adultsMin);
+  });
+  it('the invited children stay inside 1–40', () => {
+    expect(withGuestCounts(emma(), { kidsInvited: 0 }).kidsInvited).toBe(1);
+    expect(withGuestCounts(emma(), { kidsInvited: 99 }).kidsInvited).toBe(40);
   });
   it('card ids and titles', () => {
     expect(menuCardOf({ kind: 'wienerpolser' })).toBe('polser');

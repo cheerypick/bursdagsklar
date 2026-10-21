@@ -7,11 +7,11 @@ import {
   normalizeDraft,
   toggleTask as toggleTaskRule,
   toggleDiet as toggleDietRule,
-  withFoodCounts,
+  withFoodItem,
+  withGuestCounts,
   withMenu,
   withTheme,
   type DietTag,
-  type FoodCounts,
   type HomeItemId,
   type MenuChoice,
   type ISODate,
@@ -37,7 +37,10 @@ interface PartyState {
   /** Mat: the main dish (null = not chosen), the dietary chips and the screen's own head-counts. */
   setMenu: (menu: MenuChoice | null) => void;
   toggleDiet: (tag: DietTag) => void;
-  setFoodCounts: (counts: FoodCounts | null) => void;
+  /** Mat tap toggle: include or leave out one food line. */
+  setFoodItem: (id: string, included: boolean) => void;
+  /** «Endre» on Mat: the party's own guest numbers (invited children, adults eating). */
+  setGuestCounts: (change: { kidsInvited?: number; adults?: number }) => void;
   /**
    * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
    * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
@@ -148,7 +151,14 @@ export function PartyProvider({
 
   const setMenu = useCallback((menu: MenuChoice | null) => update((p) => withMenu(p, menu)), [update]);
   const toggleDiet = useCallback((tag: DietTag) => update((p) => toggleDietRule(p, tag)), [update]);
-  const setFoodCounts = useCallback((counts: FoodCounts | null) => update((p) => withFoodCounts(p, counts)), [update]);
+  const setFoodItem = useCallback(
+    (id: string, included: boolean) => update((p) => withFoodItem(p, id, included)),
+    [update],
+  );
+  const setGuestCounts = useCallback(
+    (change: { kidsInvited?: number; adults?: number }) => update((p) => withGuestCounts(p, change)),
+    [update],
+  );
 
   const startOver = useCallback(async () => {
     // a change still waiting to be saved would write the old party back after the reset
@@ -172,7 +182,8 @@ export function PartyProvider({
       setTheme,
       setMenu,
       toggleDiet,
-      setFoodCounts,
+      setFoodItem,
+      setGuestCounts,
       startOver,
     }),
     [
@@ -187,7 +198,8 @@ export function PartyProvider({
       setTheme,
       setMenu,
       toggleDiet,
-      setFoodCounts,
+      setFoodItem,
+      setGuestCounts,
       startOver,
     ],
   );

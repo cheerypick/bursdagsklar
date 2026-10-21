@@ -173,12 +173,12 @@ export function customDish(m: Extract<MenuChoice, { kind: 'egen' }>, p: Pick<Peo
 // ---------------- extras (§6.7) ----------------
 
 /** `candleAges`: one candle set per birthday child (age + 1 each); defaults to `p.age`. */
-export function extras(p: People, opts: { muffins: boolean; nutFree?: boolean; candleAges?: number[] }) {
+/** No candy here: it belongs to the goodie bags (godteposer), a later PR. See docs/ARCHITECTURE.md. */
+export function extras(p: People, opts: { muffins: boolean; candleAges?: number[] }) {
   const saftLitres = (p.kidsComing * C.SAFT_DL_CHILD + p.adultsEating * C.SAFT_DL_ADULT) / 10;
   const fruitG = p.kidsComing * C.FRUIT_G_CHILD + p.adultsEating * C.FRUIT_G_ADULT;
   const cakePieces = ceilSafe((p.kidsComing + p.adultsEating) * C.CAKE_PIECES_FACTOR);
   const muffins = opts.muffins ? Math.ceil((p.kidsComing * C.MUFFINS_PER_CHILD) / 6 - 1e-9) * 6 : 0;
-  const candyG = p.kidsComing * C.CANDY_G_CHILD;
   return {
     saftLitres: Math.round(saftLitres * 10) / 10,
     saftBottles: packs(saftLitres, C.SAFT_LITRES_PER_BOTTLE),
@@ -188,9 +188,6 @@ export function extras(p: People, opts: { muffins: boolean; nutFree?: boolean; c
     cakeBatches: packs(cakePieces, C.CAKE_PIECES_PER_LANGPANNE),
     muffins,
     candles: (opts.candleAges ?? [p.age]).reduce((sum, a) => sum + a + 1, 0),
-    candyG,
-    candyDisplay: formatGrams(candyG),
-    candyName: opts.nutFree ? 'Nøttefritt godteri' : 'Godteri',
     goodyBags: p.kidsComing,
   };
 }
@@ -209,6 +206,14 @@ export function allergyUnion(party: Pick<Party, 'guests'>): AllergyTag[] {
 }
 
 // ---------------- the shopping list for a party ----------------
+
+/**
+ * Whether the parent left a food line in (the Mat screen's tap toggle). The Mat lines and the shopping
+ * list share item ids (`polsebrod`, `saft` …), so a line deselected on Mat is left off the list too.
+ */
+export function isIncluded(party: Pick<Party, 'foodItems'>, id: string): boolean {
+  return party.foodItems?.[id]?.included !== false;
+}
 
 export const MENU_NAMES: Record<MenuChoice['kind'], string> = {
   grillpolser: 'Grillmeny',
@@ -244,8 +249,6 @@ export function shoppingList(party: Party): ShoppingItem[] {
   const hc = headCount(party);
   // joint birthday: portions follow the OLDEST birthday child's band (it feeds the most, and it's safe)
   const p: People = { kidsComing: hc.kidsComing, adultsEating: hc.adultsEating, age: oldestAge(party.celebrants) };
-  const allergies = allergyUnion(party);
-  const nutFree = allergies.includes('notter') || allergies.includes('peanott');
   const out: ShoppingItem[] = [];
   const m = party.menu;
 
@@ -362,7 +365,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
       );
       out.push(
         item({
-          id: 'revet-ost',
+          id: 'pizzaost',
           name: 'Revet ost',
           need: h.cheeseG,
           unit: 'g',
@@ -375,7 +378,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
       );
       out.push(
         item({
-          id: 'skinke',
+          id: 'pizzaskinke',
           name: 'Skinke i strimler',
           need: h.hamG,
           unit: 'g',
@@ -391,7 +394,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
       const n = pizzaCount(units, m.style, size);
       out.push(
         item({
-          id: 'pizza',
+          id: m.style === 'frossen' ? 'frossenpizza' : 'pizza',
           name:
             m.style === 'frossen'
               ? 'Frossenpizza'
@@ -435,7 +438,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
     );
     out.push(
       item({
-        id: 'taco-ost',
+        id: 'tacoost',
         name: 'Revet ost',
         need: t.cheeseG,
         unit: 'g',
@@ -549,7 +552,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
     );
   }
 
-  const e = extras(p, { muffins: party.cake.muffins, nutFree, candleAges: party.celebrants.map((c) => c.age) });
+  const e = extras(p, { muffins: party.cake.muffins, candleAges: party.celebrants.map((c) => c.age) });
   out.push(
     item({
       id: 'saft',
@@ -571,17 +574,6 @@ export function shoppingList(party: Party): ShoppingItem[] {
       display: e.fruitDisplay,
       trip: 'ferskvarer',
       ruleRef: 'extras.frukt',
-    }),
-  );
-  out.push(
-    item({
-      id: 'godteri',
-      name: e.candyName,
-      need: e.candyG,
-      unit: 'g',
-      display: e.candyDisplay,
-      trip: 'torrvarer',
-      ruleRef: 'extras.godteri',
     }),
   );
   out.push(
@@ -645,5 +637,5 @@ export function shoppingList(party: Party): ShoppingItem[] {
     }),
   );
 
-  return out.filter((i) => !i.homeItemId || !party.haveAtHome.includes(i.homeItemId));
+  return out.filter((i) => (!i.homeItemId || !party.haveAtHome.includes(i.homeItemId)) && isIncluded(party, i.id));
 }

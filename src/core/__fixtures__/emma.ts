@@ -8,7 +8,7 @@ import type { Party } from '../model';
 export function emma(overrides: Partial<Party> = {}): Party {
   return {
     id: '7d0c3f5e-1c1a-4f6b-9a51-6a3c2b1e0e01',
-    schemaVersion: 3,
+    schemaVersion: 4,
     createdAt: '2026-10-19T08:00:00.000Z',
     updatedAt: '2026-10-19T08:00:00.000Z',
     plannedFrom: '2026-10-19',
@@ -23,7 +23,7 @@ export function emma(overrides: Partial<Party> = {}): Party {
     hostAdults: 2,
     menu: { kind: 'grillpolser' },
     diets: [],
-    foodCounts: null,
+    foodItems: {},
     cake: { mode: 'bake', cakeId: 'vaniljekake-langpanne', muffins: true },
     programme: { includePinata: true, includeSkattejakt: true },
     guests: [],

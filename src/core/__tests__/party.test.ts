@@ -21,6 +21,7 @@ import { emma } from '../__fixtures__/emma';
 import { invitationCard, render, genitive, themeTexts, TEMPLATES } from '../texts/render';
 import { THEMES } from '../themes';
 import { buildTasks } from '../rules/todos';
+import { foodCounts } from '../rules/menu';
 
 const draft = {
   ...EMPTY_DRAFT,
@@ -108,7 +109,7 @@ describe('createParty', () => {
     const p = createParty(draft, { id: 'abc', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' });
     expect(p).toMatchObject({
       id: 'abc',
-      schemaVersion: 3,
+      schemaVersion: 4,
       createdAt: '2026-10-19T08:00:00.000Z',
       updatedAt: '2026-10-19T08:00:00.000Z',
       plannedFrom: '2026-10-19',
@@ -124,7 +125,8 @@ describe('createParty', () => {
       // no menu until the parent picks one on the Mat screen (not even a seasonal guess)
       menu: null,
       diets: [],
-      foodCounts: null,
+      // every food line starts included
+      foodItems: {},
     });
   });
   it('a fresh party assumes no activity or menu the parent has not chosen', () => {
@@ -273,8 +275,8 @@ describe('PartyRepository (one record per party)', () => {
     await repo.saveDraft(null);
     expect(await repo.loadDraft()).toBeNull();
   });
-  it('upgrades a v1 party (one child) to v3 (celebrants), keeping its theme', async () => {
-    const { celebrants, diets: _d, foodCounts: _f, ...rest } = emma();
+  it('upgrades a v1 party (one child) to v4 (celebrants), keeping its theme', async () => {
+    const { celebrants, diets: _d, foodItems: _f, ...rest } = emma();
     const v1 = {
       ...rest,
       menuChosen: true,
@@ -282,7 +284,7 @@ describe('PartyRepository (one record per party)', () => {
       child: { name: celebrants[0].name, age: celebrants[0].age },
     };
     const p = migrate(v1)!;
-    expect(p.schemaVersion).toBe(3);
+    expect(p.schemaVersion).toBe(4);
     expect(p.celebrants).toEqual([{ id: 'c1', name: 'Emma', age: 5 }]);
     expect(p).not.toHaveProperty('child');
     expect(p.theme).toBe('enhjorning');
@@ -295,10 +297,11 @@ describe('PartyRepository (one record per party)', () => {
     expect((await createPartyRepository(store).get(v1.id))?.celebrants[0].name).toBe('Emma');
   });
   it('upgrades a v2 party: a pre-filled menu the parent never picked becomes «not chosen»', async () => {
-    const { diets: _d, foodCounts: _f, ...rest } = emma();
+    const { diets: _d, foodItems: _f, ...rest } = emma();
     const v2 = { ...rest, schemaVersion: 2, menu: { kind: 'wienerpolser' }, menuChosen: false };
     const p = migrate(v2)!;
-    expect(p).toMatchObject({ schemaVersion: 3, menu: null, diets: [], foodCounts: null });
+    expect(p).toMatchObject({ schemaVersion: 4, menu: null, diets: [], foodItems: {} });
+    expect(p).not.toHaveProperty('foodCounts');
     expect(p).not.toHaveProperty('menuChosen');
     // a menu the parent did pick survives
     expect(migrate({ ...v2, menu: { kind: 'taco' }, menuChosen: true })!.menu).toEqual({ kind: 'taco' });
@@ -308,6 +311,18 @@ describe('PartyRepository (one record per party)', () => {
     const loaded = await createPartyRepository(store).get(v2.id);
     expect(loaded?.menu).toBeNull();
     expect(summarize(loaded!, '2026-10-19').menuLine).toBe('Mat for 13 barn og 4 voksne');
+  });
+  it("upgrades a v3 party: the Mat screen's own counts are dropped, every food line is included", async () => {
+    const { foodItems: _f, ...rest } = emma();
+    const v3 = { ...rest, schemaVersion: 3, menu: { kind: 'grillpolser' }, foodCounts: { kids: 20, adults: 9 } };
+    const p = migrate(v3)!;
+    expect(p).toMatchObject({ schemaVersion: 4, menu: { kind: 'grillpolser' }, foodItems: {}, kidsInvited: 12 });
+    expect(p).not.toHaveProperty('foodCounts');
+    // one source of truth: the food follows the party's own numbers again
+    expect(foodCounts(p)).toEqual({ kids: 13, adults: 4 });
+    const store = memoryStore();
+    await store.setItem(`bursdagsklar:party:${v3.id}`, JSON.stringify(v3));
+    expect((await createPartyRepository(store).get(v3.id))?.foodItems).toEqual({});
   });
   it('ignores unknown schema versions and junk', () => {
     expect(migrate({ ...emma(), schemaVersion: 99 })).toBeNull();

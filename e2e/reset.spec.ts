@@ -68,7 +68,11 @@ test('Planen: «Start på nytt» → our dialog → start screen, theme neutral,
   const start = visible(page, 'start');
   await expect(start).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
-  expect(await bg(start)).toBe(BRAND_PRIMARY);
+  // On desktop the pointer still rests where «Slett og start på nytt» was, which is now over the start
+  // button, so WebKit painted its hover colour (brand green2, rgb(44, 83, 72)) and the test flaked.
+  // Move the pointer away, then wait for the resting colour.
+  await page.mouse.move(1, 1);
+  await expect.poll(() => bg(start)).toBe(BRAND_PRIMARY);
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('brand');
   await page.waitForTimeout(600); // a pending debounced save must not bring the party back
   expect(await appKeys(page)).toEqual([]);

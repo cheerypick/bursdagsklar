@@ -7,7 +7,7 @@ import { addDays, diffDays, formatLong, mondayOf, parts, weekday, WEEKDAYS } fro
 import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { headCount } from './people';
 import { themeById } from '../themes';
-import { mainItemWord } from './food';
+import { isIncluded, mainItemWord } from './food';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -181,20 +181,25 @@ export function buildTasks(p: Party): TaskPlan {
 
 function dryDetail(p: Party): string {
   const m = p.menu?.kind;
-  const first =
+  // the first dry item for the dish, skipping a line the parent deselected on the Mat screen
+  const candidates: [string, string][] =
     m === 'grillpolser' || m === 'wienerpolser'
-      ? 'Lomper'
+      ? [
+          ['lomper', 'Lomper'],
+          ['polsebrod', 'Pølsebrød'],
+        ]
       : m === 'taco'
-        ? 'Tortillas'
+        ? [['tortillas', 'Tortillas']]
         : m === 'pizza'
-          ? 'Pizzasaus'
+          ? [['pizzasaus', 'Pizzasaus']]
           : m === 'pasta'
-            ? 'Pasta'
-            : 'Saft';
-  const list = [first, 'saft', 'godteri'].filter(
-    (x, i, a) => a.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i,
-  );
-  return `${list.slice(0, -1).join(', ')} og ${list[list.length - 1]}`;
+            ? [['pasta', 'Pasta']]
+            : [];
+  const first = candidates.find(([id]) => isIncluded(p, id))?.[1];
+  const saft = isIncluded(p, 'saft');
+  // no candy: it moves to the goodie bags (godteposer) in a later PR
+  if (first && saft) return `${first} og saft`;
+  return first ?? (saft ? 'Saft' : 'Det som står på handlelista');
 }
 
 /** A task is done if ticked, or if it is automatic and not explicitly unticked. */

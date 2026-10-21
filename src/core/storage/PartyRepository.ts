@@ -59,8 +59,14 @@ interface Index {
   ids: string[];
 }
 
+/** A party saved by the first Mat screen (schemaVersion 3): its own child/adult counts, no item flags. */
+type PartyV3 = Omit<Party, 'schemaVersion' | 'foodItems'> & {
+  schemaVersion: 3;
+  foodCounts?: { kids: number; adults: number } | null;
+};
+
 /** A party saved before the Mat screen (schemaVersion 2): a pre-filled menu plus a `menuChosen` flag. */
-type PartyV2 = Omit<Party, 'schemaVersion' | 'menu' | 'diets' | 'foodCounts'> & {
+type PartyV2 = Omit<PartyV3, 'schemaVersion' | 'menu' | 'diets' | 'foodCounts'> & {
   schemaVersion: 2;
   menu?: MenuChoice;
   menuChosen?: boolean;
@@ -84,15 +90,26 @@ function migrateV1(r: PartyV1): PartyV2 {
  * v2 → v3: the menu was pre-filled from the date (grill in summer) with `menuChosen: false`.
  * Only a menu the parent actually picked survives; everything else opens with no menu chosen.
  */
-function migrateV2(r: PartyV2): Party {
+function migrateV2(r: PartyV2): PartyV3 {
   const { menu, menuChosen, ...rest } = r;
   return {
     ...rest,
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: 3,
     menu: menuChosen && menu ? menu : null,
     diets: [],
     foodCounts: null,
   };
+}
+
+/**
+ * v3 → v4: one source of truth for the guest count. The Mat screen's own `foodCounts` copy is dropped
+ * (the food follows the party's numbers again, which «Endre» on Mat now edits), and every food line
+ * starts included (`foodItems: {}`).
+ */
+function migrateV3(r: PartyV3): Party {
+  const { foodCounts: _dropped, ...rest } = r;
+  void _dropped;
+  return { ...rest, schemaVersion: SCHEMA_VERSION, foodItems: {} };
 }
 
 /**
@@ -105,11 +122,16 @@ export function migrate(raw: unknown): Party | null {
   if (typeof r.id !== 'string') return null;
   switch (r.schemaVersion as number) {
     case 1:
-      return migrateV2(migrateV1(r as unknown as PartyV1));
+      return migrateV3(migrateV2(migrateV1(r as unknown as PartyV1)));
     case 2:
-      return migrateV2(r as unknown as PartyV2);
-    case SCHEMA_VERSION:
-      return r as Party;
+      return migrateV3(migrateV2(r as unknown as PartyV2));
+    case 3:
+      return migrateV3(r as unknown as PartyV3);
+    case SCHEMA_VERSION: {
+      const p = r as Party;
+      // defensive: a record without the map (hand-edited) still opens with everything included
+      return p.foodItems && typeof p.foodItems === 'object' ? p : { ...p, foodItems: {} };
+    }
     default:
       // Unknown (newer or corrupt) record: keep it on disk, but do not load it.
       return null;

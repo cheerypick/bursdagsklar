@@ -84,6 +84,10 @@ export const FRUIT_G_ADULT = 140;
 export const CAKE_PIECES_FACTOR = 1.1; // (I)
 export const CAKE_PIECES_PER_LANGPANNE = 24;
 export const MUFFINS_PER_CHILD = 0.75; // (I)
+/**
+ * Candy per child. NOT used by the food (Mat screen, shopping list): candy belongs to the goodie bags
+ * (godteposer), included by default with opt-out, which come in a later PR (docs/ARCHITECTURE.md).
+ */
 export const CANDY_G_CHILD = 100;
 export const GOODY_BAG_PACK = 10; // (I)
 export const PLATES_FACTOR = 1.2;

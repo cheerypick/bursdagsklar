@@ -2,23 +2,12 @@
  * Creating and updating a Party, and the derived numbers the screens show.
  * Pure functions: the screens never compute rules themselves.
  */
-import type {
-  Celebrant,
-  DietTag,
-  FoodCounts,
-  HHMM,
-  HomeItemId,
-  ISODate,
-  MenuChoice,
-  Party,
-  PlaceType,
-  ThemeId,
-} from './model';
+import type { Celebrant, DietTag, HHMM, HomeItemId, ISODate, MenuChoice, Party, PlaceType, ThemeId } from './model';
 import { MAX_CELEBRANTS, SCHEMA_VERSION } from './model';
-import { DEFAULT_HOST_ADULTS, programmeDefaults } from './rules/constants';
+import { DEFAULT_HOST_ADULTS, MAX_KIDS, MIN_KIDS, programmeDefaults } from './rules/constants';
 import { diffDays, formatRangeCompact, isWeekend } from './rules/dates';
 import { defaultPartyTime } from './rules/partyTime';
-import { clampFoodCounts, menuTitle } from './rules/menu';
+import { menuTitle } from './rules/menu';
 import { headCount } from './rules/people';
 import { buildTasks, progress } from './rules/todos';
 import { themeById } from './themes';
@@ -172,7 +161,7 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     // nothing is assumed: the parent picks the main dish on the Mat screen
     menu: null,
     diets: [],
-    foodCounts: null,
+    foodItems: {},
     cake: {
       mode: 'bake',
       // one shared cake for everyone; the youngest decides the flavour
@@ -205,9 +194,45 @@ export function toggleDiet(p: Party, tag: DietTag): Party {
   return { ...p, diets: has ? p.diets.filter((x) => x !== tag) : [...p.diets, tag] };
 }
 
-/** Mat steppers: the counts the food is calculated for (null = follow the party again). */
-export function withFoodCounts(p: Party, counts: FoodCounts | null): Party {
-  return { ...p, foodCounts: counts ? clampFoodCounts(counts) : null };
+/**
+ * Mat tap toggle: include or leave out one food line (`polsebrod`, `saft` …). Stored as a clean
+ * `included` flag per line id; the Mat card and the shopping list skip lines with included: false.
+ */
+export function withFoodItem(p: Party, id: string, included: boolean): Party {
+  return { ...p, foodItems: { ...p.foodItems, [id]: { included } } };
+}
+
+/** At most this many adults on top of the parents who RSVP'd or are expected to stay. */
+export const MAX_EXTRA_ADULTS = 30;
+
+/**
+ * The guest editor's bounds («Endre» on the Mat screen). Children are edited as the INVITED count
+ * (the same number setup asked for and Planen shows); adults as the adults eating, of which the
+ * host adults are the part the parent sets (the rest are RSVP'd/expected parents, see people.ts).
+ */
+export function guestBounds(p: Party): { kidsMin: number; kidsMax: number; adultsMin: number; adultsMax: number } {
+  const hc = headCount(p);
+  const others = hc.adultsEating - p.hostAdults;
+  return { kidsMin: MIN_KIDS, kidsMax: MAX_KIDS, adultsMin: others, adultsMax: others + MAX_EXTRA_ADULTS };
+}
+
+/**
+ * «Endre» on the Mat screen: changes the PARTY's own numbers, the one source of truth that Planen,
+ * the food, the to-dos and the shopping list all read. `kidsInvited` is the invited children (birthday
+ * children not counted); `adults` is the wanted number of adults eating, applied through hostAdults.
+ */
+export function withGuestCounts(p: Party, change: { kidsInvited?: number; adults?: number }): Party {
+  let next = p;
+  if (change.kidsInvited !== undefined) {
+    const kidsInvited = Math.min(MAX_KIDS, Math.max(MIN_KIDS, Math.round(change.kidsInvited)));
+    next = { ...next, kidsInvited };
+  }
+  if (change.adults !== undefined) {
+    const b = guestBounds(next);
+    const want = Math.min(b.adultsMax, Math.max(b.adultsMin, Math.round(change.adults)));
+    next = { ...next, hostAdults: want - b.adultsMin };
+  }
+  return next;
 }
 
 /** «Velg tema (valgfritt)» on Planen: a theme, or null for the neutral look. */

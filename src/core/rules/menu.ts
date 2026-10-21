@@ -3,7 +3,7 @@
  * reason line («ca. 2 per barn og 2 per voksen + 35 % ekstra»). Pure and deterministic: the amounts
  * come from rules/food.ts and rules/constants.ts, the words are fixed templates. No AI.
  */
-import type { DietTag, FoodCounts, MenuChoice, Party } from '../model';
+import type { DietTag, FoodCounts, FoodItemState, MenuChoice, Party } from '../model';
 import * as C from './constants';
 import { band } from './constants';
 import { oldestAge } from './celebrants';
@@ -57,14 +57,16 @@ export function menuTitle(menu: MenuChoice): string {
   }
 }
 
-/** Children and adults the food is counted for: the Mat screen's own counts, else the party's. */
+/**
+ * Children and adults the food is counted for: always the party's own head-count. One source of
+ * truth: the Mat screen's «Endre» edits the party (party.ts `withGuestCounts`), not a copy.
+ */
 export function foodCounts(p: Party): FoodCounts {
-  if (p.foodCounts) return p.foodCounts;
   const hc = headCount(p);
   return { kids: hc.kidsComing, adults: hc.adultsEating };
 }
 
-/** Steppers on the Mat screen. */
+/** Sanity bounds for foodPlan's input. */
 export const FOOD_KIDS_MIN = 1;
 export const FOOD_KIDS_MAX = 45;
 export const FOOD_ADULTS_MIN = 0;
@@ -87,7 +89,14 @@ export interface FoodLine {
   packs?: string;
   /** Why this amount, in one short line. */
   why: string;
+  /** Whether the parent can tap this line to leave it out (every quantity line in main, drikke, frukt). */
+  toggleable: boolean;
+  /** false = deselected: shown greyed and struck through, left out of the Mat card and the shopping list. */
+  included: boolean;
 }
+
+/** A raw line before the parent's choices are applied. */
+export type RawLine = Omit<FoodLine, 'toggleable' | 'included'>;
 
 export type FoodSectionId = 'main' | 'drikke' | 'snacks' | 'kake' | 'hensyn';
 
@@ -105,7 +114,14 @@ export interface FoodPlanInput {
   diets: readonly DietTag[];
   /** Number of birthday children (one candle set each). */
   celebrants: number;
+  /** The parent's per-line choices (party.foodItems). Missing = everything included. */
+  items?: Readonly<Record<string, FoodItemState>>;
 }
+
+/** Sections whose lines get a tap toggle. «Til kaken» is a pointer, the diet lines follow their chips. */
+const TOGGLE_SECTIONS: readonly FoodSectionId[] = ['main', 'drikke', 'snacks'];
+/** Lines that are not something to buy: «Din egen» (her own dish) and the oven time for frozen pizza. */
+const NOT_TOGGLEABLE = new Set(['egen', 'ovnstid']);
 
 export interface FoodPlan {
   title: string;
@@ -125,7 +141,7 @@ function perPerson(child: number, adult: number, unit = '', c: FoodCounts): stri
   return c.adults > 0 ? `${kid} og ${n(adult)}${u} per voksen` : kid;
 }
 
-function mainLines(menu: MenuChoice, people: People, c: FoodCounts): FoodLine[] {
+function mainLines(menu: MenuChoice, people: People, c: FoodCounts): RawLine[] {
   const b = band(people.age);
   switch (menu.kind) {
     case 'grillpolser':
@@ -279,7 +295,7 @@ function mainLines(menu: MenuChoice, people: People, c: FoodCounts): FoodLine[] 
     }
     case 'pasta': {
       const x = pasta(menu.style, people);
-      const first: FoodLine = {
+      const first: RawLine = {
         id: 'pasta',
         name: menu.style === 'salat' ? 'Pasta (skruer)' : 'Pasta',
         amount: formatGrams(x.pastaPacks * C.PASTA_PACK_G),
@@ -403,7 +419,7 @@ const DIET_TEXT: Record<DietTag, Record<DietGroup, [string, string]>> = {
   },
 };
 
-export function dietLines(menu: MenuChoice, diets: readonly DietTag[]): FoodLine[] {
+export function dietLines(menu: MenuChoice, diets: readonly DietTag[]): RawLine[] {
   const g = dietGroup(menu);
   return C_DIET_ORDER.filter((t) => diets.includes(t)).map((t) => {
     const [extra, note] = DIET_TEXT[t][g];
@@ -419,7 +435,7 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
   const e = extras(people, { muffins: false });
   const juiceL = Math.round(((c.kids * C.JUICE_DL_CHILD + c.adults * C.SAFT_DL_ADULT) / 10) * 10) / 10;
   const waterL = Math.max(1, Math.ceil(((c.kids + c.adults) * C.WATER_DL_PER_PERSON) / 10 - 1e-9));
-  const sections: FoodSection[] = [
+  const raw: { id: FoodSectionId; title: string; lines: RawLine[] }[] = [
     { id: 'main', title: 'Hovedrett', lines: mainLines(input.menu, people, c) },
     {
       id: 'drikke',
@@ -441,7 +457,7 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
     },
     {
       id: 'snacks',
-      title: 'Snacks og frukt',
+      title: 'Frukt',
       lines: [
         {
           id: 'frukt',
@@ -449,12 +465,7 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
           amount: e.fruitDisplay,
           why: `${perPerson(C.FRUIT_G_CHILD, C.FRUIT_G_ADULT, 'g', c)}, f.eks. druer, epler, agurk og gulrot`,
         },
-        {
-          id: 'godteri',
-          name: 'Godteri',
-          amount: e.candyDisplay,
-          why: `ca. ${C.CANDY_G_CHILD} g per barn, i skål eller godteposer`,
-        },
+        // no candy: it belongs to the goodie bags (godteposer), a later PR (docs/ARCHITECTURE.md)
       ],
     },
     {
@@ -474,7 +485,15 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
     },
   ];
   const diet = dietLines(input.menu, input.diets);
-  if (diet.length) sections.splice(1, 0, { id: 'hensyn', title: 'Allergier og hensyn', lines: diet });
+  if (diet.length) raw.splice(1, 0, { id: 'hensyn', title: 'Allergier og hensyn', lines: diet });
+  const items = input.items ?? {};
+  const sections: FoodSection[] = raw.map((sec) => ({
+    ...sec,
+    lines: sec.lines.map((l) => {
+      const toggleable = TOGGLE_SECTIONS.includes(sec.id) && !NOT_TOGGLEABLE.has(l.id);
+      return { ...l, toggleable, included: !toggleable || items[l.id]?.included !== false };
+    }),
+  }));
   return { title: menuTitle(input.menu), forWhom: forWhom(c), sections };
 }
 
@@ -487,19 +506,36 @@ export function partyFoodPlan(p: Party): FoodPlan | null {
     age: oldestAge(p.celebrants),
     diets: p.diets,
     celebrants: p.celebrants.length,
+    items: p.foodItems,
   });
 }
 
-/** The Mat card on Planen: «Grillpølser» + «50 pølser · 2 flasker saft · for 13 barn og 4 voksne». */
+/** The bread for sausages, named after the sausages on the Mat card («med lomper og pølsebrød»). */
+const SAUSAGE_SIDES = ['lomper', 'polsebrod'];
+
+/**
+ * The Mat card on Planen: «Grillpølser» + «50 grillpølser med lomper og pølsebrød · 2 flasker saft ·
+ * for 13 barn og 4 voksne». A line the parent deselected is left out (pølsebrød off → «med lomper»).
+ */
 export function foodCardSummary(p: Party): { title: string; line: string } | null {
   const plan = partyFoodPlan(p);
   if (!plan) return null;
-  const main = plan.sections.find((s) => s.id === 'main')!.lines[0];
-  const saft = plan.sections.find((s) => s.id === 'drikke')!.lines[0];
-  const first = main.amount.endsWith(' stk')
-    ? `${main.amount.slice(0, -4)} ${main.name.toLowerCase()}`
-    : main.id === 'langpanner'
-      ? main.amount
-      : null;
-  return { title: plan.title, line: [first, saft.amount, plan.forWhom].filter(Boolean).join(' · ') };
+  const mainSection = plan.sections.find((s) => s.id === 'main')!.lines;
+  const main = mainSection[0];
+  const saft = plan.sections.find((s) => s.id === 'drikke')!.lines.find((l) => l.id === 'saft')!;
+  let first: string | null = null;
+  if (main.included) {
+    if (main.amount.endsWith(' stk')) first = `${main.amount.slice(0, -4)} ${main.name.toLowerCase()}`;
+    else if (main.id === 'langpanner') first = main.amount;
+  }
+  if (first && (main.id === 'grillpolser' || main.id === 'wienerpolser')) {
+    const sides = mainSection
+      .filter((l) => SAUSAGE_SIDES.includes(l.id) && l.included)
+      .map((l) => l.name.toLowerCase());
+    if (sides.length) first += ` med ${sides.join(' og ')}`;
+  }
+  return {
+    title: plan.title,
+    line: [first, saft.included ? saft.amount : null, plan.forWhom].filter(Boolean).join(' · '),
+  };
 }

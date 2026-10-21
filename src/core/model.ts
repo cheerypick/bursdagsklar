@@ -62,10 +62,20 @@ export type MenuKind = MenuChoice['kind'];
 export type DietTag = 'glutenfri' | 'laktosefri' | 'vegetar' | 'ingen-svin';
 export const DIET_TAGS: readonly DietTag[] = ['glutenfri', 'laktosefri', 'vegetar', 'ingen-svin'];
 
-/** The children/adults the Mat screen counts for, when the parent adjusted them there. */
+/** The children/adults the food is counted for: always the party's own head-count (rules/people.ts). */
 export interface FoodCounts {
   kids: number;
   adults: number;
+}
+
+/**
+ * One line on the Mat screen (and the matching shopping-list item, same id), as the parent left it.
+ * Only lines she has touched are stored; a missing entry means included. Keyed by the line id
+ * (`polsebrod`, `lomper`, `saft` …), so a line keeps its state when she switches dish and back.
+ */
+export interface FoodItemState {
+  /** false = deselected: shown greyed and struck through, left out of the Mat card and the shopping list. */
+  included: boolean;
 }
 
 export interface CakeChoice {
@@ -90,13 +100,15 @@ export interface TaskState {
 }
 
 /**
+ * v4 (Oct 2026): `foodCounts` is gone: the Mat screen edits the party's own numbers (one source of
+ * truth for the guest count), and `foodItems` holds the per-line `included` flag (deselect pølsebrød).
  * v3 (Oct 2026): `menu` is null until the parent picks one on the Mat screen (`menuChosen` is gone),
  * plus `diets` (the Mat chip row) and `foodCounts` (the Mat screen's own child/adult steppers).
  * v2 (Oct 2026): `child` became `celebrants` (joint birthdays: siblings or 2–3 kindergarten
  * friends), `theme` became optional (chosen later, on Planen) and `home.type` gained 'lokale'/'ute'.
  * Older records are upgraded in storage/PartyRepository.ts `migrate`.
  */
-export const SCHEMA_VERSION = 3 as const;
+export const SCHEMA_VERSION = 4 as const;
 
 /** The ages the app plans for (3–10). A 1-year-old's party is a family coffee party, not this. */
 export const MIN_AGE = 3;
@@ -140,8 +152,11 @@ export interface Party {
   menu: MenuChoice | null;
   /** Dietary needs ticked on the Mat screen (glutenfri, laktosefri, vegetar, ingen svin). */
   diets: DietTag[];
-  /** The Mat screen's own child/adult counts. null = follow the party's head-count. */
-  foodCounts: FoodCounts | null;
+  /** Per food line: included or deselected (see FoodItemState). Empty = everything included. */
+  foodItems: Record<string, FoodItemState>;
+  // TODO(godteposer): goodie bags come in a later PR as their own field, e.g.
+  // `goodieBags: { included: boolean }` (included by default, with opt-out). Candy lives there, not
+  // in the food. See docs/ARCHITECTURE.md «Later: godteposer».
   cake: CakeChoice;
   programme: { includePinata: boolean; includeSkattejakt: boolean };
   guests: Guest[];

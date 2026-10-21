@@ -7,7 +7,7 @@ import { addDays, diffDays, formatLong, mondayOf, parts, weekday, WEEKDAYS } fro
 import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { headCount } from './people';
 import { themeById } from '../themes';
-import { mainItemWord } from './food';
+import { isIncluded, mainItemWord } from './food';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -51,7 +51,7 @@ export function buildTasks(p: Party): TaskPlan {
   const has = (id: Party['haveAtHome'][number]) => p.haveAtHome.includes(id);
 
   const rows: (Task | false)[] = [
-    { id: 'guestList', date: T, title: 'Lag gjestelisten', detail: `${p.kidsInvited} barn`, auto: true },
+    { id: 'guestList', date: T, title: 'Lag gjestelisten', detail: `${p.children} barn`, auto: true },
     {
       id: 'sendInvite',
       date: front(19),
@@ -62,8 +62,9 @@ export function buildTasks(p: Party): TaskPlan {
     {
       id: 'printCards',
       date: front(18),
-      title: `Skriv ut ${p.kidsInvited} invitasjonskort`,
-      detail: 'A6, to per A4',
+      // no count here: the one children number includes the birthday children, who get no card
+      title: 'Skriv ut invitasjonskortene',
+      detail: 'A6, to per A4. Ett til hver gjest',
       link: { label: 'Se kortet', route: '/invitasjon' },
     },
     pinata &&
@@ -102,7 +103,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Ingen allergier meldt ennå',
       link: { label: 'Mat', route: '/mat' },
     },
-    menu.kind === 'pizza' &&
+    menu?.kind === 'pizza' &&
       menu.style === 'bestilt' && {
         id: 'orderPizza',
         date: at(2),
@@ -123,7 +124,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Da er fredagen roligere',
       link: { label: 'Oppskrift', route: '/kake' },
     },
-    menu.kind === 'grillpolser' && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
+    menu?.kind === 'grillpolser' && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
     {
       id: 'partyReminder',
       date: at(2),
@@ -138,7 +139,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Og gjør fiskedammen klar',
       link: { label: 'Lappene', route: '/program' },
     },
-    menu.kind === 'pizza' &&
+    menu?.kind === 'pizza' &&
       menu.style === 'hjemmelaget' && {
         id: 'makeDough',
         date: at(1),
@@ -149,7 +150,7 @@ export function buildTasks(p: Party): TaskPlan {
       id: 'buyFresh',
       date: at(1),
       title: 'Handle ferskvarer',
-      detail: `${mainItemWord(menu)}, frukt og grønt`,
+      detail: menu ? `${mainItemWord(menu)}, frukt og grønt` : 'Frukt og grønt. Velg meny under Mat',
       link: { label: 'Handleliste', route: '/mat' },
     },
     bake && {
@@ -180,19 +181,26 @@ export function buildTasks(p: Party): TaskPlan {
 }
 
 function dryDetail(p: Party): string {
-  const m = p.menu.kind;
-  const first =
+  const m = p.menu?.kind;
+  // the first dry item for the dish, skipping a line the parent deselected on the Mat screen
+  const candidates: [string, string][] =
     m === 'grillpolser' || m === 'wienerpolser'
-      ? 'Lomper'
+      ? [
+          ['lomper', 'Lomper'],
+          ['polsebrod', 'Pølsebrød'],
+        ]
       : m === 'taco'
-        ? 'Tortillas'
+        ? [['tortillas', 'Tortillas']]
         : m === 'pizza'
-          ? 'Pizzasaus'
-          : 'Saft';
-  const list = [first, 'saft', 'godteri'].filter(
-    (x, i, a) => a.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i,
-  );
-  return `${list.slice(0, -1).join(', ')} og ${list[list.length - 1]}`;
+          ? [['pizzasaus', 'Pizzasaus']]
+          : m === 'pasta'
+            ? [['pasta', 'Pasta']]
+            : [];
+  const first = candidates.find(([id]) => isIncluded(p, id))?.[1];
+  const saft = isIncluded(p, 'saft');
+  // no candy: it moves to the goodie bags (godteposer) in a later PR
+  if (first && saft) return `${first} og saft`;
+  return first ?? (saft ? 'Saft' : 'Det som står på handlelista');
 }
 
 /** A task is done if ticked, or if it is automatic and not explicitly unticked. */

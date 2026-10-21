@@ -12,6 +12,8 @@ const jointEmmaJonas = () =>
       { id: 'c1', name: 'Emma', age: 5 },
       { id: 'c2', name: 'Jonas', age: 7 },
     ],
+    // the same real party as before the one children number: 12 guests + Emma + Jonas
+    children: 14,
   });
 
 describe('ages 3–10', () => {
@@ -44,7 +46,7 @@ describe('joint birthday: names and ages', () => {
 });
 
 describe('joint birthday: the rules', () => {
-  it('both birthday children eat: 12 invited + 2 = 14 kids', () => {
+  it('the one children number counts both birthday children: 14 children = 14 kids eating', () => {
     expect(headCount(jointEmmaJonas())).toMatchObject({ kidsComing: 14, adultsEating: 4 });
   });
   it('portions use the OLDEST child (7 → band C), so nobody goes hungry', () => {

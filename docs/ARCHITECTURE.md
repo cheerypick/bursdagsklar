@@ -26,7 +26,8 @@ The rule that keeps this maintainable: **screens never calculate anything**. Eve
 | `rules/calendar.ts`          | —        | Our own month calendar: Monday-first grid, leap years, past days disabled, a year ahead, keyboard moves.                                                       |
 | `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                                                   |
 | `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                                               |
-| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, egen meny, extras and the allergy additions. The Mat screen comes in milestone 2.                          |
+| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, pasta, egen meny, extras and the allergy additions; the shopping list.                                     |
+| `rules/menu.ts`              | —        | The Mat screen: one main dish → each line's amount, pack rounding and a short reason; drinks, fruit, «Til kaken», the diet chips, item toggles; the Mat card.  |
 | `rules/constants.ts`         | §5–6     | Every number in one place; values marked (I) in the spec are our defaults.                                                                                     |
 | `texts/`                     | §7       | The pre-written template library (`templates.json`) and its renderer. No AI.                                                                                   |
 | `party.ts`                   |          | Creating a party from the setup, updates, and the summary numbers screens show.                                                                                |
@@ -39,7 +40,7 @@ Emma's worked example from the spec is the test fixture (`src/core/__fixtures__/
 Each party is **one self-contained record**:
 
 ```ts
-{ id: '7d0c…', schemaVersion: 2, createdAt, updatedAt, plannedFrom, celebrants: [{ id, name, age }], date, start, end, theme | null, home, kidsInvited, …, taskState, haveAtHome }
+{ id: '7d0c…', schemaVersion: 5, createdAt, updatedAt, plannedFrom, celebrants: [{ id, name, age }], date, start, end, theme | null, home, children, hostAdults, menu | null, diets, foodItems: { polsebrod: { included: false } }, …, taskState, haveAtHome }
 ```
 
 - `id` is a uuid (`crypto.randomUUID`), stable forever.
@@ -50,7 +51,21 @@ Each party is **one self-contained record**:
 
   Keys: `bursdagsklar:index`, `bursdagsklar:party:<id>`, `bursdagsklar:draft`.
 
-- `schemaVersion` + `migrate()` handle future changes to the record.
+- `schemaVersion` + `migrate()` handle changes to the record. v3 (the Mat screen): `menu` is null until the parent picks one (v2's pre-filled menu with `menuChosen: false` opens as «not chosen»), plus `diets`. v4: `foodCounts` (v3's separate child/adult counts on the Mat screen) is dropped and `foodItems` is added (see below). v5: one children number. `children` is the total number of children at the party, birthday children included; it replaces v4's `kidsInvited` (invited children, birthday children not counted) and the unused `siblingsAttending`. A stored v4 party with `kidsInvited: N` becomes `children: N + celebrants (+ siblings)`, the same real head-count, so its food amounts do not change. Old setup drafts are upgraded the same way (`normalizeDraft`).
+- **One children number.** `children` is the total number of children at the party, birthday children included. Setup asks «Hvor mange barn blir det?» with the helper «Med Emma» (default 12), and Planen's header, Festen er klar, the Mat screen («For 12 barn og 4 voksne»), «Endre», the to-dos (gjestelisten, godteposer) and the shopping list all show that number as is. No rule or screen adds or subtracts the birthday children. The one place they are left out is internal: the not-yet-answered estimate of staying adults counts the guests' families (`children − celebrants`, `rules/people.ts`). The invitation-card to-do has no count («Skriv ut invitasjonskortene»). Bounds: at least the birthday children + 1, at most 40 (`minChildren`, `MAX_CHILDREN`).
+- **One source of truth for the guest count.** The party's own numbers (`children`, `hostAdults`, plus the RSVPs in `guests`) give the head-count (`rules/people.ts`), and Planen, the food, the to-dos and the shopping list all read it. The Mat screen shows «For 12 barn og 4 voksne» with «Endre», an inline editor that writes to the party (`withGuestCounts` in `party.ts`): children as the one children number, adults («Voksne som spiser») as the adults eating, applied through `hostAdults` (the RSVP'd and expected parents are the floor).
+- **Food item toggles.** Every quantity line on the Mat screen (main dish, drinks, fruit) has a tap toggle. `foodItems[lineId] = { included: false }` keeps a deselected line visible (greyed, struck through) and leaves it out of the Mat card on Planen, the shopping list (`shoppingList`) and the «Handle tørrvarer» to-do. Missing entry = included. The Mat lines and shopping items share ids (`polsebrod`, `saft`, `pizzaost` …), and a test checks that. Not toggleable: «Til kaken» (a pointer to Kake), the diet lines (their chip is the toggle), «Din egen» and the frozen pizza's oven time. Swipe-to-remove on iOS/Android is a possible later nicety; the tap toggle works everywhere.
+
+### Later: godteposer (goodie bags)
+
+Candy is **not food**: it is not on the Mat screen, in `extras()` or in the shopping list. It belongs to the goodie bags, which come in their own PR:
+
+- Goodie bags are **included by default, with opt-out** (Ekaterina, 21 Oct 2026).
+- Suggested model: a `goodieBags: { included: boolean }` field on the party (schema bump, migrate to `{ included: true }`), the same `included` pattern as `foodItems`.
+- Contents per bag from `CANDY_G_CHILD` (100 g per child, kept in `rules/constants.ts` for this) and, when an RSVP says nøtter/peanøtt, nut-free candy (the rule that used to live in `extras()`).
+- What already exists and stays: the `godteposer` item (the bags themselves) in `shoppingList` and «fyll N godteposer» in the to-dos. Both should follow the opt-out.
+
+TODO(godteposer): build the above; candy shows up in the shopping list again only through the goodie bags.
 
 **Adding a server later** (yearly reminder email, two parents on one party, RSVP links): add a `RemotePartyRepository` (or a sync layer) that PUTs/GETs the same JSON by `id` and resolves conflicts on `updatedAt`. Screens and rules don't change. Keep children's data in Norway/EU and delete parties some time after the date.
 
@@ -65,7 +80,7 @@ Each party is **one self-contained record**:
 
 ## Routes
 
-`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/festdagen` · placeholders for later milestones: `/invitasjon` `/mat` `/kake` `/program`.
+`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/mat` (main dish, amounts, guest editor, item toggles) · `/festdagen` · placeholders for later milestones: `/invitasjon` `/kake` `/program`.
 
 ## Web vs native: what differs
 

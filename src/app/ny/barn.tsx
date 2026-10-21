@@ -5,7 +5,7 @@ import { SetupStep } from '../../features/setup/SetupStep';
 import { Stepper, Text } from '../../ui';
 import { radii, useColors } from '../../theme';
 import { nb } from '../../i18n/nb';
-import { draftNames, draftYoungest, MAX_KIDS, MIN_KIDS } from '../../core';
+import { draftNames, draftYoungest, MAX_CHILDREN, minChildren } from '../../core';
 
 export default function KidsStep() {
   const colors = useColors();
@@ -23,14 +23,18 @@ export default function KidsStep() {
       testID="step-kids"
     >
       <Stepper
-        value={draft.kidsInvited}
-        min={MIN_KIDS}
-        max={MAX_KIDS}
+        testID="kids-count"
+        value={draft.children}
+        min={minChildren(draft.celebrants.length)}
+        max={MAX_CHILDREN}
         unit={nb.kids.unit}
-        onChange={(kidsInvited) => updateDraft({ kidsInvited })}
+        onChange={(children) => updateDraft({ children })}
         lessLabel={nb.kids.fewer}
         moreLabel={nb.kids.more}
       />
+      <Text variant="small" style={{ marginTop: 10 }}>
+        {nb.kids.adultsLater}
+      </Text>
       <View
         style={{
           marginTop: 16,

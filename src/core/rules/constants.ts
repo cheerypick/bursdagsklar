@@ -24,9 +24,17 @@ export function stayRate(age: number): number {
 }
 
 export const DEFAULT_HOST_ADULTS = 2; // (I)
-export const DEFAULT_KIDS_INVITED = 10;
-export const MIN_KIDS = 1;
-export const MAX_KIDS = 40;
+/** Children at the party in total, birthday children included. */
+export const DEFAULT_CHILDREN = 12;
+export const MAX_CHILDREN = 40;
+/** The fewest children a party can have: the birthday children plus at least one guest. */
+export function minChildren(celebrants: number): number {
+  return Math.max(1, celebrants) + 1;
+}
+/** Keeps a children count inside minChildren..MAX_CHILDREN. */
+export function clampChildren(n: number, celebrants: number): number {
+  return Math.min(MAX_CHILDREN, Math.max(minChildren(celebrants), Math.round(n)));
+}
 
 // ---- sausages (§6.4) ----
 export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 1.5, B: 2, C: 2.5, D: 3 };
@@ -58,6 +66,23 @@ export const TACO_TORTILLA_PACK = 8; // (I)
 export const TACO_CHEESE_PACK_G = 350; // (I)
 export const TACO_SIDES_PER_EATERS = 8; // (I)
 
+// ---- pasta / pastasalat (Mat screen, Oct 2026; all I) ----
+export const PASTA_DRY_G: Record<Band, number> = { A: 50, B: 60, C: 70, D: 80 };
+export const PASTA_DRY_G_ADULT = 90;
+export const PASTA_BUFFER = 0.2;
+export const PASTA_PACK_G = 500;
+export const PASTA_HAM_G: Record<Band, number> = { A: 15, B: 20, C: 25, D: 30 };
+export const PASTA_HAM_G_ADULT = 40;
+export const PASTA_HAM_PACK_G = 150;
+export const PASTA_VEG_PER_EATERS = 8; // 1 boks mais, 1 beger cherrytomater, 1 agurk per started 8
+export const PASTA_DRESSING_PER_EATERS = 12; // 1 flaske
+export const PASTA_SAUCE_PER_PORTIONS = 6; // 1 glass ≈ 6 barneporsjoner; an adult is 1,5
+export const PASTA_CHEESE_PER_EATERS = 15; // 1 pose revet ost
+
+// ---- drinks on the Mat screen (I) ----
+export const JUICE_DL_CHILD = 5; // juice instead of saft: the same volume as ready-mixed saft
+export const WATER_DL_PER_PERSON = 2;
+
 // ---- extras (§6.7) ----
 export const SAFT_DL_CHILD = 5;
 export const SAFT_DL_ADULT = 6;
@@ -67,6 +92,10 @@ export const FRUIT_G_ADULT = 140;
 export const CAKE_PIECES_FACTOR = 1.1; // (I)
 export const CAKE_PIECES_PER_LANGPANNE = 24;
 export const MUFFINS_PER_CHILD = 0.75; // (I)
+/**
+ * Candy per child. NOT used by the food (Mat screen, shopping list): candy belongs to the goodie bags
+ * (godteposer), included by default with opt-out, which come in a later PR (docs/ARCHITECTURE.md).
+ */
 export const CANDY_G_CHILD = 100;
 export const GOODY_BAG_PACK = 10; // (I)
 export const PLATES_FACTOR = 1.2;

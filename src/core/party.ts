@@ -2,12 +2,19 @@
  * Creating and updating a Party, and the derived numbers the screens show.
  * Pure functions: the screens never compute rules themselves.
  */
-import type { Celebrant, HHMM, HomeItemId, ISODate, Party, PlaceType, ThemeId } from './model';
+import type { Celebrant, DietTag, HHMM, HomeItemId, ISODate, MenuChoice, Party, PlaceType, ThemeId } from './model';
 import { MAX_CELEBRANTS, SCHEMA_VERSION } from './model';
-import { DEFAULT_HOST_ADULTS, programmeDefaults } from './rules/constants';
+import {
+  clampChildren,
+  DEFAULT_CHILDREN,
+  DEFAULT_HOST_ADULTS,
+  MAX_CHILDREN,
+  minChildren,
+  programmeDefaults,
+} from './rules/constants';
 import { diffDays, formatRangeCompact, isWeekend } from './rules/dates';
 import { defaultPartyTime } from './rules/partyTime';
-import { defaultMenu, MENU_NAMES } from './rules/food';
+import { menuTitle } from './rules/menu';
 import { headCount } from './rules/people';
 import { buildTasks, progress } from './rules/todos';
 import { themeById } from './themes';
@@ -31,7 +38,8 @@ export interface SetupDraft {
   end: HHMM | null;
   /** True once the parent has changed the time by hand; then a new date or age keeps it. */
   timeEdited?: boolean;
-  kidsInvited: number;
+  /** Children at the party in total, the birthday children included («Hvor mange barn blir det?»). */
+  children: number;
   /** Where the party is held (the last setup step). */
   place: PlaceType | null;
 }
@@ -43,16 +51,21 @@ export const EMPTY_DRAFT: SetupDraft = {
   start: null,
   end: null,
   timeEdited: false,
-  kidsInvited: 10,
+  children: DEFAULT_CHILDREN,
   place: null,
 };
 
 /**
  * A draft read from storage, made current: older drafts had one `name`/`age` and a `theme`
- * (the theme is now chosen on Planen, so it is dropped); ages outside 3–10 are cleared.
+ * (the theme is now chosen on Planen, so it is dropped); ages outside 3–10 are cleared. Older drafts
+ * counted invited children without the birthday children (`kidsInvited`); that becomes the total.
  */
 export function normalizeDraft(raw: unknown): SetupDraft {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<SetupDraft> & { name?: string; age?: number | null };
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<SetupDraft> & {
+    name?: string;
+    age?: number | null;
+    kidsInvited?: number;
+  };
   let celebrants: DraftCelebrant[] = Array.isArray(r.celebrants)
     ? r.celebrants.slice(0, MAX_CELEBRANTS).map((c, i) => ({
         id: typeof c?.id === 'string' ? c.id : `c${i + 1}`,
@@ -69,7 +82,12 @@ export function normalizeDraft(raw: unknown): SetupDraft {
     start: typeof r.start === 'string' ? r.start : null,
     end: typeof r.end === 'string' ? r.end : null,
     timeEdited: Boolean(r.timeEdited),
-    kidsInvited: typeof r.kidsInvited === 'number' ? r.kidsInvited : EMPTY_DRAFT.kidsInvited,
+    children:
+      typeof r.children === 'number'
+        ? r.children
+        : typeof r.kidsInvited === 'number'
+          ? r.kidsInvited + celebrants.length
+          : EMPTY_DRAFT.children,
     place: r.place ?? null,
     celebrants,
   };
@@ -135,7 +153,7 @@ export function celebrantsComplete(d: Pick<SetupDraft, 'celebrants'>): boolean {
 }
 
 export function draftComplete(d: SetupDraft): boolean {
-  return Boolean(celebrantsComplete(d) && d.date && d.start && d.end && d.place && d.kidsInvited > 0);
+  return Boolean(celebrantsComplete(d) && d.date && d.start && d.end && d.place && d.children > 0);
 }
 
 /** Builds a new Party from a completed setup. `newId` is injected so tests are deterministic. */
@@ -155,11 +173,12 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     end: d.end!,
     theme: null,
     home: { type: d.place, garden: null },
-    kidsInvited: d.kidsInvited,
-    siblingsAttending: 0,
+    children: clampChildren(d.children, celebrants.length),
     hostAdults: DEFAULT_HOST_ADULTS,
-    menu: defaultMenu(d.date!),
-    menuChosen: false,
+    // nothing is assumed: the parent picks the main dish on the Mat screen
+    menu: null,
+    diets: [],
+    foodItems: {},
     cake: {
       mode: 'bake',
       // one shared cake for everyone; the youngest decides the flavour
@@ -178,6 +197,64 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
 export function withDate(p: Party, date: ISODate, today: ISODate): Party {
   if (date === p.date) return p;
   return { ...p, date, plannedFrom: today };
+}
+
+/** Mat step 1: the main dish (null clears it, back to «not chosen»). */
+export function withMenu(p: Party, menu: MenuChoice | null): Party {
+  if (menu && menu.kind === 'annet') return { ...p, menu: { kind: 'annet', text: menu.text.slice(0, 60) } };
+  return { ...p, menu };
+}
+
+/** Mat chip row: toggles one dietary need. */
+export function toggleDiet(p: Party, tag: DietTag): Party {
+  const has = p.diets.includes(tag);
+  return { ...p, diets: has ? p.diets.filter((x) => x !== tag) : [...p.diets, tag] };
+}
+
+/**
+ * Mat tap toggle: include or leave out one food line (`polsebrod`, `saft` …). Stored as a clean
+ * `included` flag per line id; the Mat card and the shopping list skip lines with included: false.
+ */
+export function withFoodItem(p: Party, id: string, included: boolean): Party {
+  return { ...p, foodItems: { ...p.foodItems, [id]: { included } } };
+}
+
+/** At most this many adults on top of the parents who RSVP'd or are expected to stay. */
+export const MAX_EXTRA_ADULTS = 30;
+
+/**
+ * The guest editor's bounds («Endre» on the Mat screen). Children are the party's one children number
+ * (the total, birthday children included: the same number setup asked for and Planen shows); adults
+ * are the adults eating, of which the host adults are the part the parent sets (the rest are
+ * RSVP'd/expected parents, see people.ts).
+ */
+export function guestBounds(p: Party): { kidsMin: number; kidsMax: number; adultsMin: number; adultsMax: number } {
+  const hc = headCount(p);
+  const others = hc.adultsEating - p.hostAdults;
+  return {
+    kidsMin: minChildren(p.celebrants.length),
+    kidsMax: MAX_CHILDREN,
+    adultsMin: others,
+    adultsMax: others + MAX_EXTRA_ADULTS,
+  };
+}
+
+/**
+ * «Endre» on the Mat screen: changes the PARTY's own numbers, the one source of truth that Planen,
+ * the food, the to-dos and the shopping list all read. `children` is the total number of children
+ * (birthday children included); `adults` is the wanted number of adults eating, applied through hostAdults.
+ */
+export function withGuestCounts(p: Party, change: { children?: number; adults?: number }): Party {
+  let next = p;
+  if (change.children !== undefined) {
+    next = { ...next, children: clampChildren(change.children, p.celebrants.length) };
+  }
+  if (change.adults !== undefined) {
+    const b = guestBounds(next);
+    const want = Math.min(b.adultsMax, Math.max(b.adultsMin, Math.round(change.adults)));
+    next = { ...next, hostAdults: want - b.adultsMin };
+  }
+  return next;
 }
 
 /** «Velg tema (valgfritt)» on Planen: a theme, or null for the neutral look. */
@@ -211,9 +288,9 @@ export function homeItemsFor(p: Party): HomeItemId[] {
     'stor-kjele',
   ];
   return all.filter((id) => {
-    if (id === 'pizzahjul') return p.menu.kind === 'pizza';
-    if (id === 'stor-kjele') return p.menu.kind === 'wienerpolser';
-    if (id === 'grill') return p.menu.kind === 'grillpolser';
+    if (id === 'pizzahjul') return p.menu?.kind === 'pizza';
+    if (id === 'stor-kjele') return p.menu?.kind === 'wienerpolser' || p.menu?.kind === 'pasta';
+    if (id === 'grill') return p.menu?.kind === 'grillpolser';
     if (id === 'laken-fiskedam' || id === 'fiskestang') return p.programme.includeSkattejakt;
     if (id === 'muffinsformer') return p.cake.muffins;
     return true;
@@ -282,7 +359,7 @@ export function summarize(p: Party, today: ISODate): PartySummary {
     countdownLabel,
     kidsComing: hc.kidsComing,
     adultsEating: hc.adultsEating,
-    menuLine: `${p.menuChosen ? MENU_NAMES[p.menu.kind] : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
+    menuLine: `${p.menu ? menuTitle(p.menu) : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
     cakeLine:
       p.cake.mode === 'buy'
         ? 'Kake fra bakeren'

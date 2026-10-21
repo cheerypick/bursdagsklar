@@ -8,13 +8,19 @@ export function Surface({
   children,
   style,
   padded = true,
+  testID,
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   padded?: boolean;
+  testID?: string;
 }) {
   const styles = useStyles();
-  return <View style={[styles.surface, padded && { padding: 20 }, style]}>{children}</View>;
+  return (
+    <View testID={testID} style={[styles.surface, padded && { padding: 20 }, style]}>
+      {children}
+    </View>
+  );
 }
 
 interface PhotoCardProps {
@@ -28,6 +34,7 @@ interface PhotoCardProps {
   arrow?: boolean;
   imagePosition?: 'top' | 'center';
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }
 
 /** A big tappable photo card (Planen). */
@@ -40,11 +47,13 @@ export function PhotoCard({
   aspectRatio = 16 / 10,
   arrow = true,
   style,
+  testID,
 }: PhotoCardProps) {
   const styles = useStyles();
   const colors = useColors();
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="link"
       accessibilityLabel={[title, sub, badge].filter(Boolean).join('. ')}
       onPress={onPress}

@@ -2,12 +2,23 @@
  * Creating and updating a Party, and the derived numbers the screens show.
  * Pure functions: the screens never compute rules themselves.
  */
-import type { Celebrant, HHMM, HomeItemId, ISODate, Party, PlaceType, ThemeId } from './model';
+import type {
+  Celebrant,
+  DietTag,
+  FoodCounts,
+  HHMM,
+  HomeItemId,
+  ISODate,
+  MenuChoice,
+  Party,
+  PlaceType,
+  ThemeId,
+} from './model';
 import { MAX_CELEBRANTS, SCHEMA_VERSION } from './model';
 import { DEFAULT_HOST_ADULTS, programmeDefaults } from './rules/constants';
 import { diffDays, formatRangeCompact, isWeekend } from './rules/dates';
 import { defaultPartyTime } from './rules/partyTime';
-import { defaultMenu, MENU_NAMES } from './rules/food';
+import { clampFoodCounts, menuTitle } from './rules/menu';
 import { headCount } from './rules/people';
 import { buildTasks, progress } from './rules/todos';
 import { themeById } from './themes';
@@ -158,8 +169,10 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     kidsInvited: d.kidsInvited,
     siblingsAttending: 0,
     hostAdults: DEFAULT_HOST_ADULTS,
-    menu: defaultMenu(d.date!),
-    menuChosen: false,
+    // nothing is assumed: the parent picks the main dish on the Mat screen
+    menu: null,
+    diets: [],
+    foodCounts: null,
     cake: {
       mode: 'bake',
       // one shared cake for everyone; the youngest decides the flavour
@@ -178,6 +191,23 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
 export function withDate(p: Party, date: ISODate, today: ISODate): Party {
   if (date === p.date) return p;
   return { ...p, date, plannedFrom: today };
+}
+
+/** Mat step 1: the main dish (null clears it, back to «not chosen»). */
+export function withMenu(p: Party, menu: MenuChoice | null): Party {
+  if (menu && menu.kind === 'annet') return { ...p, menu: { kind: 'annet', text: menu.text.slice(0, 60) } };
+  return { ...p, menu };
+}
+
+/** Mat chip row: toggles one dietary need. */
+export function toggleDiet(p: Party, tag: DietTag): Party {
+  const has = p.diets.includes(tag);
+  return { ...p, diets: has ? p.diets.filter((x) => x !== tag) : [...p.diets, tag] };
+}
+
+/** Mat steppers: the counts the food is calculated for (null = follow the party again). */
+export function withFoodCounts(p: Party, counts: FoodCounts | null): Party {
+  return { ...p, foodCounts: counts ? clampFoodCounts(counts) : null };
 }
 
 /** «Velg tema (valgfritt)» on Planen: a theme, or null for the neutral look. */
@@ -211,9 +241,9 @@ export function homeItemsFor(p: Party): HomeItemId[] {
     'stor-kjele',
   ];
   return all.filter((id) => {
-    if (id === 'pizzahjul') return p.menu.kind === 'pizza';
-    if (id === 'stor-kjele') return p.menu.kind === 'wienerpolser';
-    if (id === 'grill') return p.menu.kind === 'grillpolser';
+    if (id === 'pizzahjul') return p.menu?.kind === 'pizza';
+    if (id === 'stor-kjele') return p.menu?.kind === 'wienerpolser' || p.menu?.kind === 'pasta';
+    if (id === 'grill') return p.menu?.kind === 'grillpolser';
     if (id === 'laken-fiskedam' || id === 'fiskestang') return p.programme.includeSkattejakt;
     if (id === 'muffinsformer') return p.cake.muffins;
     return true;
@@ -282,7 +312,7 @@ export function summarize(p: Party, today: ISODate): PartySummary {
     countdownLabel,
     kidsComing: hc.kidsComing,
     adultsEating: hc.adultsEating,
-    menuLine: `${p.menuChosen ? MENU_NAMES[p.menu.kind] : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
+    menuLine: `${p.menu ? menuTitle(p.menu) : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
     cakeLine:
       p.cake.mode === 'buy'
         ? 'Kake fra bakeren'

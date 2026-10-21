@@ -6,8 +6,14 @@ import {
   toggleHome as toggleHomeRule,
   normalizeDraft,
   toggleTask as toggleTaskRule,
+  toggleDiet as toggleDietRule,
+  withFoodCounts,
+  withMenu,
   withTheme,
+  type DietTag,
+  type FoodCounts,
   type HomeItemId,
+  type MenuChoice,
   type ISODate,
   type Party,
   type PartyRepository,
@@ -28,6 +34,10 @@ interface PartyState {
   toggleHome: (id: HomeItemId) => boolean;
   /** «Velg tema» on Planen: a theme, or null for the neutral look. Saved like any change. */
   setTheme: (id: ThemeId | null) => void;
+  /** Mat: the main dish (null = not chosen), the dietary chips and the screen's own head-counts. */
+  setMenu: (menu: MenuChoice | null) => void;
+  toggleDiet: (tag: DietTag) => void;
+  setFoodCounts: (counts: FoodCounts | null) => void;
   /**
    * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
    * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
@@ -136,6 +146,10 @@ export function PartyProvider({
 
   const setTheme = useCallback((id: ThemeId | null) => update((p) => withTheme(p, id)), [update]);
 
+  const setMenu = useCallback((menu: MenuChoice | null) => update((p) => withMenu(p, menu)), [update]);
+  const toggleDiet = useCallback((tag: DietTag) => update((p) => toggleDietRule(p, tag)), [update]);
+  const setFoodCounts = useCallback((counts: FoodCounts | null) => update((p) => withFoodCounts(p, counts)), [update]);
+
   const startOver = useCallback(async () => {
     // a change still waiting to be saved would write the old party back after the reset
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -146,8 +160,36 @@ export function PartyProvider({
   }, [repository]);
 
   const value = useMemo<PartyState>(
-    () => ({ ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, setTheme, startOver }),
-    [ready, today, party, draft, updateDraft, finishSetup, toggleTask, toggleHome, setTheme, startOver],
+    () => ({
+      ready,
+      today,
+      party,
+      draft,
+      updateDraft,
+      finishSetup,
+      toggleTask,
+      toggleHome,
+      setTheme,
+      setMenu,
+      toggleDiet,
+      setFoodCounts,
+      startOver,
+    }),
+    [
+      ready,
+      today,
+      party,
+      draft,
+      updateDraft,
+      finishSetup,
+      toggleTask,
+      toggleHome,
+      setTheme,
+      setMenu,
+      toggleDiet,
+      setFoodCounts,
+      startOver,
+    ],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

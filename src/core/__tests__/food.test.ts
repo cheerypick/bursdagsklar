@@ -10,7 +10,6 @@ import {
   sausages,
   shoppingList,
   taco,
-  defaultMenu,
 } from '../rules/food';
 import { headCount } from '../rules/people';
 import { ceilSafe } from '../rules/constants';
@@ -178,8 +177,11 @@ describe('shopping list for Emma (spec §6.9)', () => {
     expect(list.map((i) => i.id)).not.toContain('kakelys');
     expect(list.map((i) => i.id)).not.toContain('ballonger');
   });
-  it('default menu: grill May–September, wiener otherwise', () => {
-    expect(defaultMenu('2026-06-13').kind).toBe('grillpolser');
-    expect(defaultMenu('2026-11-07').kind).toBe('wienerpolser');
+  it('no menu chosen: only drinks, fruit, candy and the party things', () => {
+    const ids = shoppingList(emma({ menu: null })).map((i) => i.id);
+    expect(ids).toContain('saft');
+    expect(ids).toContain('frukt');
+    expect(ids).not.toContain('grillpolser');
+    expect(ids).not.toContain('lomper');
   });
 });

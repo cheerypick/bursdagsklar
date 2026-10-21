@@ -12,6 +12,10 @@ export const images = {
   skattejakt: require('../../assets/images/skattejakt.webp'),
   fiskedam: require('../../assets/images/fiskedam.webp'),
   gjoremal: require('../../assets/images/gjoremal.webp'),
+  menuPizza: require('../../assets/images/menu-pizza.webp'),
+  menuTaco: require('../../assets/images/menu-taco.webp'),
+  menuPasta: require('../../assets/images/menu-pasta.webp'),
+  menuAnnet: require('../../assets/images/menu-annet.webp'),
 } satisfies Record<string, ImageSourcePropType>;
 
 /**

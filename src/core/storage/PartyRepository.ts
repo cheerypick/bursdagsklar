@@ -12,7 +12,7 @@
  *
  * Every key the app writes starts with `bursdagsklar:`; `reset()` («Start på nytt») removes them all.
  */
-import type { Party } from '../model';
+import type { MenuChoice, Party } from '../model';
 import { SCHEMA_VERSION } from '../model';
 import { normalizeDraft, type SetupDraft } from '../party';
 import { clampAge } from '../rules/celebrants';
@@ -59,18 +59,40 @@ interface Index {
   ids: string[];
 }
 
+/** A party saved before the Mat screen (schemaVersion 2): a pre-filled menu plus a `menuChosen` flag. */
+type PartyV2 = Omit<Party, 'schemaVersion' | 'menu' | 'diets' | 'foodCounts'> & {
+  schemaVersion: 2;
+  menu?: MenuChoice;
+  menuChosen?: boolean;
+};
+
 /** A party saved before joint birthdays (schemaVersion 1): one `child`, a required theme. */
-type PartyV1 = Omit<Party, 'schemaVersion' | 'celebrants'> & {
+type PartyV1 = Omit<PartyV2, 'schemaVersion' | 'celebrants'> & {
   schemaVersion: 1;
   child: { name: string; age: number };
 };
 
 /** v1 → v2: the single child is wrapped into `celebrants`; its age is kept inside 3–10. */
-function migrateV1(r: PartyV1): Party {
+function migrateV1(r: PartyV1): PartyV2 {
   const { child, ...rest } = r;
   const name = typeof child?.name === 'string' ? child.name : '';
   const age = typeof child?.age === 'number' ? clampAge(child.age) : 5;
-  return { ...rest, schemaVersion: SCHEMA_VERSION, theme: rest.theme ?? null, celebrants: [{ id: 'c1', name, age }] };
+  return { ...rest, schemaVersion: 2, theme: rest.theme ?? null, celebrants: [{ id: 'c1', name, age }] };
+}
+
+/**
+ * v2 → v3: the menu was pre-filled from the date (grill in summer) with `menuChosen: false`.
+ * Only a menu the parent actually picked survives; everything else opens with no menu chosen.
+ */
+function migrateV2(r: PartyV2): Party {
+  const { menu, menuChosen, ...rest } = r;
+  return {
+    ...rest,
+    schemaVersion: SCHEMA_VERSION,
+    menu: menuChosen && menu ? menu : null,
+    diets: [],
+    foodCounts: null,
+  };
 }
 
 /**
@@ -83,7 +105,9 @@ export function migrate(raw: unknown): Party | null {
   if (typeof r.id !== 'string') return null;
   switch (r.schemaVersion as number) {
     case 1:
-      return migrateV1(r as unknown as PartyV1);
+      return migrateV2(migrateV1(r as unknown as PartyV1));
+    case 2:
+      return migrateV2(r as unknown as PartyV2);
     case SCHEMA_VERSION:
       return r as Party;
     default:

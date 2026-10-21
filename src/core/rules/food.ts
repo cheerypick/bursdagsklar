@@ -1,6 +1,6 @@
 /**
  * Deterministic food rules (spec §6.4–6.8). Pure functions, no UI.
- * The Mat screen that shows these is milestone 2; the rules and their tests are here already.
+ * The Mat screen shows them through rules/menu.ts (amounts plus a reason line per item).
  */
 import type { AllergyTag, MenuChoice, Party, ShoppingItem } from '../model';
 import * as C from './constants';
@@ -132,6 +132,37 @@ export function taco(p: People) {
   };
 }
 
+// ---------------- pasta / pastasalat ----------------
+
+export function pasta(style: 'salat' | 'varm', p: People) {
+  const b = band(p.age);
+  const k = 1 + C.PASTA_BUFFER;
+  const eaters = p.kidsComing + p.adultsEating;
+  const pastaG = ceilSafe((p.kidsComing * C.PASTA_DRY_G[b] + p.adultsEating * C.PASTA_DRY_G_ADULT) * k);
+  const out = { pastaG, pastaPacks: packs(pastaG, C.PASTA_PACK_G), eaters };
+  if (style === 'salat') {
+    const hamG = ceilSafe((p.kidsComing * C.PASTA_HAM_G[b] + p.adultsEating * C.PASTA_HAM_G_ADULT) * k);
+    return {
+      ...out,
+      hamG,
+      hamPacks: packs(hamG, C.PASTA_HAM_PACK_G),
+      veg: packs(eaters, C.PASTA_VEG_PER_EATERS),
+      dressing: packs(eaters, C.PASTA_DRESSING_PER_EATERS),
+      sauceJars: 0,
+      cheesePacks: 0,
+    };
+  }
+  return {
+    ...out,
+    hamG: 0,
+    hamPacks: 0,
+    veg: 0,
+    dressing: 0,
+    sauceJars: packs(p.kidsComing + p.adultsEating * 1.5, C.PASTA_SAUCE_PER_PORTIONS),
+    cheesePacks: packs(eaters, C.PASTA_CHEESE_PER_EATERS),
+  };
+}
+
 // ---------------- egen meny ----------------
 
 export function customDish(m: Extract<MenuChoice, { kind: 'egen' }>, p: Pick<People, 'kidsComing' | 'adultsEating'>) {
@@ -179,22 +210,19 @@ export function allergyUnion(party: Pick<Party, 'guests'>): AllergyTag[] {
 
 // ---------------- the shopping list for a party ----------------
 
-/** Default main dish before the parent picks (I): grill in May–September, otherwise wiener. */
-export function defaultMenu(dateISO: string): MenuChoice {
-  const month = Number(dateISO.slice(5, 7));
-  return month >= 5 && month <= 9 ? { kind: 'grillpolser' } : { kind: 'wienerpolser' };
-}
-
 export const MENU_NAMES: Record<MenuChoice['kind'], string> = {
   grillpolser: 'Grillmeny',
   wienerpolser: 'Pølsemeny',
   pizza: 'Pizza',
   taco: 'Taco',
+  pasta: 'Pasta',
+  annet: 'Egen hovedrett',
   egen: 'Egen meny',
 };
 
 /** Short word for the main item on a shopping trip («Pølser, frukt og grønt»). */
-export function mainItemWord(menu: MenuChoice): string {
+export function mainItemWord(menu: MenuChoice | null): string {
+  if (!menu) return 'Maten';
   switch (menu.kind) {
     case 'grillpolser':
     case 'wienerpolser':
@@ -203,6 +231,10 @@ export function mainItemWord(menu: MenuChoice): string {
       return menu.style === 'hjemmelaget' ? 'Ost og skinke' : 'Pizza';
     case 'taco':
       return 'Kjøttdeig og tortillas';
+    case 'pasta':
+      return menu.style === 'salat' ? 'Pasta, skinke og grønnsaker' : 'Pasta og saus';
+    case 'annet':
+      return menu.text.trim() || 'Maten';
     case 'egen':
       return menu.name || 'Maten';
   }
@@ -217,7 +249,9 @@ export function shoppingList(party: Party): ShoppingItem[] {
   const out: ShoppingItem[] = [];
   const m = party.menu;
 
-  if (m.kind === 'grillpolser' || m.kind === 'wienerpolser') {
+  if (!m) {
+    // no menu chosen yet: only the extras below
+  } else if (m.kind === 'grillpolser' || m.kind === 'wienerpolser') {
     const s = sausages(m.kind, p);
     out.push(
       item({
@@ -423,6 +457,83 @@ export function shoppingList(party: Party): ShoppingItem[] {
         ruleRef: 'menu.taco',
       }),
     );
+  } else if (m.kind === 'pasta') {
+    const x = pasta(m.style, p);
+    out.push(
+      item({
+        id: 'pasta',
+        name: m.style === 'salat' ? 'Pasta (skruer)' : 'Pasta',
+        need: x.pastaG,
+        unit: 'g',
+        packSize: C.PASTA_PACK_G,
+        packs: x.pastaPacks,
+        display: `${x.pastaPacks} pk à 500 g`,
+        trip: 'torrvarer',
+        ruleRef: 'menu.pasta',
+      }),
+    );
+    if (m.style === 'salat') {
+      out.push(
+        item({
+          id: 'pastaskinke',
+          name: 'Skinke i terninger',
+          need: x.hamG,
+          unit: 'g',
+          packSize: C.PASTA_HAM_PACK_G,
+          packs: x.hamPacks,
+          display: `${x.hamPacks} pk à ${C.PASTA_HAM_PACK_G} g`,
+          trip: 'ferskvarer',
+          ruleRef: 'menu.pasta',
+        }),
+      );
+      out.push(
+        item({
+          id: 'pastagront',
+          name: 'Mais, cherrytomater og agurk',
+          need: x.veg,
+          unit: 'stk',
+          display: `${x.veg} av hver`,
+          trip: 'ferskvarer',
+          ruleRef: 'menu.pasta',
+        }),
+      );
+      out.push(
+        item({
+          id: 'dressing',
+          name: 'Dressing',
+          need: x.dressing,
+          unit: 'flaske',
+          display: `${x.dressing} flaske${x.dressing === 1 ? '' : 'r'}`,
+          trip: 'torrvarer',
+          ruleRef: 'menu.pasta',
+        }),
+      );
+    } else {
+      out.push(
+        item({
+          id: 'pastasaus',
+          name: 'Tomatsaus til pasta',
+          need: x.sauceJars,
+          unit: 'glass',
+          display: `${x.sauceJars} glass`,
+          trip: 'torrvarer',
+          ruleRef: 'menu.pasta',
+        }),
+      );
+      out.push(
+        item({
+          id: 'pastaost',
+          name: 'Revet ost',
+          need: x.cheesePacks,
+          unit: 'pose',
+          display: `${x.cheesePacks} pose${x.cheesePacks === 1 ? '' : 'r'}`,
+          trip: 'ferskvarer',
+          ruleRef: 'menu.pasta',
+        }),
+      );
+    }
+  } else if (m.kind === 'annet') {
+    // «Noe annet»: the parent's own dish; only the extras below are calculated
   } else {
     const c = customDish(m, p);
     out.push(

@@ -2,6 +2,7 @@ export * from './Button';
 export * from './Calendar';
 export * from './Card';
 export * from './CheckRow';
+export * from './ChoiceTile';
 export * from './ConfirmDialog';
 export * from './Grid';
 export * from './HeroButton';

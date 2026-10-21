@@ -1,0 +1,505 @@
+/**
+ * The Mat screen's numbers: one main dish → amounts for N children + M adults, each with a short
+ * reason line («ca. 2 per barn og 2 per voksen + 35 % ekstra»). Pure and deterministic: the amounts
+ * come from rules/food.ts and rules/constants.ts, the words are fixed templates. No AI.
+ */
+import type { DietTag, FoodCounts, MenuChoice, Party } from '../model';
+import * as C from './constants';
+import { band } from './constants';
+import { oldestAge } from './celebrants';
+import { headCount } from './people';
+import { extras, formatGrams, homemadePizza, pasta, pizzaCount, pizzaUnits, sausages, taco, type People } from './food';
+
+const nb = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
+const n = (x: number) => nb.format(x);
+const pct = (x: number) => `${Math.round(x * 100)} %`;
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+/** The cards in step 1, in order. «pizza» and «polser» need one more tap (how) before amounts show. */
+export type MenuCardId = 'polser' | 'pizza' | 'taco' | 'pasta' | 'annet';
+export const MENU_CARDS: readonly MenuCardId[] = ['polser', 'pizza', 'taco', 'pasta', 'annet'];
+
+export function menuCardOf(menu: MenuChoice | null): MenuCardId | null {
+  if (!menu) return null;
+  switch (menu.kind) {
+    case 'grillpolser':
+    case 'wienerpolser':
+      return 'polser';
+    case 'pizza':
+      return 'pizza';
+    case 'taco':
+      return 'taco';
+    case 'pasta':
+      return 'pasta';
+    case 'annet':
+    case 'egen':
+      return 'annet';
+  }
+}
+
+/** «Grillpølser», «Hjemmelaget pizza», «Pastasalat», or the parent's own words for «Noe annet». */
+export function menuTitle(menu: MenuChoice): string {
+  switch (menu.kind) {
+    case 'grillpolser':
+      return 'Grillpølser';
+    case 'wienerpolser':
+      return 'Wienerpølser';
+    case 'pizza':
+      return menu.style === 'hjemmelaget' ? 'Hjemmelaget pizza' : menu.style === 'frossen' ? 'Frossenpizza' : 'Pizza';
+    case 'taco':
+      return 'Taco';
+    case 'pasta':
+      return menu.style === 'salat' ? 'Pastasalat' : 'Pasta med tomatsaus';
+    case 'annet':
+      return menu.text.trim() || 'Egen hovedrett';
+    case 'egen':
+      return menu.name || 'Egen meny';
+  }
+}
+
+/** Children and adults the food is counted for: the Mat screen's own counts, else the party's. */
+export function foodCounts(p: Party): FoodCounts {
+  if (p.foodCounts) return p.foodCounts;
+  const hc = headCount(p);
+  return { kids: hc.kidsComing, adults: hc.adultsEating };
+}
+
+/** Steppers on the Mat screen. */
+export const FOOD_KIDS_MIN = 1;
+export const FOOD_KIDS_MAX = 45;
+export const FOOD_ADULTS_MIN = 0;
+export const FOOD_ADULTS_MAX = 30;
+
+export function clampFoodCounts(c: FoodCounts): FoodCounts {
+  const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(x)));
+  return {
+    kids: clamp(c.kids, FOOD_KIDS_MIN, FOOD_KIDS_MAX),
+    adults: clamp(c.adults, FOOD_ADULTS_MIN, FOOD_ADULTS_MAX),
+  };
+}
+
+export interface FoodLine {
+  id: string;
+  name: string;
+  /** The big number: «50 stk», «2 flasker», «ca. 2,3 kg». */
+  amount: string;
+  /** Pack rounding, when it applies: «5 pk à 10». */
+  packs?: string;
+  /** Why this amount, in one short line. */
+  why: string;
+}
+
+export type FoodSectionId = 'main' | 'drikke' | 'snacks' | 'kake' | 'hensyn';
+
+export interface FoodSection {
+  id: FoodSectionId;
+  title: string;
+  lines: FoodLine[];
+}
+
+export interface FoodPlanInput {
+  menu: MenuChoice;
+  counts: FoodCounts;
+  /** Portions follow the OLDEST birthday child's band (it feeds the most). */
+  age: number;
+  diets: readonly DietTag[];
+  /** Number of birthday children (one candle set each). */
+  celebrants: number;
+}
+
+export interface FoodPlan {
+  title: string;
+  /** «for 13 barn og 4 voksne» */
+  forWhom: string;
+  sections: FoodSection[];
+}
+
+export function forWhom(c: FoodCounts): string {
+  return `for ${plural(c.kids, 'barn', 'barn')} og ${plural(c.adults, 'voksen', 'voksne')}`;
+}
+
+/** «ca. 2 per barn og 2 per voksen» — the per-person rule in words. */
+function perPerson(child: number, adult: number, unit = '', c: FoodCounts): string {
+  const u = unit ? ` ${unit}` : '';
+  const kid = `ca. ${n(child)}${u} per barn`;
+  return c.adults > 0 ? `${kid} og ${n(adult)}${u} per voksen` : kid;
+}
+
+function mainLines(menu: MenuChoice, people: People, c: FoodCounts): FoodLine[] {
+  const b = band(people.age);
+  switch (menu.kind) {
+    case 'grillpolser':
+    case 'wienerpolser': {
+      const s = sausages(menu.kind, people);
+      const word = menu.kind === 'grillpolser' ? 'Grillpølser' : 'Wienerpølser';
+      return [
+        {
+          id: menu.kind,
+          name: word,
+          amount: `${s.packs * s.pack} stk`,
+          packs: `${s.packs} pk à ${s.pack}`,
+          why: `${perPerson(C.SAUSAGE_PER_CHILD[b], C.SAUSAGE_PER_ADULT, '', c)} + ${pct(C.SAUSAGE_BUFFER[menu.kind])} ekstra = ${s.need}, rundet opp til hele pakker`,
+        },
+        {
+          id: 'lomper',
+          name: 'Lomper',
+          amount: `${s.lomper} stk`,
+          packs: `${s.lomperPacks} pk à ${C.LOMPER_PACK}`,
+          why: 'Én til hver pølse',
+        },
+        {
+          id: 'polsebrod',
+          name: 'Pølsebrød',
+          amount: `${s.bunPacks * C.POLSEBROD_PACK} stk`,
+          packs: `${s.bunPacks} pk à ${C.POLSEBROD_PACK}`,
+          why: 'Ett til annenhver pølse, til dem som vil ha brød',
+        },
+        {
+          id: 'ketchup',
+          name: 'Ketchup, sennep og sprøstekt løk',
+          amount: `${s.condiments} av hver`,
+          why: `Én av hver per påbegynte ${C.CONDIMENT_PER_EATERS} som spiser`,
+        },
+      ];
+    }
+    case 'pizza': {
+      const units = pizzaUnits(people);
+      const unitWhy = `${perPerson(C.PIZZA_SLICES_PER_CHILD[b], C.PIZZA_SLICES_PER_ADULT, 'stykker', c)} + ${pct(C.PIZZA_BUFFER)} ekstra = ${units} stykker`;
+      if (menu.style === 'hjemmelaget') {
+        const trays = pizzaCount(units, 'hjemmelaget');
+        const h = homemadePizza(trays);
+        const cheeseOnly = trays - h.hamTrays;
+        return [
+          {
+            id: 'langpanner',
+            name: 'Pizza i langpanne',
+            amount: plural(trays, 'langpanne', 'langpanner'),
+            why: `${unitWhy}, ca. ${C.PIZZA_UNITS_PER.langpanne} per langpanne`,
+          },
+          {
+            id: 'hvetemel',
+            name: 'Hvetemel',
+            amount: formatGrams(h.flourG),
+            packs: `${h.flourPacks} pk à 1 kg`,
+            why: `${n(h.flourDl)} dl, 8 dl per langpanne`,
+          },
+          {
+            id: 'gjaer',
+            name: 'Fersk gjær',
+            amount: `${h.yeastG} g`,
+            packs: `${h.yeastPacks} pk à 50 g`,
+            why: '25 g per langpanne',
+          },
+          {
+            id: 'pizzasaus',
+            name: 'Pizzasaus',
+            amount: plural(h.sauceJars, 'glass', 'glass'),
+            why: 'Ett glass per langpanne',
+          },
+          {
+            id: 'pizzaost',
+            name: 'Revet ost',
+            amount: formatGrams(h.cheeseG),
+            packs: `${h.cheesePacks} pk à 350 g`,
+            why: '300 g per langpanne',
+          },
+          {
+            id: 'pizzaskinke',
+            name: 'Skinke',
+            amount: `${h.hamG} g`,
+            packs: `${h.hamPacks} pk à 150 g`,
+            why:
+              cheeseOnly > 0
+                ? `150 g per langpanne, på ${h.hamTrays} av ${trays}. Én i fire er bare med ost`
+                : '150 g per langpanne',
+          },
+        ];
+      }
+      const pizzas = pizzaCount(units, 'frossen');
+      const rounds = Math.ceil(pizzas / C.FROZEN_PIZZAS_PER_ROUND - 1e-9);
+      return [
+        {
+          id: 'frossenpizza',
+          name: 'Frossenpizza',
+          amount: `${pizzas} stk`,
+          why: `${unitWhy}, ca. ${C.PIZZA_UNITS_PER.frossen} per pizza`,
+        },
+        {
+          id: 'ovnstid',
+          name: 'Steking',
+          amount: `ca. ${rounds * C.FROZEN_ROUND_MIN} min`,
+          why: `${C.FROZEN_PIZZAS_PER_ROUND} om gangen i ovnen, ${plural(rounds, 'runde', 'runder')} à ca. ${C.FROZEN_ROUND_MIN} min`,
+        },
+      ];
+    }
+    case 'taco': {
+      const t = taco(people);
+      const buf = `+ ${pct(C.TACO_BUFFER)} ekstra`;
+      return [
+        {
+          id: 'kjottdeig',
+          name: 'Kjøttdeig',
+          amount: formatGrams(t.meatG),
+          packs: `${t.meatPacks} pk à ${C.TACO_MEAT_PACK_G} g`,
+          why: `${perPerson(C.TACO_MEAT_G[b], C.TACO_MEAT_G_ADULT, 'g', c)} ${buf}`,
+        },
+        {
+          id: 'tortillas',
+          name: 'Tortillas',
+          amount: `${t.tortillaPacks * C.TACO_TORTILLA_PACK} stk`,
+          packs: `${t.tortillaPacks} pk à ${C.TACO_TORTILLA_PACK}`,
+          why: `${perPerson(C.TACO_TORTILLA[b], C.TACO_TORTILLA_ADULT, '', c)} ${buf} = ${t.tortillas}`,
+        },
+        {
+          id: 'tacoost',
+          name: 'Revet ost',
+          amount: formatGrams(t.cheeseG),
+          packs: `${t.cheesePacks} pk à ${C.TACO_CHEESE_PACK_G} g`,
+          why: `${perPerson(C.TACO_CHEESE_G[b], C.TACO_CHEESE_G_ADULT, 'g', c)} ${buf}`,
+        },
+        {
+          id: 'tacokrydder',
+          name: 'Tacokrydder, mild',
+          amount: plural(t.spiceBags, 'pose', 'poser'),
+          why: 'Én pose per 2 pakker kjøttdeig',
+        },
+        {
+          id: 'tacotilbehor',
+          name: 'Mais, rømme og tacosaus',
+          amount: `${t.mais} av hver`,
+          why: `Én av hver per påbegynte ${C.TACO_SIDES_PER_EATERS} som spiser`,
+        },
+        {
+          id: 'isberg',
+          name: 'Isbergsalat, agurk og tomat',
+          amount: `${Math.max(1, Math.ceil(t.isberg - 1e-9))} av hver`,
+          why: `Én av hver per påbegynte ${C.TACO_SIDES_PER_EATERS * 2} som spiser`,
+        },
+      ];
+    }
+    case 'pasta': {
+      const x = pasta(menu.style, people);
+      const first: FoodLine = {
+        id: 'pasta',
+        name: menu.style === 'salat' ? 'Pasta (skruer)' : 'Pasta',
+        amount: formatGrams(x.pastaPacks * C.PASTA_PACK_G),
+        packs: `${x.pastaPacks} pk à ${C.PASTA_PACK_G} g`,
+        why: `${perPerson(C.PASTA_DRY_G[b], C.PASTA_DRY_G_ADULT, 'g tørr pasta', c)} + ${pct(C.PASTA_BUFFER)} ekstra = ${formatGrams(x.pastaG)}`,
+      };
+      if (menu.style === 'salat')
+        return [
+          first,
+          {
+            id: 'pastaskinke',
+            name: 'Skinke i terninger',
+            amount: `${x.hamPacks * C.PASTA_HAM_PACK_G} g`,
+            packs: `${x.hamPacks} pk à ${C.PASTA_HAM_PACK_G} g`,
+            why: `${perPerson(C.PASTA_HAM_G[b], C.PASTA_HAM_G_ADULT, 'g', c)} + ${pct(C.PASTA_BUFFER)} ekstra`,
+          },
+          {
+            id: 'pastagront',
+            name: 'Mais, cherrytomater og agurk',
+            amount: `${x.veg} av hver`,
+            why: `Én boks, ett beger og én agurk per påbegynte ${C.PASTA_VEG_PER_EATERS} som spiser`,
+          },
+          {
+            id: 'dressing',
+            name: 'Dressing',
+            amount: plural(x.dressing, 'flaske', 'flasker'),
+            why: `Én flaske per påbegynte ${C.PASTA_DRESSING_PER_EATERS} som spiser`,
+          },
+        ];
+      return [
+        first,
+        {
+          id: 'pastasaus',
+          name: 'Tomatsaus til pasta',
+          amount: plural(x.sauceJars, 'glass', 'glass'),
+          why: `Ett glass holder til ca. ${C.PASTA_SAUCE_PER_PORTIONS} barn (en voksen spiser som 1,5)`,
+        },
+        {
+          id: 'pastaost',
+          name: 'Revet ost',
+          amount: plural(x.cheesePacks, 'pose', 'poser'),
+          why: `Én pose per påbegynte ${C.PASTA_CHEESE_PER_EATERS} som spiser`,
+        },
+      ];
+    }
+    case 'annet':
+    case 'egen':
+      return [
+        {
+          id: 'egen',
+          name: menuTitle(menu),
+          amount: 'Din egen',
+          why: 'Mengden til hovedretten bestemmer du. Drikke, frukt og kake under er regnet ut',
+        },
+      ];
+  }
+}
+
+type DietGroup = 'polser' | 'pizza-hjemmelaget' | 'pizza-frossen' | 'taco' | 'pasta-salat' | 'pasta-varm' | 'annet';
+
+function dietGroup(menu: MenuChoice): DietGroup {
+  switch (menu.kind) {
+    case 'grillpolser':
+    case 'wienerpolser':
+      return 'polser';
+    case 'pizza':
+      return menu.style === 'hjemmelaget' ? 'pizza-hjemmelaget' : 'pizza-frossen';
+    case 'taco':
+      return 'taco';
+    case 'pasta':
+      return menu.style === 'salat' ? 'pasta-salat' : 'pasta-varm';
+    default:
+      return 'annet';
+  }
+}
+
+export const DIET_LABELS: Record<DietTag, string> = {
+  glutenfri: 'Glutenfri',
+  laktosefri: 'Laktosefri',
+  vegetar: 'Vegetar',
+  'ingen-svin': 'Ingen svin',
+};
+
+/** [extra portion, note] per need and dish. Plain shopping advice, no health claims. */
+const DIET_TEXT: Record<DietTag, Record<DietGroup, [string, string]>> = {
+  glutenfri: {
+    polser: ['1 pk glutenfrie pølsebrød eller lomper', 'Pølser kan inneholde gluten. Sjekk merkingen'],
+    'pizza-hjemmelaget': ['1 pk glutenfri pizzamel eller -bunn', 'Stekes først, på eget brett'],
+    'pizza-frossen': ['1 glutenfri frossenpizza', 'Stekes først, på eget brett'],
+    taco: ['1 pk glutenfrie tortillas', 'Sjekk at tacokrydderet er uten gluten'],
+    'pasta-salat': ['1 pk glutenfri pasta (500 g)', 'Kokes i egen kjele og blandes i egen bolle'],
+    'pasta-varm': ['1 pk glutenfri pasta (500 g)', 'Kokes i egen kjele'],
+    annet: ['1 ekstra porsjon uten gluten', 'Sjekk merkingen på det du kjøper'],
+  },
+  laktosefri: {
+    polser: ['1 pk lomper eller brød uten melk', 'Lomper og pølser kan inneholde melk. Sjekk merkingen'],
+    'pizza-hjemmelaget': ['1 pk laktosefri revet ost', 'Til én egen langpanne'],
+    'pizza-frossen': ['1 laktosefri frossenpizza', 'Sjekk merkingen'],
+    taco: ['1 laktosefri rømme og 1 pk laktosefri ost', 'Sett dem i egne skåler'],
+    'pasta-salat': ['1 laktosefri dressing', 'Eller sett dressingen ved siden av'],
+    'pasta-varm': ['1 pose laktosefri revet ost', 'Sett osten ved siden av, så velger hver selv'],
+    annet: ['1 ekstra porsjon uten laktose', 'Sjekk merkingen på det du kjøper'],
+  },
+  vegetar: {
+    polser: ['1 pk vegetarpølser', 'Grilles eller kokes først, på egen side eller i egen kjele'],
+    'pizza-hjemmelaget': ['1 langpanne uten skinke', 'Ost og grønnsaker, f.eks. mais og paprika'],
+    'pizza-frossen': ['1 vegetarpizza, f.eks. margherita', 'Stekes først'],
+    taco: ['1 pk vegetarfarse eller 1 boks bønner', 'Lag den i egen panne'],
+    'pasta-salat': ['1 boks bønner eller kikerter', 'Sett av en bolle uten skinke'],
+    'pasta-varm': ['1 ekstra glass tomatsaus', 'Tomatsausen er uten kjøtt. Sjekk merkingen'],
+    annet: ['1 ekstra porsjon uten kjøtt', 'Sett den av før resten serveres'],
+  },
+  'ingen-svin': {
+    polser: ['1 pk kyllingpølser', 'Grilles eller kokes først, på egen side eller i egen kjele'],
+    'pizza-hjemmelaget': ['1 pk kyllingpålegg til én langpanne', 'I stedet for skinke på den langpannen'],
+    'pizza-frossen': ['1 pizza uten svinekjøtt', 'Sjekk merkingen'],
+    taco: ['Kjøttdeig av storfe eller kylling', 'Velg ren storfe- eller kyllingdeig, ikke blandet med svin'],
+    'pasta-salat': ['1 pk kyllingpålegg', 'I stedet for skinke i én bolle'],
+    'pasta-varm': ['Ingen ekstra trengs', 'Tomatsausen er uten kjøtt. Sjekk merkingen'],
+    annet: ['1 ekstra porsjon uten svin', 'Sjekk merkingen på det du kjøper'],
+  },
+};
+
+export function dietLines(menu: MenuChoice, diets: readonly DietTag[]): FoodLine[] {
+  const g = dietGroup(menu);
+  return C_DIET_ORDER.filter((t) => diets.includes(t)).map((t) => {
+    const [extra, note] = DIET_TEXT[t][g];
+    return { id: `diet-${t}`, name: DIET_LABELS[t], amount: extra, why: note };
+  });
+}
+const C_DIET_ORDER: readonly DietTag[] = ['glutenfri', 'laktosefri', 'vegetar', 'ingen-svin'];
+
+/** Everything the Mat screen lists for one main dish. */
+export function foodPlan(input: FoodPlanInput): FoodPlan {
+  const c = clampFoodCounts(input.counts);
+  const people: People = { kidsComing: c.kids, adultsEating: c.adults, age: input.age };
+  const e = extras(people, { muffins: false });
+  const juiceL = Math.round(((c.kids * C.JUICE_DL_CHILD + c.adults * C.SAFT_DL_ADULT) / 10) * 10) / 10;
+  const waterL = Math.max(1, Math.ceil(((c.kids + c.adults) * C.WATER_DL_PER_PERSON) / 10 - 1e-9));
+  const sections: FoodSection[] = [
+    { id: 'main', title: 'Hovedrett', lines: mainLines(input.menu, people, c) },
+    {
+      id: 'drikke',
+      title: 'Drikke',
+      lines: [
+        {
+          id: 'saft',
+          name: 'Saft eller juice',
+          amount: plural(e.saftBottles, 'flaske saft', 'flasker saft'),
+          why: `${perPerson(C.SAFT_DL_CHILD, C.SAFT_DL_ADULT, 'dl', c)} = ca. ${n(e.saftLitres)} liter. Juice i stedet: ca. ${n(juiceL)} liter`,
+        },
+        {
+          id: 'vann',
+          name: 'Vann',
+          amount: `ca. ${waterL} liter`,
+          why: `En mugge på bordet, ca. ${C.WATER_DL_PER_PERSON} dl per person. Fyll på underveis`,
+        },
+      ],
+    },
+    {
+      id: 'snacks',
+      title: 'Snacks og frukt',
+      lines: [
+        {
+          id: 'frukt',
+          name: 'Frukt og grønt',
+          amount: e.fruitDisplay,
+          why: `${perPerson(C.FRUIT_G_CHILD, C.FRUIT_G_ADULT, 'g', c)}, f.eks. druer, epler, agurk og gulrot`,
+        },
+        {
+          id: 'godteri',
+          name: 'Godteri',
+          amount: e.candyDisplay,
+          why: `ca. ${C.CANDY_G_CHILD} g per barn, i skål eller godteposer`,
+        },
+      ],
+    },
+    {
+      id: 'kake',
+      title: 'Til kaken',
+      lines: [
+        {
+          id: 'kake',
+          name: 'Kake',
+          amount: `ca. ${e.cakePieces} biter`,
+          why:
+            input.celebrants > 1
+              ? 'Én bit til alle, og litt til. Kaken velger du under Kake senere. Ett lys-sett per bursdagsbarn'
+              : 'Én bit til alle, og litt til. Kaken velger du under Kake senere',
+        },
+      ],
+    },
+  ];
+  const diet = dietLines(input.menu, input.diets);
+  if (diet.length) sections.splice(1, 0, { id: 'hensyn', title: 'Allergier og hensyn', lines: diet });
+  return { title: menuTitle(input.menu), forWhom: forWhom(c), sections };
+}
+
+/** The Mat screen for a party, or null while no menu is chosen. */
+export function partyFoodPlan(p: Party): FoodPlan | null {
+  if (!p.menu) return null;
+  return foodPlan({
+    menu: p.menu,
+    counts: foodCounts(p),
+    age: oldestAge(p.celebrants),
+    diets: p.diets,
+    celebrants: p.celebrants.length,
+  });
+}
+
+/** The Mat card on Planen: «Grillpølser» + «50 pølser · 2 flasker saft · for 13 barn og 4 voksne». */
+export function foodCardSummary(p: Party): { title: string; line: string } | null {
+  const plan = partyFoodPlan(p);
+  if (!plan) return null;
+  const main = plan.sections.find((s) => s.id === 'main')!.lines[0];
+  const saft = plan.sections.find((s) => s.id === 'drikke')!.lines[0];
+  const first = main.amount.endsWith(' stk')
+    ? `${main.amount.slice(0, -4)} ${main.name.toLowerCase()}`
+    : main.id === 'langpanner'
+      ? main.amount
+      : null;
+  return { title: plan.title, line: [first, saft.amount, plan.forWhom].filter(Boolean).join(' · ') };
+}

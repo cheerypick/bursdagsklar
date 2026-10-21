@@ -102,7 +102,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Ingen allergier meldt ennå',
       link: { label: 'Mat', route: '/mat' },
     },
-    menu.kind === 'pizza' &&
+    menu?.kind === 'pizza' &&
       menu.style === 'bestilt' && {
         id: 'orderPizza',
         date: at(2),
@@ -123,7 +123,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Da er fredagen roligere',
       link: { label: 'Oppskrift', route: '/kake' },
     },
-    menu.kind === 'grillpolser' && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
+    menu?.kind === 'grillpolser' && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
     {
       id: 'partyReminder',
       date: at(2),
@@ -138,7 +138,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Og gjør fiskedammen klar',
       link: { label: 'Lappene', route: '/program' },
     },
-    menu.kind === 'pizza' &&
+    menu?.kind === 'pizza' &&
       menu.style === 'hjemmelaget' && {
         id: 'makeDough',
         date: at(1),
@@ -149,7 +149,7 @@ export function buildTasks(p: Party): TaskPlan {
       id: 'buyFresh',
       date: at(1),
       title: 'Handle ferskvarer',
-      detail: `${mainItemWord(menu)}, frukt og grønt`,
+      detail: menu ? `${mainItemWord(menu)}, frukt og grønt` : 'Frukt og grønt. Velg meny under Mat',
       link: { label: 'Handleliste', route: '/mat' },
     },
     bake && {
@@ -180,7 +180,7 @@ export function buildTasks(p: Party): TaskPlan {
 }
 
 function dryDetail(p: Party): string {
-  const m = p.menu.kind;
+  const m = p.menu?.kind;
   const first =
     m === 'grillpolser' || m === 'wienerpolser'
       ? 'Lomper'
@@ -188,7 +188,9 @@ function dryDetail(p: Party): string {
         ? 'Tortillas'
         : m === 'pizza'
           ? 'Pizzasaus'
-          : 'Saft';
+          : m === 'pasta'
+            ? 'Pasta'
+            : 'Saft';
   const list = [first, 'saft', 'godteri'].filter(
     (x, i, a) => a.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i,
   );

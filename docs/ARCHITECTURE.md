@@ -26,7 +26,8 @@ The rule that keeps this maintainable: **screens never calculate anything**. Eve
 | `rules/calendar.ts`          | —        | Our own month calendar: Monday-first grid, leap years, past days disabled, a year ahead, keyboard moves.                                                       |
 | `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                                                   |
 | `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                                               |
-| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, egen meny, extras and the allergy additions. The Mat screen comes in milestone 2.                          |
+| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, pasta, egen meny, extras and the allergy additions; the shopping list.                                     |
+| `rules/menu.ts`              | —        | The Mat screen: one main dish → each line's amount, pack rounding and a short reason; drinks, snacks, «Til kaken», the diet chips; the Mat card on Planen.     |
 | `rules/constants.ts`         | §5–6     | Every number in one place; values marked (I) in the spec are our defaults.                                                                                     |
 | `texts/`                     | §7       | The pre-written template library (`templates.json`) and its renderer. No AI.                                                                                   |
 | `party.ts`                   |          | Creating a party from the setup, updates, and the summary numbers screens show.                                                                                |
@@ -39,7 +40,7 @@ Emma's worked example from the spec is the test fixture (`src/core/__fixtures__/
 Each party is **one self-contained record**:
 
 ```ts
-{ id: '7d0c…', schemaVersion: 2, createdAt, updatedAt, plannedFrom, celebrants: [{ id, name, age }], date, start, end, theme | null, home, kidsInvited, …, taskState, haveAtHome }
+{ id: '7d0c…', schemaVersion: 3, createdAt, updatedAt, plannedFrom, celebrants: [{ id, name, age }], date, start, end, theme | null, home, kidsInvited, menu | null, diets, foodCounts | null, …, taskState, haveAtHome }
 ```
 
 - `id` is a uuid (`crypto.randomUUID`), stable forever.
@@ -50,7 +51,7 @@ Each party is **one self-contained record**:
 
   Keys: `bursdagsklar:index`, `bursdagsklar:party:<id>`, `bursdagsklar:draft`.
 
-- `schemaVersion` + `migrate()` handle future changes to the record.
+- `schemaVersion` + `migrate()` handle changes to the record. v3 (the Mat screen): `menu` is null until the parent picks one (v2's pre-filled menu with `menuChosen: false` opens as «not chosen»), plus `diets` and `foodCounts` (the Mat screen's own child/adult counts; null follows the party).
 
 **Adding a server later** (yearly reminder email, two parents on one party, RSVP links): add a `RemotePartyRepository` (or a sync layer) that PUTs/GETs the same JSON by `id` and resolves conflicts on `updatedAt`. Screens and rules don't change. Keep children's data in Norway/EU and delete parties some time after the date.
 

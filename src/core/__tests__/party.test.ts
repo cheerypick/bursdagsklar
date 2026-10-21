@@ -108,7 +108,7 @@ describe('createParty', () => {
     const p = createParty(draft, { id: 'abc', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' });
     expect(p).toMatchObject({
       id: 'abc',
-      schemaVersion: 2,
+      schemaVersion: 3,
       createdAt: '2026-10-19T08:00:00.000Z',
       updatedAt: '2026-10-19T08:00:00.000Z',
       plannedFrom: '2026-10-19',
@@ -121,10 +121,11 @@ describe('createParty', () => {
       // nothing the parent hasn't chosen: no piñata, skattejakt or muffins yet
       programme: { includePinata: false, includeSkattejakt: false },
       cake: { mode: 'bake', muffins: false },
-      menuChosen: false,
+      // no menu until the parent picks one on the Mat screen (not even a seasonal guess)
+      menu: null,
+      diets: [],
+      foodCounts: null,
     });
-    // November → wienerpølser by default until the parent picks (Mat is milestone 2)
-    expect(p.menu.kind).toBe('wienerpolser');
   });
   it('a fresh party assumes no activity or menu the parent has not chosen', () => {
     const p = createParty(draft, { id: 'abc', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' });
@@ -162,7 +163,7 @@ describe('summary for «Festen er klar» and Planen (spec §10.2)', () => {
       countdownLabel: '19 dager igjen',
       kidsComing: 13,
       adultsEating: 4,
-      menuLine: 'Grillmeny for 13 barn og 4 voksne',
+      menuLine: 'Grillpølser for 13 barn og 4 voksne',
       cakeLine: 'Enhjørningkake og muffins',
       cakeIdea: 'Rosa og hvit kake med regnbuedryss og muffins',
       programmeLine: 'Program 12–14 med skattejakt',
@@ -272,11 +273,16 @@ describe('PartyRepository (one record per party)', () => {
     await repo.saveDraft(null);
     expect(await repo.loadDraft()).toBeNull();
   });
-  it('upgrades a v1 party (one child) to v2 (celebrants), keeping its theme', async () => {
-    const { celebrants, ...rest } = emma();
-    const v1 = { ...rest, schemaVersion: 1, child: { name: celebrants[0].name, age: celebrants[0].age } };
+  it('upgrades a v1 party (one child) to v3 (celebrants), keeping its theme', async () => {
+    const { celebrants, diets: _d, foodCounts: _f, ...rest } = emma();
+    const v1 = {
+      ...rest,
+      menuChosen: true,
+      schemaVersion: 1,
+      child: { name: celebrants[0].name, age: celebrants[0].age },
+    };
     const p = migrate(v1)!;
-    expect(p.schemaVersion).toBe(2);
+    expect(p.schemaVersion).toBe(3);
     expect(p.celebrants).toEqual([{ id: 'c1', name: 'Emma', age: 5 }]);
     expect(p).not.toHaveProperty('child');
     expect(p.theme).toBe('enhjorning');
@@ -287,6 +293,21 @@ describe('PartyRepository (one record per party)', () => {
     const store = memoryStore();
     await store.setItem(`bursdagsklar:party:${v1.id}`, JSON.stringify(v1));
     expect((await createPartyRepository(store).get(v1.id))?.celebrants[0].name).toBe('Emma');
+  });
+  it('upgrades a v2 party: a pre-filled menu the parent never picked becomes «not chosen»', async () => {
+    const { diets: _d, foodCounts: _f, ...rest } = emma();
+    const v2 = { ...rest, schemaVersion: 2, menu: { kind: 'wienerpolser' }, menuChosen: false };
+    const p = migrate(v2)!;
+    expect(p).toMatchObject({ schemaVersion: 3, menu: null, diets: [], foodCounts: null });
+    expect(p).not.toHaveProperty('menuChosen');
+    // a menu the parent did pick survives
+    expect(migrate({ ...v2, menu: { kind: 'taco' }, menuChosen: true })!.menu).toEqual({ kind: 'taco' });
+    // and an old party opens fine through the repository, with no menu chosen
+    const store = memoryStore();
+    await store.setItem(`bursdagsklar:party:${v2.id}`, JSON.stringify(v2));
+    const loaded = await createPartyRepository(store).get(v2.id);
+    expect(loaded?.menu).toBeNull();
+    expect(summarize(loaded!, '2026-10-19').menuLine).toBe('Mat for 13 barn og 4 voksne');
   });
   it('ignores unknown schema versions and junk', () => {
     expect(migrate({ ...emma(), schemaVersion: 99 })).toBeNull();

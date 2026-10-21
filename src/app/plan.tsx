@@ -8,7 +8,17 @@ import { StartOverButton } from '../features/StartOver';
 import { Button, Grid, Icon, PhotoCard, Screen, Surface, Text } from '../ui';
 import { fonts, images, radii, themeImages, useLayout, themedStyles, useColors } from '../theme';
 import { nb } from '../i18n/nb';
-import { buildTasks, formatLongCap, formatRangeCompact, nextTask, planTitle, summarize, themeById } from '../core';
+import {
+  buildTasks,
+  foodCardSummary,
+  formatLongCap,
+  formatRangeCompact,
+  menuCardOf,
+  nextTask,
+  planTitle,
+  summarize,
+  themeById,
+} from '../core';
 
 export default function PlanScreen() {
   const styles = useStyles();
@@ -27,6 +37,18 @@ export default function PlanScreen() {
   const { tasks } = buildTasks(party);
   const next = nextTask(party, tasks, today);
   const tid = formatRangeCompact(party.start, party.end);
+  const food = foodCardSummary(party);
+  const foodCard = menuCardOf(party.menu);
+  const foodImage =
+    foodCard === 'pizza'
+      ? images.menuPizza
+      : foodCard === 'taco'
+        ? images.menuTaco
+        : foodCard === 'pasta'
+          ? images.menuPasta
+          : foodCard === 'annet'
+            ? images.menuAnnet
+            : images.grill;
 
   const cards = [
     {
@@ -39,10 +61,10 @@ export default function PlanScreen() {
     },
     {
       key: 'food',
-      image: images.grill,
-      title: nb.plan.cards.food.title,
-      sub: nb.plan.cards.food.sub,
-      badge: party.menuChosen ? undefined : nb.plan.cards.food.badgeChoose,
+      image: foodImage,
+      title: food ? nb.plan.cards.food.chosenTitle(food.title) : nb.plan.cards.food.title,
+      sub: food ? food.line : nb.plan.cards.food.sub,
+      badge: food ? undefined : nb.plan.cards.food.badgeChoose,
       route: '/mat',
     },
     { key: 'cake', image: images.cake, title: nb.plan.cards.cake.title, sub: s.cakeIdea, route: '/kake', half: true },
@@ -174,6 +196,7 @@ export default function PlanScreen() {
             keyOf={(c) => c.key}
             render={(c) => (
               <PhotoCard
+                testID={`plan-card-${c.key}`}
                 image={c.image}
                 title={c.title}
                 sub={c.sub}
@@ -191,6 +214,7 @@ export default function PlanScreen() {
               .map((c) => (
                 <PhotoCard
                   key={c.key}
+                  testID={`plan-card-${c.key}`}
                   image={c.image}
                   title={c.title}
                   sub={c.sub}
@@ -205,6 +229,7 @@ export default function PlanScreen() {
               keyOf={(c) => c.key}
               render={(c) => (
                 <PhotoCard
+                  testID={`plan-card-${c.key}`}
                   image={c.image}
                   title={c.title}
                   sub={c.sub}
@@ -219,6 +244,7 @@ export default function PlanScreen() {
               .map((c) => (
                 <PhotoCard
                   key={c.key}
+                  testID={`plan-card-${c.key}`}
                   image={c.image}
                   title={c.title}
                   sub={c.sub}

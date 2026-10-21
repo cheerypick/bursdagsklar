@@ -43,6 +43,9 @@ export type MenuChoice =
   | { kind: 'wienerpolser' }
   | { kind: 'pizza'; style: 'hjemmelaget' | 'frossen' | 'bestilt'; takeawaySize?: '30' | '40' }
   | { kind: 'taco'; shells?: boolean }
+  | { kind: 'pasta'; style: 'salat' | 'varm' }
+  /** «Noe annet»: the parent's own words; only drinks, snacks and cake are calculated. */
+  | { kind: 'annet'; text: string }
   | {
       kind: 'egen';
       name: string;
@@ -54,6 +57,16 @@ export type MenuChoice =
     };
 
 export type MenuKind = MenuChoice['kind'];
+
+/** The Mat screen's chip row: each adds a note line and one extra-portion suggestion. */
+export type DietTag = 'glutenfri' | 'laktosefri' | 'vegetar' | 'ingen-svin';
+export const DIET_TAGS: readonly DietTag[] = ['glutenfri', 'laktosefri', 'vegetar', 'ingen-svin'];
+
+/** The children/adults the Mat screen counts for, when the parent adjusted them there. */
+export interface FoodCounts {
+  kids: number;
+  adults: number;
+}
 
 export interface CakeChoice {
   mode: 'bake' | 'buy';
@@ -77,11 +90,13 @@ export interface TaskState {
 }
 
 /**
+ * v3 (Oct 2026): `menu` is null until the parent picks one on the Mat screen (`menuChosen` is gone),
+ * plus `diets` (the Mat chip row) and `foodCounts` (the Mat screen's own child/adult steppers).
  * v2 (Oct 2026): `child` became `celebrants` (joint birthdays: siblings or 2–3 kindergarten
  * friends), `theme` became optional (chosen later, on Planen) and `home.type` gained 'lokale'/'ute'.
  * Older records are upgraded in storage/PartyRepository.ts `migrate`.
  */
-export const SCHEMA_VERSION = 2 as const;
+export const SCHEMA_VERSION = 3 as const;
 
 /** The ages the app plans for (3–10). A 1-year-old's party is a family coffee party, not this. */
 export const MIN_AGE = 3;
@@ -121,9 +136,12 @@ export interface Party {
   kidsInvited: number;
   siblingsAttending: number;
   hostAdults: number;
-  menu: MenuChoice;
-  /** false until the parent has picked a menu on the Mat screen (milestone 2). */
-  menuChosen: boolean;
+  /** The main dish, picked on the Mat screen. null = not chosen yet: nothing assumes a menu. */
+  menu: MenuChoice | null;
+  /** Dietary needs ticked on the Mat screen (glutenfri, laktosefri, vegetar, ingen svin). */
+  diets: DietTag[];
+  /** The Mat screen's own child/adult counts. null = follow the party's head-count. */
+  foodCounts: FoodCounts | null;
   cake: CakeChoice;
   programme: { includePinata: boolean; includeSkattejakt: boolean };
   guests: Guest[];

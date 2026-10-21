@@ -17,10 +17,19 @@
  * - her own free-text items («Legg til vare»).
  */
 import type { CustomShoppingItem, GoodieBagItemId, Party } from '../model';
-import { GOODIE_BAG_ITEMS } from '../model';
+import { DIET_TAGS, GOODIE_BAG_ITEMS } from '../model';
 import * as C from './constants';
 import { formatGrams } from './food';
-import { dietGroup, foodPlan, partyFoodPlan, type DietGroup, type FoodLine, type FoodPlan } from './menu';
+import {
+  dietGroup,
+  foodPlan,
+  isMainSection,
+  partyFoodPlan,
+  type DietGroup,
+  type FoodLine,
+  type FoodPlan,
+} from './menu';
+import { menuDishes } from './dishes';
 import { headCount } from './people';
 import { celebrantNames, oldestAge } from './celebrants';
 import { genitive } from '../texts/render';
@@ -99,6 +108,20 @@ const LINE_GROUP: Record<string, ShopGroupId> = {
   ketchup: 'torrvarer',
   lok: 'torrvarer',
   frossenpizza: 'frys',
+  // homemade pizza (PR #5): fresh dough and ready-baked bases by the bread, toppings where they are
+  pizzadeig: 'brod',
+  pizzabunner: 'brod',
+  pizzamiks: 'torrvarer',
+  hvetemel: 'torrvarer',
+  gjaer: 'kjott',
+  pizzasaus: 'torrvarer',
+  pepperoni: 'kjott',
+  kebab: 'kjott',
+  paprika: 'frukt',
+  sopp: 'torrvarer',
+  ananas: 'torrvarer',
+  mais: 'torrvarer',
+  rommedressing: 'torrvarer',
 };
 
 /** Where a dietary extra is in the shop; null = not something to buy (e.g. «Ingen ekstra trengs»). */
@@ -169,12 +192,16 @@ function foodItems(p: Party): { items: Omit<ShopItem, 'ticked'>[]; menuChosen: b
   const out: Omit<ShopItem, 'ticked'>[] = [];
   for (const s of base.sections) {
     if (s.id === 'kake') continue;
-    if (!menuChosen && s.id === 'main') continue;
+    if (!menuChosen && isMainSection(s.id)) continue;
     if (s.id === 'hensyn') {
-      if (!p.menu) continue;
-      const g = dietGroup(p.menu);
+      const first = menuDishes(p.menu)[0];
+      if (!first) continue;
       for (const l of s.lines) {
-        const group = dietShopGroup(l.id.replace(/^diet-/, ''), g);
+        // `diet-glutenfri` belongs to the first dish; with several, `diet-glutenfri-pizza-hjemmelaget` names its dish
+        const rest = l.id.replace(/^diet-/, '');
+        const tag = DIET_TAGS.find((t) => rest === t || rest.startsWith(`${t}-`)) ?? rest;
+        const g = rest.length > tag.length ? (rest.slice(tag.length + 1) as DietGroup) : dietGroup(first);
+        const group = dietShopGroup(tag, g);
         if (!group) continue;
         out.push({ id: l.id, group, name: l.amount, qty: '', detail: `${l.name}. ${l.why}`, text: l.amount });
       }

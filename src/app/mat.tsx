@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Pressable, TextInput, View, type ImageSourcePropType } from 'react-native';
+import { Pressable, TextInput, View, type ImageSourcePropType } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
@@ -9,18 +9,26 @@ import { nb } from '../i18n/nb';
 import {
   DIET_LABELS,
   DIET_TAGS,
-  MENU_CARDS,
+  PIZZA_TOPPINGS,
+  VISIBLE_MENU_CARDS,
+  dishOn,
+  ALLOW_POLSER_AND_PIZZA,
+  cardsExcludedBy,
+  dishShare,
+  pizzaToppings,
+  withDishOn,
   celebrantNames,
   foodCounts,
   forWhom,
   guestBounds,
   headCount,
-  menuCardOf,
   partyFoodPlan,
+  type Dish,
   type FoodLine,
   type FoodSection,
   type MenuCardId,
-  type MenuChoice,
+  type PizzaDough,
+  type PizzaTopping,
 } from '../core';
 
 const CARD_IMAGES: Record<MenuCardId, ImageSourcePropType> = {
@@ -31,37 +39,22 @@ const CARD_IMAGES: Record<MenuCardId, ImageSourcePropType> = {
   annet: images.menuAnnet,
 };
 
-/** The second tap for the cards that need one: [label, menu] pairs. */
-const HOW: Partial<Record<MenuCardId, { title: string; options: { id: string; label: string; menu: MenuChoice }[] }>> =
-  {
-    polser: {
-      title: nb.food.how.polser,
-      options: [
-        { id: 'grillpolser', label: nb.food.options.grillpolser, menu: { kind: 'grillpolser' } },
-        { id: 'wienerpolser', label: nb.food.options.wienerpolser, menu: { kind: 'wienerpolser' } },
-      ],
-    },
-    pizza: {
-      title: nb.food.how.pizza,
-      options: [
-        { id: 'hjemmelaget', label: nb.food.options.hjemmelaget, menu: { kind: 'pizza', style: 'hjemmelaget' } },
-        { id: 'frossen', label: nb.food.options.frossen, menu: { kind: 'pizza', style: 'frossen' } },
-      ],
-    },
-    pasta: {
-      title: nb.food.how.pasta,
-      options: [
-        { id: 'salat', label: nb.food.options.salat, menu: { kind: 'pasta', style: 'salat' } },
-        { id: 'varm', label: nb.food.options.varm, menu: { kind: 'pasta', style: 'varm' } },
-      ],
-    },
-  };
-
-const sameMenu = (a: MenuChoice | null, b: MenuChoice) => JSON.stringify(a) === JSON.stringify(b);
+type PizzaDish = Extract<Dish, { kind: 'pizza' }>;
+/** Tapping the Pizza card picks the defaults Ekaterina chose: homemade in a langpanne, ready-made dough, skinke. */
+const DEFAULT_PIZZA: PizzaDish = { kind: 'pizza', style: 'hjemmelaget' };
+const SAUSAGE_OPTIONS: { id: 'grillpolser' | 'wienerpolser'; label: string }[] = [
+  { id: 'grillpolser', label: nb.food.options.grillpolser },
+  { id: 'wienerpolser', label: nb.food.options.wienerpolser },
+];
+/** The bases shown as pills; «Lag deigen selv» is a small text button under them. */
+const DOUGH_PILLS: PizzaDough[] = ['ferdigdeig', 'ferdigstekt', 'miks'];
 
 /**
- * Mat (from the Mat card on Planen). Step 1: one main dish from big picture cards; nothing is
- * pre-picked. Step 2: amounts for N children + M adults, each with a short reason line. Every
+ * Mat (from the Mat card on Planen). Step 1: the main dish from big picture cards: Pølser, Pizza and
+ * Noe annet (taco and pasta are hidden for now, rules/dishes.ts). Nothing is pre-picked, and she can pick
+ * several: pølser and pizza together each cover about half. Pølser needs one more tap (grill or kjele);
+ * Pizza starts homemade with ready-made dough and skinke, with the base and topping chips right under it.
+ * Step 2: amounts for N children + M adults, one section per dish, each line with a short reason. Every
  * number comes from src/core (rules/menu.ts); this screen only shows them.
  *
  * The guest count has ONE source of truth, the party: «For 13 barn og 4 voksne · Endre» edits the
@@ -75,128 +68,197 @@ export default function MatScreen() {
   const { ready, party, setMenu, toggleDiet, setFoodItem, setGuestCounts } = useParty();
   const router = useRouter();
   const { isWide, gutter } = useLayout();
-  const [card, setCard] = useState<MenuCardId | null>(() => menuCardOf(party?.menu ?? null));
-  const [picking, setPicking] = useState(false);
+  // Pølser tapped, grill or kjele not picked yet (nothing is assumed until she picks one)
+  const [polserPending, setPolserPending] = useState(false);
   const [editingGuests, setEditingGuests] = useState(false);
   if (!ready) return <Loading />;
   if (!party) return <Redirect href="/" />;
 
   const back = () => (router.canGoBack() ? router.back() : router.replace('/plan'));
   const menu = party.menu;
-  const activeCard = card ?? menuCardOf(menu);
   const plan = partyFoodPlan(party);
   const dietSection = plan?.sections.find((s) => s.id === 'hensyn');
   const counts = foodCounts(party);
   const hc = headCount(party);
   const bounds = guestBounds(party);
-  // the grid until a card is tapped; then one compact row (with the «how» pills when the dish needs them)
-  const showGrid = picking || !activeCard;
-
-  const pickCard = (id: MenuCardId) => {
-    setCard(id);
-    if (id === 'taco') {
-      setMenu({ kind: 'taco' });
-      setPicking(false);
-    } else if (id === 'annet') {
-      setMenu({ kind: 'annet', text: menu?.kind === 'annet' ? menu.text : '' });
-      setPicking(false);
-    } else if (menuCardOf(menu) !== id) {
-      // a new dish that needs one more tap (grill or wiener, which pizza …): nothing chosen until then
-      setMenu(null);
-    }
-    setPicking(false);
+  const polser = dishOn(menu, 'polser');
+  const pizza = dishOn(menu, 'pizza') as PizzaDish | undefined;
+  const annet = dishOn(menu, 'annet');
+  const picked: Record<string, boolean> = {
+    polser: Boolean(polser) || polserPending,
+    pizza: Boolean(pizza),
+    annet: Boolean(annet),
   };
-  const pickHow = (m: MenuChoice) => setMenu(m);
+  const setDish = (card: MenuCardId, dish: Dish | null) => setMenu(withDishOn(menu, card, dish));
+  // «Halvparten pølser, halvparten pizza» only when both may be picked (off for the MVP)
+  const shared = ALLOW_POLSER_AND_PIZZA && dishShare(menu) < 1;
 
-  const how = activeCard ? HOW[activeCard] : undefined;
-  const howRow = how ? (
-    <View style={{ marginTop: 16 }} testID="menu-how">
-      <Text style={styles.howTitle}>{how.title}</Text>
-      <PillRow>
-        {how.options.map((o) => (
-          <View key={o.id} testID={`menu-how-${o.id}`}>
-            <Pill label={o.label} on={sameMenu(menu, o.menu)} onPress={() => pickHow(o.menu)} />
-          </View>
-        ))}
-      </PillRow>
-    </View>
-  ) : null;
-
-  const annetInput =
-    activeCard === 'annet' && menu?.kind === 'annet' ? (
-      <View style={{ marginTop: 16 }}>
-        <Text style={styles.howTitle}>{nb.food.annetLabel}</Text>
-        <TextInput
-          testID="menu-annet-input"
-          value={menu.text}
-          onChangeText={(text) => setMenu({ kind: 'annet', text: text.replace(/\s+/g, ' ') })}
-          placeholder={nb.food.annetPlaceholder}
-          placeholderTextColor="#9B958B"
-          accessibilityLabel={nb.food.annetLabel}
-          maxLength={60}
-          autoFocus={!menu.text}
-          returnKeyType="done"
-          style={styles.input}
-        />
-        <Text variant="small" style={{ marginTop: 6 }}>
-          {nb.food.annetHelp}
-        </Text>
-      </View>
-    ) : null;
+  // Pølser and Pizza work like a radio (cardsExcludedBy): picking one unpicks the other; Noe annet goes with either
+  const toggleCard = (id: MenuCardId) => {
+    if (id === 'polser') {
+      if (picked.polser) {
+        setPolserPending(false);
+        setDish('polser', null);
+      } else {
+        setPolserPending(true);
+        if (pizza && cardsExcludedBy('polser').includes('pizza')) setDish('pizza', null);
+      }
+    } else if (id === 'pizza') {
+      if (!pizza && cardsExcludedBy('pizza').includes('polser')) setPolserPending(false);
+      setDish('pizza', pizza ? null : DEFAULT_PIZZA);
+    } else if (id === 'annet') setDish('annet', annet ? null : { kind: 'annet', text: '' });
+  };
+  const setPizza = (patch: Partial<PizzaDish>) => pizza && setDish('pizza', { ...pizza, ...patch });
+  const toppings = pizza ? pizzaToppings(pizza.toppings) : [];
+  const toggleTopping = (t: PizzaTopping) =>
+    setPizza({ toppings: toppings.includes(t) ? toppings.filter((x) => x !== t) : [...toppings, t] });
+  const dough = pizza?.dough ?? 'ferdigdeig';
 
   const grid = (
-    <View accessibilityRole="radiogroup" accessibilityLabel={nb.food.step1}>
+    <View accessibilityRole="list" accessibilityLabel={nb.food.step1}>
       <Grid
-        items={[...MENU_CARDS]}
-        columns={isWide ? 5 : 2}
-        gap={isWide ? 16 : 12}
+        items={[...VISIBLE_MENU_CARDS]}
+        columns={3}
+        gap={isWide ? 16 : 10}
         keyOf={(id) => id}
         render={(id) => (
           <ChoiceTile
+            multi
             testID={`menu-card-${id}`}
             image={CARD_IMAGES[id]}
             label={nb.food.cards[id].label}
             sub={nb.food.cards[id].sub}
-            selected={activeCard === id && Boolean(menu)}
-            onPress={() => pickCard(id)}
+            selected={Boolean(picked[id])}
+            onPress={() => toggleCard(id)}
           />
         )}
       />
+      {shared ? (
+        <Text variant="small" testID="menu-share-note" style={{ marginTop: 12, color: colors.ink }}>
+          {nb.food.shareNote}
+        </Text>
+      ) : null}
     </View>
   );
 
-  const chosen = activeCard ? (
-    <Surface testID="menu-chosen" style={{ padding: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-        <View style={[styles.thumb, isWide && { width: 96, height: 96 }]}>
-          <Image source={CARD_IMAGES[activeCard]} style={{ width: '100%', height: '100%' }} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text variant="eyebrow">{nb.food.step1}</Text>
-          <Text variant="h3" testID="menu-chosen-title" style={{ marginTop: 2 }}>
-            {plan ? plan.title : nb.food.cards[activeCard].label}
-          </Text>
-        </View>
-        <Pressable
-          testID="menu-change"
-          accessibilityRole="button"
-          accessibilityLabel={nb.food.change}
-          onPress={() => setPicking(true)}
-          hitSlop={8}
-          style={styles.changeBtn}
-        >
-          <Text style={styles.changeText}>{nb.food.changeShort}</Text>
-        </Pressable>
-      </View>
-      {howRow}
-      {annetInput}
-      {how && !menu ? (
+  const polserBox = picked.polser ? (
+    <Surface testID="menu-polser" style={{ padding: 16 }}>
+      <Text style={styles.howTitle}>{nb.food.how.polser}</Text>
+      <PillRow>
+        {SAUSAGE_OPTIONS.map((o) => (
+          <View key={o.id} testID={`menu-how-${o.id}`}>
+            <Pill
+              label={o.label}
+              on={polser?.kind === o.id}
+              onPress={() => {
+                setPolserPending(false);
+                setDish('polser', { kind: o.id });
+              }}
+            />
+          </View>
+        ))}
+      </PillRow>
+      {!polser ? (
         <Text variant="small" style={{ marginTop: 10 }} testID="menu-pick-how">
           {nb.food.pickHow}
         </Text>
       ) : null}
     </Surface>
   ) : null;
+
+  const pizzaBox = pizza ? (
+    <Surface testID="menu-pizza" style={{ padding: 16, gap: 18 }}>
+      <View>
+        <Text style={styles.howTitle}>{nb.food.how.pizza}</Text>
+        <PillRow>
+          {(['hjemmelaget', 'frossen'] as const).map((style) => (
+            <View key={style} testID={`menu-how-${style}`}>
+              <Pill label={nb.food.options[style]} on={pizza.style === style} onPress={() => setPizza({ style })} />
+            </View>
+          ))}
+        </PillRow>
+      </View>
+      {pizza.style === 'hjemmelaget' ? (
+        <>
+          <View testID="pizza-dough">
+            <Text style={styles.howTitle}>{nb.food.pizza.doughTitle}</Text>
+            <PillRow>
+              {DOUGH_PILLS.map((d) => (
+                <View key={d} testID={`pizza-dough-${d}`}>
+                  <Pill label={nb.food.pizza.dough[d]} on={dough === d} onPress={() => setPizza({ dough: d })} />
+                </View>
+              ))}
+            </PillRow>
+            <Pressable
+              testID="pizza-dough-selv"
+              accessibilityRole="button"
+              accessibilityState={{ selected: dough === 'selv' }}
+              accessibilityLabel={nb.food.pizza.dough.selv}
+              onPress={() => setPizza({ dough: dough === 'selv' ? 'ferdigdeig' : 'selv' })}
+              hitSlop={6}
+              style={styles.smallOption}
+            >
+              <Text style={[styles.smallOptionText, dough === 'selv' && { color: colors.green }]}>
+                {dough === 'selv' ? `✓ ${nb.food.pizza.dough.selv}` : nb.food.pizza.doughSelfSmall}
+              </Text>
+            </Pressable>
+          </View>
+          <View testID="pizza-toppings">
+            <Text style={styles.howTitle}>{nb.food.pizza.toppingsTitle}</Text>
+            <Text variant="small" style={{ marginTop: -6, marginBottom: 10 }}>
+              {nb.food.pizza.toppingsLede}
+            </Text>
+            <PillRow>
+              {PIZZA_TOPPINGS.map((t) => {
+                const on = toppings.includes(t);
+                const label = nb.food.pizza.toppings[t];
+                return (
+                  <View key={t} testID={`topping-${t}`}>
+                    <Pill
+                      label={on ? `✓ ${label}` : label}
+                      accessibilityLabel={label}
+                      on={on}
+                      onPress={() => toggleTopping(t)}
+                    />
+                  </View>
+                );
+              })}
+            </PillRow>
+          </View>
+        </>
+      ) : null}
+    </Surface>
+  ) : null;
+
+  const annetBox =
+    annet && annet.kind === 'annet' ? (
+      <Surface testID="menu-annet" style={{ padding: 16 }}>
+        <Text style={styles.howTitle}>{nb.food.annetLabel}</Text>
+        <TextInput
+          testID="menu-annet-input"
+          value={annet.text}
+          onChangeText={(text) => setDish('annet', { kind: 'annet', text: text.replace(/\s+/g, ' ') })}
+          placeholder={nb.food.annetPlaceholder}
+          placeholderTextColor="#9B958B"
+          accessibilityLabel={nb.food.annetLabel}
+          maxLength={60}
+          autoFocus={!annet.text}
+          returnKeyType="done"
+          style={styles.input}
+        />
+        <Text variant="small" style={{ marginTop: 6 }}>
+          {nb.food.annetHelp}
+        </Text>
+      </Surface>
+    ) : null;
+
+  const choices = (
+    <View style={{ gap: 14, marginTop: polserBox || pizzaBox || annetBox ? 16 : 0 }}>
+      {polserBox}
+      {pizzaBox}
+      {annetBox}
+    </View>
+  );
 
   const guestBox = (
     <View testID="food-guests">
@@ -310,6 +372,9 @@ export default function MatScreen() {
     <View style={{ gap: 14 }} testID="food-amounts">
       <View>
         <Text variant="h2Small">{nb.food.amountsTitle}</Text>
+        <Text variant="h3" testID="menu-chosen-title" style={{ marginTop: 2 }}>
+          {plan.title}
+        </Text>
         <Text variant="small" testID="food-toggle-hint" style={{ marginTop: 2 }}>
           {nb.food.toggleHint}
         </Text>
@@ -333,10 +398,11 @@ export default function MatScreen() {
         <Text variant="lede" style={{ marginBottom: 20, maxWidth: 640 }}>
           {nb.food.lede(forWhom(counts))}
         </Text>
-        {showGrid ? grid : chosen}
+        {grid}
+        {choices}
       </View>
 
-      {plan && !showGrid ? (
+      {plan ? (
         isWide ? (
           <View
             style={{
@@ -511,6 +577,8 @@ const useStyles = themedStyles((colors) => ({
     justifyContent: 'center',
   },
   changeText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.green },
+  smallOption: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 4 },
+  smallOptionText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.muted, textDecorationLine: 'underline' },
   line: { flexDirection: 'row', gap: 12, paddingVertical: 12, alignItems: 'flex-start', minHeight: 44 },
   off: { opacity: 0.45 },
   struck: { textDecorationLine: 'line-through' },

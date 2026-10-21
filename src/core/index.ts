@@ -7,6 +7,7 @@ export * from './rules/celebrants';
 export * from './rules/calendar';
 export * from './rules/partyTime';
 export * from './rules/people';
+export * from './rules/dishes';
 export * from './rules/food';
 export * from './rules/menu';
 export * from './rules/todos';

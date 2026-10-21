@@ -12,15 +12,7 @@ export type ISODate = string;
 export type HHMM = string;
 
 export type ThemeId =
-  | 'enhjorning'
-  | 'dinosaurer'
-  | 'verdensrommet'
-  | 'fotball'
-  | 'havfruer'
-  | 'dyr-i-skogen'
-  | 'pokemon'
-  | 'paw-patrol'
-  | 'frost';
+  'enhjorning' | 'dinosaurer' | 'verdensrommet' | 'fotball' | 'dyr-i-skogen' | 'pokemon' | 'paw-patrol' | 'frost';
 
 export type AllergyTag = 'notter' | 'peanott' | 'melk' | 'egg' | 'gluten' | 'ikke-svin' | 'vegetar' | 'annet';
 
@@ -38,10 +30,39 @@ export type HomeItemId =
   | 'pizzahjul'
   | 'stor-kjele';
 
-export type MenuChoice =
+/**
+ * Homemade pizza's base (Mat → Pizza). Missing = 'ferdigdeig', ready-made fresh dough: parents with kids
+ * rarely make their own dough, so «Lag deigen selv» is the last, small option.
+ */
+export type PizzaDough = 'ferdigdeig' | 'ferdigstekt' | 'miks' | 'selv';
+export const PIZZA_DOUGHS: readonly PizzaDough[] = ['ferdigdeig', 'ferdigstekt', 'miks', 'selv'];
+
+/** Topping chips on homemade pizza. Missing `toppings` = the default, skinke only. */
+export type PizzaTopping = 'skinke' | 'pepperoni' | 'sopp' | 'ananas' | 'mais' | 'paprika' | 'kebab' | 'rommedressing';
+export const PIZZA_TOPPINGS: readonly PizzaTopping[] = [
+  'skinke',
+  'pepperoni',
+  'sopp',
+  'ananas',
+  'mais',
+  'paprika',
+  'kebab',
+  'rommedressing',
+];
+
+/** One main dish. */
+export type Dish =
   | { kind: 'grillpolser' }
   | { kind: 'wienerpolser' }
-  | { kind: 'pizza'; style: 'hjemmelaget' | 'frossen' | 'bestilt'; takeawaySize?: '30' | '40' }
+  | {
+      kind: 'pizza';
+      style: 'hjemmelaget' | 'frossen' | 'bestilt';
+      takeawaySize?: '30' | '40';
+      /** Homemade only. Missing = 'ferdigdeig'. */
+      dough?: PizzaDough;
+      /** Homemade only. Missing = ['skinke'] (the default); [] = none. */
+      toppings?: PizzaTopping[];
+    }
   | { kind: 'taco'; shells?: boolean }
   | { kind: 'pasta'; style: 'salat' | 'varm' }
   /** «Noe annet»: the parent's own words; only drinks, snacks and cake are calculated. */
@@ -55,6 +76,13 @@ export type MenuChoice =
       bufferPct: 0 | 10 | 25 | 35;
       packSize?: number;
     };
+
+/**
+ * What the parent picked on the Mat screen: one dish, or several at once («Pølser» and «Pizza», plus
+ * «Noe annet»). Several are stored as `{ kind: 'flere', dishes }` (always 2+, see rules/menu.ts
+ * `menuFromDishes`), so a party saved with one dish reads exactly as before.
+ */
+export type MenuChoice = Dish | { kind: 'flere'; dishes: Dish[] };
 
 export type MenuKind = MenuChoice['kind'];
 

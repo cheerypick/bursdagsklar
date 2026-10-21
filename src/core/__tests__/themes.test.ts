@@ -35,6 +35,16 @@ describe('contrast maths', () => {
   });
 });
 
+describe('theme list', () => {
+  it('offers Enhjørninger (generic, not a brand) and no longer Havfruer', () => {
+    const ids = THEMES.map((t) => t.id as string);
+    expect(ids).not.toContain('havfruer');
+    const unicorn = THEMES.find((t) => t.id === 'enhjorning')!;
+    expect(unicorn).toMatchObject({ name: 'Enhjørninger', licensed: false });
+    expect(JSON.stringify(unicorn)).not.toMatch(/pony|ponni/i);
+  });
+});
+
 describe('themes: every theme is complete', () => {
   const all: [string, ThemePalette][] = [
     ['brand', BRAND_PALETTE],

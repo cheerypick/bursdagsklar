@@ -3,7 +3,7 @@ import { fonts, radii, shadow, useColors, themedStyles } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
-/** A big picture card you pick one of (Mat: Pølser, Pizza, Taco …). */
+/** A big picture card you pick (Mat: Pølser, Pizza, Noe annet). `multi`: several can be picked (a checkbox). */
 export function ChoiceTile({
   image,
   label,
@@ -11,6 +11,7 @@ export function ChoiceTile({
   selected,
   onPress,
   testID,
+  multi,
 }: {
   image: ImageSourcePropType;
   label: string;
@@ -18,13 +19,15 @@ export function ChoiceTile({
   selected: boolean;
   onPress: () => void;
   testID?: string;
+  multi?: boolean;
 }) {
   const styles = useStyles();
   const colors = useColors();
   return (
     <Pressable
       testID={testID}
-      accessibilityRole="radio"
+      accessibilityRole={multi ? 'checkbox' : 'radio'}
+      aria-checked={selected}
       accessibilityLabel={sub ? `${label}. ${sub}` : label}
       accessibilityState={{ checked: selected, selected }}
       onPress={onPress}

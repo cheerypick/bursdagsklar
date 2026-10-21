@@ -8,6 +8,7 @@ import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { headCount } from './people';
 import { themeById } from '../themes';
 import { isIncluded, mainItemWord } from './food';
+import { dishOn, menuDishes } from './dishes';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -48,6 +49,8 @@ export function buildTasks(p: Party): TaskPlan {
   const clues = p.programme.includeSkattejakt;
   const bake = p.cake.mode === 'bake';
   const menu = p.menu;
+  const pizza = dishOn(menu, 'pizza');
+  const grill = menuDishes(menu).some((d) => d.kind === 'grillpolser');
   const has = (id: Party['haveAtHome'][number]) => p.haveAtHome.includes(id);
 
   const rows: (Task | false)[] = [
@@ -103,12 +106,12 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Ingen allergier meldt ennå',
       link: { label: 'Mat', route: '/mat' },
     },
-    menu?.kind === 'pizza' &&
-      menu.style === 'bestilt' && {
+    pizza?.kind === 'pizza' &&
+      pizza.style === 'bestilt' && {
         id: 'orderPizza',
         date: at(2),
         title: 'Forhåndsbestill pizzaene',
-        detail: menu.takeawaySize === '40' ? 'Store, ca. 40 cm' : 'Vanlige, ca. 30 cm',
+        detail: pizza.takeawaySize === '40' ? 'Store, ca. 40 cm' : 'Vanlige, ca. 30 cm',
       },
     {
       id: 'buyDry',
@@ -124,7 +127,7 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Da er fredagen roligere',
       link: { label: 'Oppskrift', route: '/kake' },
     },
-    menu?.kind === 'grillpolser' && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
+    grill && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
     {
       id: 'partyReminder',
       date: at(2),
@@ -139,8 +142,10 @@ export function buildTasks(p: Party): TaskPlan {
       detail: 'Og gjør fiskedammen klar',
       link: { label: 'Lappene', route: '/program' },
     },
-    menu?.kind === 'pizza' &&
-      menu.style === 'hjemmelaget' && {
+    // only when she makes the dough herself; ready-made dough is the default
+    pizza?.kind === 'pizza' &&
+      pizza.style === 'hjemmelaget' &&
+      pizza.dough === 'selv' && {
         id: 'makeDough',
         date: at(1),
         title: 'Lag pizzadeigen og la den heve kaldt',
@@ -181,9 +186,10 @@ export function buildTasks(p: Party): TaskPlan {
 }
 
 function dryDetail(p: Party): string {
-  const m = p.menu?.kind;
+  // pølser and pizza together: pølser's bread comes first, pizzasaus after it
+  const kinds = menuDishes(p.menu).map((d) => d.kind);
   // the first dry item for the dish, skipping a line the parent deselected on the Mat screen
-  const candidates: [string, string][] =
+  const candidates: [string, string][] = kinds.flatMap((m): [string, string][] =>
     m === 'grillpolser' || m === 'wienerpolser'
       ? [
           ['lomper', 'Lomper'],
@@ -195,7 +201,8 @@ function dryDetail(p: Party): string {
           ? [['pizzasaus', 'Pizzasaus']]
           : m === 'pasta'
             ? [['pasta', 'Pasta']]
-            : [];
+            : [],
+  );
   const first = candidates.find(([id]) => isIncluded(p, id))?.[1];
   const saft = isIncluded(p, 'saft');
   // no candy: it moves to the goodie bags (godteposer) (picked on Handleliste)

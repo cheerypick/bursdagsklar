@@ -19,7 +19,7 @@ import {
 import { createPartyRepository, memoryStore, migrate } from '../storage/PartyRepository';
 import { emma } from '../__fixtures__/emma';
 import { invitationCard, render, genitive, themeTexts, TEMPLATES } from '../texts/render';
-import { THEMES } from '../themes';
+import { BRAND_PALETTE, paletteFor, THEMES } from '../themes';
 import { buildTasks } from '../rules/todos';
 import { foodCounts } from '../rules/menu';
 import { headCount } from '../rules/people';
@@ -291,7 +291,7 @@ describe('texts (no AI: templates only)', () => {
   });
   it('every theme, including Pokémon, Paw Patrol and Frost, has texts', () => {
     expect(THEMES.map((t) => t.id)).toEqual(expect.arrayContaining(['pokemon', 'paw-patrol', 'frost']));
-    expect(THEMES).toHaveLength(9);
+    expect(THEMES).toHaveLength(8);
     for (const t of THEMES) {
       const tt = themeTexts(t.id);
       expect(tt.navn, t.id).toBe(t.name);
@@ -362,7 +362,9 @@ describe('PartyRepository (one record per party)', () => {
     expect(p).not.toHaveProperty('foodCounts');
     expect(p).not.toHaveProperty('menuChosen');
     // a menu the parent did pick survives
-    expect(migrate({ ...v2, menu: { kind: 'taco' }, menuChosen: true })!.menu).toEqual({ kind: 'taco' });
+    expect(migrate({ ...v2, menu: { kind: 'grillpolser' }, menuChosen: true })!.menu).toEqual({ kind: 'grillpolser' });
+    // … unless it is a dish that is hidden for now (taco, pasta): then it opens with nothing picked
+    expect(migrate({ ...v2, menu: { kind: 'taco' }, menuChosen: true })!.menu).toBeNull();
     // and an old party opens fine through the repository, with no menu chosen
     const store = memoryStore();
     await store.setItem(`bursdagsklar:party:${v2.id}`, JSON.stringify(v2));
@@ -414,5 +416,23 @@ describe('PartyRepository (one record per party)', () => {
     expect(migrate({ ...emma(), schemaVersion: 99 })).toBeNull();
     expect(migrate('x')).toBeNull();
     expect(migrate(emma())).not.toBeNull();
+  });
+  it('opens a party saved with the removed Havfruer theme as «Uten tema», old and new versions alike', async () => {
+    const saved = { ...emma(), theme: 'havfruer' };
+    const p = migrate(saved)!;
+    expect(p.theme).toBeNull();
+    expect(summarize(p, '2026-10-19')).toBeTruthy();
+    expect(paletteFor(p.theme)).toEqual(BRAND_PALETTE);
+    const { celebrants, diets: _d, foodItems: _f, ...rest } = emmaV4();
+    const v1 = { ...rest, theme: 'havfruer', schemaVersion: 1, child: { name: celebrants[0].name, age: 5 } };
+    expect(migrate(v1)!.theme).toBeNull();
+    // and through the repository (a reload)
+    const store = memoryStore();
+    await store.setItem(`bursdagsklar:party:${saved.id}`, JSON.stringify(saved));
+    const loaded = await createPartyRepository(store).get(saved.id);
+    expect(loaded?.theme).toBeNull();
+    expect(loaded?.celebrants[0].name).toBe('Emma');
+    // a theme still offered is kept
+    expect(migrate({ ...emma(), theme: 'frost' })!.theme).toBe('frost');
   });
 });

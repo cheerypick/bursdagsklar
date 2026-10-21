@@ -38,10 +38,9 @@ export function clampChildren(n: number, celebrants: number): number {
 
 // ---- sausages (§6.4, reworked 21 Oct 2026) ----
 /**
- * Sanity check (not the source of the rule): en ekte fest med 15 barn (Ekaterina's, KIWI 26.08.2026) kjøpte
- * 60 grillpølser og hadde ~20 til overs, so ~40 were eaten by 15 children and the parents who stayed; the
- * bread was lomper and pølsebrød, about half each. Her words: just an example, use your own reasoning.
- * The rule below gives that party 40.
+ * Context: en ekte fest med 15 barn (Ekaterina's, KIWI 26.08.2026) kjøpte 60 grillpølser og hadde ~20 til
+ * overs; the bread was lomper and pølsebrød. On 21 Oct 2026 she chose the more generous amounts (Emma: 50
+ * grillpølser, ca. 30 lomper and 30 pølsebrød) over a tighter rule that gave 40 / 20 / 24.
  *
  * Packs read on Oda (oda.com) on 21 Oct 2026, the «Wienerpølser» and «Grillpølser» categories
  * (https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3044-wienerpolser/ and
@@ -71,23 +70,25 @@ export const LOMPER_PRODUCT = { name: 'lomper', count: 10 } as const;
 export const POLSEBROD_PRODUCT = { name: 'pølsebrød', count: 8 } as const;
 
 /**
- * Sausages each person eats (what is eaten, not bought): 3–4 år 1,5 · 5–6 år 2 · 7–10 år 2,5 · a grown-up 1,5.
- * Portions follow the OLDEST birthday child. The sanity check: 15 × 2 + 5 adults × 1,5 = 37,5 → 38.
- * Then 2 extra (SAUSAGE_EXTRA) and up to whole packs: 38 + 2 = 40 → 4 pk à 10. Until 21 Oct 2026 the rule was 2 per child
- * for 5–6 år plus 35 % (grill) / 25 % (wiener) and gave Emma 50 grillpølser; now 40.
+ * Sausages to buy per person (Ekaterina, 21 Oct 2026): 3 per child, every age 3–10, and 2 per grown-up, then up to
+ * whole packs. No extra percentage: rounding up to packs is the margin. Emma (13 barn, 4 voksne):
+ * 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50 grillpølser (wienerpølser: 6 pk à 8 = 48).
+ * Kept per age band so a band can differ later; today they are all 3.
  */
-export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 1.5, B: 2, C: 2.5, D: 2.5 };
-export const SAUSAGE_PER_ADULT = 1.5; // (I)
-/** A couple of sausages on top before rounding up to whole packs, so a count that fits a pack exactly still has some to spare. */
-export const SAUSAGE_EXTRA = 2;
+export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 3, B: 3, C: 3, D: 3 };
+export const SAUSAGE_PER_ADULT = 2;
 export const SAUSAGE_PACK = {
   grillpolser: SAUSAGE_PRODUCT.grillpolser.count,
   wienerpolser: SAUSAGE_PRODUCT.wienerpolser.count,
 };
 export const LOMPER_PACK = LOMPER_PRODUCT.count;
 export const POLSEBROD_PACK = POLSEBROD_PRODUCT.count;
-/** Lomper and pølsebrød both on: each covers about half the sausages. One left out: the other covers all. */
-export const BREAD_SHARE_WHEN_BOTH = 0.5;
+/**
+ * Lomper and pølsebrød both on: each covers about 60 % of the sausages, up to whole packs, so together there is
+ * some bread to spare (people mix, and nobody knows in advance who wants which). Emma: 60 % of 50 = 30 →
+ * lomper 3 pk à 10 = 30, pølsebrød 4 pk à 8 = 32. One left out: the other covers every sausage.
+ */
+export const BREAD_SHARE_WHEN_BOTH = 0.6;
 /**
  * One bottle of ketchup (ca. 500 g), and one of sennep, for ca. 25 people: ca. 2 pølser each, and not all
  * children take both (I).

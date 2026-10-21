@@ -40,15 +40,25 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
   });
 
   it('has the Mat lines with the same amounts and pack sizes', () => {
-    // 13 × 2 + 4 × 1,5 = 32, pluss 2 = 34 → 4 pk à 10
+    // 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50; lomper and pølsebrød ca. 30 each
     expect(item(emma(), 'grillpolser')).toMatchObject({
       group: 'kjott',
-      qty: '4 pk',
-      detail: 'à 10, 40 stk i alt',
-      text: '4 pk grillpølser',
+      qty: '5 pk',
+      detail: 'à 10, 50 stk i alt',
+      text: '5 pk grillpølser',
     });
-    expect(item(emma(), 'lomper')).toMatchObject({ group: 'brod', text: expect.stringMatching(/^\d+ pk lomper$/) });
-    expect(item(emma(), 'polsebrod')).toMatchObject({ group: 'brod' });
+    expect(item(emma(), 'lomper')).toMatchObject({
+      group: 'brod',
+      qty: '3 pk',
+      detail: 'à 10, 30 stk i alt',
+      text: '3 pk lomper',
+    });
+    expect(item(emma(), 'polsebrod')).toMatchObject({
+      group: 'brod',
+      qty: '4 pk',
+      detail: 'à 8, 32 stk i alt',
+      text: '4 pk pølsebrød',
+    });
     expect(item(emma(), 'ketchup')).toMatchObject({ group: 'torrvarer', text: 'Ketchup og sennep: 1 av hver' });
     expect(item(emma(), 'lok')).toMatchObject({ group: 'torrvarer', text: '2 poser sprøstekt løk' });
     expect(item(emma(), 'saft')?.detail).toBe('Eller jus. Se Mat for mengden');
@@ -195,7 +205,7 @@ describe('shareText', () => {
         'Handleliste – Emmas bursdag 7. nov',
         '',
         'Kjøtt og pålegg',
-        '☐ 4 pk grillpølser',
+        '☐ 5 pk grillpølser',
         '',
         'Brød',
         `☐ ${item(p, 'lomper')!.text}`,

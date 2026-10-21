@@ -37,8 +37,9 @@ export interface People {
 
 /**
  * Sausages in whole real packs (constants.ts names them), and the bread for them.
- * Bread: lomper and pølsebrød together cover every sausage, about half each (her real party: 60 pølser,
- * 30 lomper + 32 pølsebrød). With one of them left out, the other covers them all. Up to whole packs.
+ * 3 per child and 2 per grown-up, up to whole packs (Emma: 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50).
+ * Bread: lomper and pølsebrød both on → each covers about 60 % of the sausages, up to whole packs, so there is
+ * some to spare (Emma: 30 lomper, 32 pølsebrød). With one of them left out, the other covers them all.
  */
 export function sausages(
   kind: 'grillpolser' | 'wienerpolser',
@@ -48,30 +49,32 @@ export function sausages(
   const withLomper = opts.withLomper ?? true;
   const withPolsebrod = opts.withPolsebrod ?? true;
   const both = withLomper && withPolsebrod;
-  const base = C.SAUSAGE_PER_CHILD[band(p.age)];
-  const raw = p.kidsComing * base + p.adultsEating * C.SAUSAGE_PER_ADULT;
-  /** What the party eats, by the per-person rule. */
-  const eaten = ceilSafe(raw);
-  const need = eaten + C.SAUSAGE_EXTRA;
+  const perChild = C.SAUSAGE_PER_CHILD[band(p.age)];
+  const raw = p.kidsComing * perChild + p.adultsEating * C.SAUSAGE_PER_ADULT;
+  /** Sausages the per-person rule asks for, before rounding up to packs. */
+  const need = ceilSafe(raw);
   const pack = C.SAUSAGE_PACK[kind];
   const sausagePacks = packs(need, pack);
   const bought = sausagePacks * pack;
-  const half = ceilSafe(bought * C.BREAD_SHARE_WHEN_BOTH);
-  const lomperNeed = both ? half : bought;
+  /** Both breads on: about 60 % of the sausages each («ca. 30 av hver»). */
+  const share = ceilSafe(bought * C.BREAD_SHARE_WHEN_BOTH);
+  const lomperNeed = both ? share : bought;
   const lomperPacks = packs(lomperNeed, C.LOMPER_PACK);
-  const buns = both ? half : bought;
+  const buns = both ? share : bought;
   const bunPacks = packs(buns, C.POLSEBROD_PACK);
   const eaters = p.kidsComing + p.adultsEating;
   const condiments = packs(eaters, C.CONDIMENT_PER_EATERS);
   const onionBags = packs(eaters, C.CRISPY_ONION_PER_EATERS);
   return {
     raw,
-    eaten,
+    perChild,
     need,
     pack,
     packs: sausagePacks,
     /** Sausages bought: whole packs. */
     bought,
+    /** Each bread's share when both are on (about 60 % of the sausages). */
+    share,
     lomperNeed,
     lomper: lomperPacks * C.LOMPER_PACK,
     lomperPacks,
@@ -92,14 +95,14 @@ export function sausages(
 const persons = (k: number) => `${k} ${k === 1 ? 'person' : 'personer'}`;
 
 /**
- * «Ca. 2 per barn og 1,5 per voksen = 32 pølser, pluss et par ekstra. 4 pk Gilde Grillpølser (10 stk) = 40,
- * eller 1 storpakning (3 × 10) og 1 pk»
+ * «13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk»
  */
 export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<typeof sausages>, p: People): string {
   const product = C.SAUSAGE_PRODUCT[kind];
-  const kid = `Ca. ${nb.format(C.SAUSAGE_PER_CHILD[band(p.age)])} per barn`;
-  const rate = p.adultsEating > 0 ? `${kid} og ${nb.format(C.SAUSAGE_PER_ADULT)} per voksen` : kid;
-  const line = `${rate} = ${s.eaten} pølser, pluss et par ekstra. ${s.packs} pk ${product.name} (${product.count} stk) = ${s.bought}`;
+  const kids = `${p.kidsComing} barn × ${nb.format(s.perChild)}`;
+  const adults = `${p.adultsEating} ${p.adultsEating === 1 ? 'voksen' : 'voksne'} × ${nb.format(C.SAUSAGE_PER_ADULT)}`;
+  const sum = p.adultsEating > 0 ? `${kids} + ${adults}` : kids;
+  const line = `${sum} = ${s.need}. ${s.packs} pk ${product.name} à ${product.count} = ${s.bought}`;
   const big = Math.floor(s.packs / C.GRILL_STORPAKNING_PACKS);
   if (kind !== 'grillpolser' || big < 1) return line;
   const rest = s.packs - big * C.GRILL_STORPAKNING_PACKS;
@@ -107,16 +110,16 @@ export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<t
   return `${line}, eller ${bigWords} (3 × 10)${rest > 0 ? ` og ${rest} pk` : ''}`;
 }
 
-/** Both breads on: half each, and the other one takes over if one is left out. */
+/** Both breads on: «Ca. 30 av hver – noen vil ha lompe, noen brød». One left out: the other covers every sausage. */
 export function lomperWhy(s: ReturnType<typeof sausages>): string {
   return s.withPolsebrod
-    ? 'Til halvparten av pølsene, pølsebrød til resten. Tar du bort det ene, dekker det andre alle pølsene'
+    ? `Ca. ${s.share} av hver – noen vil ha lompe, noen brød. Tar du bort det ene, dekker det andre alle pølsene`
     : 'Uten pølsebrød: én lompe per pølse';
 }
 
 export function polsebrodWhy(s: ReturnType<typeof sausages>): string {
   return s.withLomper
-    ? 'Til den andre halvparten av pølsene, for dem som heller vil ha brød'
+    ? `Ca. ${s.share} av hver – noen vil ha lompe, noen brød`
     : 'Uten lomper: ett pølsebrød per pølse';
 }
 

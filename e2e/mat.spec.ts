@@ -57,18 +57,16 @@ test('Mat: choose Pølser, see the amounts, change the guests (the party), reloa
 
   await expect(visible(page, 'menu-chosen-title')).toHaveText('Grillpølser');
   await expect(visible(page, 'food-for-whom')).toHaveText('For 12 barn og 4 voksne');
-  // 12 × 2 + 4 × 1,5 = 30, + 2 = 32 → 4 pk Gilde Grillpølser à 10 = 40
-  await expect(visible(page, 'food-amount-grillpolser')).toHaveText('40 stk');
-  await expect(visible(page, 'food-line-grillpolser')).toContainText('4 pk à 10');
+  // 12 × 3 + 4 × 2 = 44 → 5 pk Gilde Grillpølser à 10 = 50
+  await expect(visible(page, 'food-amount-grillpolser')).toHaveText('50 stk');
+  await expect(visible(page, 'food-line-grillpolser')).toContainText('5 pk à 10');
   await expect(visible(page, 'food-why-grillpolser')).toHaveText(
-    'Ca. 2 per barn og 1,5 per voksen = 30 pølser, pluss et par ekstra. 4 pk Gilde Grillpølser (10 stk) = 40, eller 1 storpakning (3 × 10) og 1 pk',
+    '12 barn × 3 + 4 voksne × 2 = 44. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk',
   );
-  // lomper and pølsebrød together cover the sausages, about half each
-  await expect(visible(page, 'food-amount-lomper')).toHaveText('20 stk');
-  await expect(visible(page, 'food-amount-polsebrod')).toHaveText('24 stk');
-  await expect(visible(page, 'food-why-polsebrod')).toHaveText(
-    'Til den andre halvparten av pølsene, for dem som heller vil ha brød',
-  );
+  // lomper and pølsebrød: ca. 60 % each (30), so there is some bread to spare
+  await expect(visible(page, 'food-amount-lomper')).toHaveText('30 stk');
+  await expect(visible(page, 'food-amount-polsebrod')).toHaveText('32 stk');
+  await expect(visible(page, 'food-why-polsebrod')).toHaveText('Ca. 30 av hver – noen vil ha lompe, noen brød');
   await expect(visible(page, 'food-amount-ketchup')).toHaveText('1 av hver');
   await expect(visible(page, 'food-amount-lok')).toHaveText('2 poser');
   await expect(visible(page, 'food-amount-saft')).toHaveText('2 flasker saft');
@@ -103,8 +101,8 @@ test('Mat: choose Pølser, see the amounts, change the guests (the party), reloa
   await expect(visible(page, 'guest-kids-value')).toHaveText('16');
   await expect(visible(page, 'guest-adults-value')).toHaveText('5');
   await expect(visible(page, 'food-for-whom')).toHaveText('For 16 barn og 5 voksne');
-  // 16 × 2 + 5 × 1,5 = 39,5 → 40, + 2 = 42 → 5 pk = 50
-  await expect(visible(page, 'food-amount-grillpolser')).toHaveText('50 stk');
+  // 16 × 3 + 5 × 2 = 58 → 6 pk = 60
+  await expect(visible(page, 'food-amount-grillpolser')).toHaveText('60 stk');
   await visible(page, 'food-guests-done').click();
   await expect(visible(page, 'food-guests-editor')).toHaveCount(0);
 
@@ -118,7 +116,7 @@ test('Mat: choose Pølser, see the amounts, change the guests (the party), reloa
   await page.reload();
   await expect(visible(page, 'menu-chosen-title')).toHaveText('Grillpølser');
   await expect(visible(page, 'food-for-whom')).toHaveText('For 16 barn og 5 voksne');
-  await expect(visible(page, 'food-amount-grillpolser')).toHaveText('50 stk');
+  await expect(visible(page, 'food-amount-grillpolser')).toHaveText('60 stk');
   await expect(visible(page, 'food-line-diet-ingen-svin')).toBeVisible();
 
   // Planen shows the menu on the Mat card, and the party's own numbers changed with it
@@ -126,7 +124,7 @@ test('Mat: choose Pølser, see the amounts, change the guests (the party), reloa
   await expect(visible(page, 'plan-meta')).toContainText('16 barn');
   const card = visible(page, 'plan-card-food');
   await expect(card).toContainText('Mat: Grillpølser');
-  await expect(card).toContainText('50 grillpølser med lomper og pølsebrød');
+  await expect(card).toContainText('60 grillpølser med lomper og pølsebrød');
   await expect(card).toContainText('for 16 barn og 5 voksne');
   await expect(card).not.toContainText('Velg meny');
 
@@ -160,7 +158,7 @@ test('Mat: deselect pølsebrød → greyed and struck through, kept after a relo
   await brod.click();
   await expect(brod).toHaveAttribute('aria-checked', 'false');
   // still there, with its amount, but struck through and greyed
-  await expect(visible(page, 'food-amount-polsebrod')).toHaveText('24 stk');
+  await expect(visible(page, 'food-amount-polsebrod')).toHaveText('32 stk');
   await expect(visible(page, 'food-why-polsebrod')).toHaveText('Ikke med på handlelista');
   const deco = await visible(page, 'food-amount-polsebrod').evaluate(
     (el) => getComputedStyle(el).textDecorationLine || getComputedStyle(el).textDecoration,
@@ -168,7 +166,7 @@ test('Mat: deselect pølsebrød → greyed and struck through, kept after a relo
   expect(deco).toContain('line-through');
   // the rest stay in, and the lomper now cover every sausage
   await expect(visible(page, 'food-line-lomper')).toHaveAttribute('aria-checked', 'true');
-  await expect(visible(page, 'food-amount-lomper')).toHaveText('40 stk');
+  await expect(visible(page, 'food-amount-lomper')).toHaveText('50 stk');
   await expect(visible(page, 'food-why-lomper')).toHaveText('Uten pølsebrød: én lompe per pølse');
 
   await page.waitForTimeout(600); // storage writes are debounced 300 ms
@@ -178,7 +176,7 @@ test('Mat: deselect pølsebrød → greyed and struck through, kept after a relo
 
   await visible(page, 'mat-back-to-plan').click();
   const card = visible(page, 'plan-card-food');
-  await expect(card).toContainText('40 grillpølser med lomper · 2 flasker saft');
+  await expect(card).toContainText('50 grillpølser med lomper · 2 flasker saft');
   await expect(card).not.toContainText('pølsebrød');
 
   // and back in again
@@ -186,10 +184,10 @@ test('Mat: deselect pølsebrød → greyed and struck through, kept after a relo
   await visible(page, 'food-line-polsebrod').click();
   await expect(visible(page, 'food-line-polsebrod')).toHaveAttribute('aria-checked', 'true');
   await expect(visible(page, 'food-why-polsebrod')).not.toHaveText('Ikke med på handlelista');
-  await expect(visible(page, 'food-amount-lomper')).toHaveText('20 stk');
+  await expect(visible(page, 'food-amount-lomper')).toHaveText('30 stk');
   await page.waitForTimeout(600);
   await visible(page, 'mat-back-to-plan').click();
-  await expect(visible(page, 'plan-card-food')).toContainText('40 grillpølser med lomper og pølsebrød');
+  await expect(visible(page, 'plan-card-food')).toContainText('50 grillpølser med lomper og pølsebrød');
   expect(errors).toEqual([]);
 });
 

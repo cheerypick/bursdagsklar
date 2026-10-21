@@ -27,7 +27,6 @@ export const themeImages: Record<ThemeId, ImageSourcePropType> = {
   dinosaurer: require('../../assets/images/theme-dinosaur.webp'),
   verdensrommet: require('../../assets/images/theme-verdensrommet.webp'),
   fotball: require('../../assets/images/theme-fotball.webp'),
-  havfruer: require('../../assets/images/theme-havfrue.webp'),
   'dyr-i-skogen': require('../../assets/images/theme-dyr.webp'),
   pokemon: require('../../assets/images/theme-pokemon.webp'),
   'paw-patrol': require('../../assets/images/theme-paw-patrol.webp'),

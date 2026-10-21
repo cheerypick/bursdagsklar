@@ -137,8 +137,8 @@ export default function PlanScreen() {
           <Text style={styles.greeting} testID="plan-greeting">
             {theme ? theme.copy.greeting : nb.plan.greeting}
           </Text>
-          <Text variant="small" color={colors.onPrimarySoft} style={{ marginTop: 8, fontSize: 16 }}>
-            {nb.plan.meta(formatLongCap(party.date), tid, party.kidsInvited)}
+          <Text variant="small" color={colors.onPrimarySoft} style={{ marginTop: 8, fontSize: 16 }} testID="plan-meta">
+            {nb.plan.meta(formatLongCap(party.date), tid, party.children)}
           </Text>
         </View>
         <View style={[styles.heroArt, isWide && { width: 140, height: 140, borderRadius: 32 }]}>

@@ -39,8 +39,8 @@ interface PartyState {
   toggleDiet: (tag: DietTag) => void;
   /** Mat tap toggle: include or leave out one food line. */
   setFoodItem: (id: string, included: boolean) => void;
-  /** «Endre» on Mat: the party's own guest numbers (invited children, adults eating). */
-  setGuestCounts: (change: { kidsInvited?: number; adults?: number }) => void;
+  /** «Endre» on Mat: the party's own guest numbers (children in total, adults eating). */
+  setGuestCounts: (change: { children?: number; adults?: number }) => void;
   /**
    * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
    * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
@@ -156,7 +156,7 @@ export function PartyProvider({
     [update],
   );
   const setGuestCounts = useCallback(
-    (change: { kidsInvited?: number; adults?: number }) => update((p) => withGuestCounts(p, change)),
+    (change: { children?: number; adults?: number }) => update((p) => withGuestCounts(p, change)),
     [update],
   );
 

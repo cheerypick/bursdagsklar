@@ -4,7 +4,14 @@
  */
 import type { Celebrant, DietTag, HHMM, HomeItemId, ISODate, MenuChoice, Party, PlaceType, ThemeId } from './model';
 import { MAX_CELEBRANTS, SCHEMA_VERSION } from './model';
-import { DEFAULT_HOST_ADULTS, MAX_KIDS, MIN_KIDS, programmeDefaults } from './rules/constants';
+import {
+  clampChildren,
+  DEFAULT_CHILDREN,
+  DEFAULT_HOST_ADULTS,
+  MAX_CHILDREN,
+  minChildren,
+  programmeDefaults,
+} from './rules/constants';
 import { diffDays, formatRangeCompact, isWeekend } from './rules/dates';
 import { defaultPartyTime } from './rules/partyTime';
 import { menuTitle } from './rules/menu';
@@ -31,7 +38,8 @@ export interface SetupDraft {
   end: HHMM | null;
   /** True once the parent has changed the time by hand; then a new date or age keeps it. */
   timeEdited?: boolean;
-  kidsInvited: number;
+  /** Children at the party in total, the birthday children included («Hvor mange barn blir det?»). */
+  children: number;
   /** Where the party is held (the last setup step). */
   place: PlaceType | null;
 }
@@ -43,16 +51,21 @@ export const EMPTY_DRAFT: SetupDraft = {
   start: null,
   end: null,
   timeEdited: false,
-  kidsInvited: 10,
+  children: DEFAULT_CHILDREN,
   place: null,
 };
 
 /**
  * A draft read from storage, made current: older drafts had one `name`/`age` and a `theme`
- * (the theme is now chosen on Planen, so it is dropped); ages outside 3–10 are cleared.
+ * (the theme is now chosen on Planen, so it is dropped); ages outside 3–10 are cleared. Older drafts
+ * counted invited children without the birthday children (`kidsInvited`); that becomes the total.
  */
 export function normalizeDraft(raw: unknown): SetupDraft {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<SetupDraft> & { name?: string; age?: number | null };
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<SetupDraft> & {
+    name?: string;
+    age?: number | null;
+    kidsInvited?: number;
+  };
   let celebrants: DraftCelebrant[] = Array.isArray(r.celebrants)
     ? r.celebrants.slice(0, MAX_CELEBRANTS).map((c, i) => ({
         id: typeof c?.id === 'string' ? c.id : `c${i + 1}`,
@@ -69,7 +82,12 @@ export function normalizeDraft(raw: unknown): SetupDraft {
     start: typeof r.start === 'string' ? r.start : null,
     end: typeof r.end === 'string' ? r.end : null,
     timeEdited: Boolean(r.timeEdited),
-    kidsInvited: typeof r.kidsInvited === 'number' ? r.kidsInvited : EMPTY_DRAFT.kidsInvited,
+    children:
+      typeof r.children === 'number'
+        ? r.children
+        : typeof r.kidsInvited === 'number'
+          ? r.kidsInvited + celebrants.length
+          : EMPTY_DRAFT.children,
     place: r.place ?? null,
     celebrants,
   };
@@ -135,7 +153,7 @@ export function celebrantsComplete(d: Pick<SetupDraft, 'celebrants'>): boolean {
 }
 
 export function draftComplete(d: SetupDraft): boolean {
-  return Boolean(celebrantsComplete(d) && d.date && d.start && d.end && d.place && d.kidsInvited > 0);
+  return Boolean(celebrantsComplete(d) && d.date && d.start && d.end && d.place && d.children > 0);
 }
 
 /** Builds a new Party from a completed setup. `newId` is injected so tests are deterministic. */
@@ -155,8 +173,7 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     end: d.end!,
     theme: null,
     home: { type: d.place, garden: null },
-    kidsInvited: d.kidsInvited,
-    siblingsAttending: 0,
+    children: clampChildren(d.children, celebrants.length),
     hostAdults: DEFAULT_HOST_ADULTS,
     // nothing is assumed: the parent picks the main dish on the Mat screen
     menu: null,
@@ -206,26 +223,31 @@ export function withFoodItem(p: Party, id: string, included: boolean): Party {
 export const MAX_EXTRA_ADULTS = 30;
 
 /**
- * The guest editor's bounds («Endre» on the Mat screen). Children are edited as the INVITED count
- * (the same number setup asked for and Planen shows); adults as the adults eating, of which the
- * host adults are the part the parent sets (the rest are RSVP'd/expected parents, see people.ts).
+ * The guest editor's bounds («Endre» on the Mat screen). Children are the party's one children number
+ * (the total, birthday children included: the same number setup asked for and Planen shows); adults
+ * are the adults eating, of which the host adults are the part the parent sets (the rest are
+ * RSVP'd/expected parents, see people.ts).
  */
 export function guestBounds(p: Party): { kidsMin: number; kidsMax: number; adultsMin: number; adultsMax: number } {
   const hc = headCount(p);
   const others = hc.adultsEating - p.hostAdults;
-  return { kidsMin: MIN_KIDS, kidsMax: MAX_KIDS, adultsMin: others, adultsMax: others + MAX_EXTRA_ADULTS };
+  return {
+    kidsMin: minChildren(p.celebrants.length),
+    kidsMax: MAX_CHILDREN,
+    adultsMin: others,
+    adultsMax: others + MAX_EXTRA_ADULTS,
+  };
 }
 
 /**
  * «Endre» on the Mat screen: changes the PARTY's own numbers, the one source of truth that Planen,
- * the food, the to-dos and the shopping list all read. `kidsInvited` is the invited children (birthday
- * children not counted); `adults` is the wanted number of adults eating, applied through hostAdults.
+ * the food, the to-dos and the shopping list all read. `children` is the total number of children
+ * (birthday children included); `adults` is the wanted number of adults eating, applied through hostAdults.
  */
-export function withGuestCounts(p: Party, change: { kidsInvited?: number; adults?: number }): Party {
+export function withGuestCounts(p: Party, change: { children?: number; adults?: number }): Party {
   let next = p;
-  if (change.kidsInvited !== undefined) {
-    const kidsInvited = Math.min(MAX_KIDS, Math.max(MIN_KIDS, Math.round(change.kidsInvited)));
-    next = { ...next, kidsInvited };
+  if (change.children !== undefined) {
+    next = { ...next, children: clampChildren(change.children, p.celebrants.length) };
   }
   if (change.adults !== undefined) {
     const b = guestBounds(next);

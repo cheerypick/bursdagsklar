@@ -230,16 +230,16 @@ export default function MatScreen() {
             <Stepper
               compact
               testID="guest-kids"
-              value={party.kidsInvited}
+              value={party.children}
               min={bounds.kidsMin}
               max={bounds.kidsMax}
               unit={nb.food.guests.kidsUnit}
               lessLabel={nb.food.guests.lessKids}
               moreLabel={nb.food.guests.moreKids}
-              onChange={(kidsInvited) => setGuestCounts({ kidsInvited })}
+              onChange={(children) => setGuestCounts({ children })}
             />
-            <Text variant="small" testID="guest-kids-total">
-              {nb.food.guests.kidsWithCelebrants(celebrantNames(party.celebrants), hc.kidsComing)}
+            <Text variant="small" testID="guest-kids-with">
+              {nb.food.guests.kidsWith(celebrantNames(party.celebrants))}
             </Text>
           </View>
           <View style={{ gap: 6 }}>

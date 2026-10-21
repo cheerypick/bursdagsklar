@@ -128,7 +128,7 @@ test('setup in 4 steps → Festen er klar → Planen → Gjøremål, and a tick 
   await visible(page, 'next').click();
   // kids: keep the default (wait for the step, so the click isn't eaten by the fading one)
   await expect(
-    page.getByRole('heading', { name: 'Hvor mange barn inviterer dere?' }).filter({ visible: true }),
+    page.getByRole('heading', { name: 'Hvor mange barn blir det?' }).filter({ visible: true }),
   ).toBeVisible();
   await expect(page.getByText('Steg 3 av 4').filter({ visible: true })).toBeVisible();
   await visible(page, 'next').click();
@@ -157,7 +157,7 @@ test('setup in 4 steps → Festen er klar → Planen → Gjøremål, and a tick 
     .click();
   await expect(visible(page, 'screen-todo')).toBeVisible();
   const tick = page
-    .getByRole('checkbox', { name: /^Marker som gjort: Skriv ut \d+ invitasjonskort$/ })
+    .getByRole('checkbox', { name: /^Marker som gjort: Skriv ut invitasjonskortene$/ })
     .filter({ visible: true });
   await tick.click();
   await page.waitForTimeout(600); // storage writes are debounced 300 ms
@@ -166,7 +166,7 @@ test('setup in 4 steps → Festen er klar → Planen → Gjøremål, and a tick 
   await expect(visible(page, 'screen-todo')).toBeVisible();
   await expect(
     page
-      .getByRole('checkbox', { name: /^Marker som ikke gjort: Skriv ut \d+ invitasjonskort$/ })
+      .getByRole('checkbox', { name: /^Marker som ikke gjort: Skriv ut invitasjonskortene$/ })
       .filter({ visible: true }),
   ).toHaveCount(1);
 });
@@ -181,9 +181,11 @@ test('joint birthday: two children of different ages', async ({ page }) => {
   await pickDay(page, nextDayAfter(10, 3));
   await visible(page, 'next').click();
   await expect(
-    page.getByRole('heading', { name: 'Hvor mange barn inviterer dere?' }).filter({ visible: true }),
+    page.getByRole('heading', { name: 'Hvor mange barn blir det?' }).filter({ visible: true }),
   ).toBeVisible();
-  await expect(visible(page, 'step-kids')).toContainText('Uten Emma og Jonas');
+  await expect(visible(page, 'step-kids')).toContainText('Med Emma og Jonas');
+  // one children number: the total, both birthday children included (default 12)
+  await expect(visible(page, 'kids-count-value')).toHaveText('12');
   await visible(page, 'next').click();
   await visible(page, 'place-leilighet').click();
   await visible(page, 'next').click();

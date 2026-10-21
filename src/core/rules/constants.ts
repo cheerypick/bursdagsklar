@@ -24,9 +24,17 @@ export function stayRate(age: number): number {
 }
 
 export const DEFAULT_HOST_ADULTS = 2; // (I)
-export const DEFAULT_KIDS_INVITED = 10;
-export const MIN_KIDS = 1;
-export const MAX_KIDS = 40;
+/** Children at the party in total, birthday children included. */
+export const DEFAULT_CHILDREN = 12;
+export const MAX_CHILDREN = 40;
+/** The fewest children a party can have: the birthday children plus at least one guest. */
+export function minChildren(celebrants: number): number {
+  return Math.max(1, celebrants) + 1;
+}
+/** Keeps a children count inside minChildren..MAX_CHILDREN. */
+export function clampChildren(n: number, celebrants: number): number {
+  return Math.min(MAX_CHILDREN, Math.max(minChildren(celebrants), Math.round(n)));
+}
 
 // ---- sausages (§6.4) ----
 export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 1.5, B: 2, C: 2.5, D: 3 };

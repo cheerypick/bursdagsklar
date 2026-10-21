@@ -102,13 +102,16 @@ export interface TaskState {
 /**
  * v4 (Oct 2026): `foodCounts` is gone: the Mat screen edits the party's own numbers (one source of
  * truth for the guest count), and `foodItems` holds the per-line `included` flag (deselect pølsebrød).
+ * v5 (Oct 2026): ONE children number. `children` is the total number of children at the party,
+ * birthday children included (it replaces `kidsInvited`, which did not count them, and the unused
+ * `siblingsAttending`). Planen, the food, the to-dos and every text use it as is, with no ±1.
  * v3 (Oct 2026): `menu` is null until the parent picks one on the Mat screen (`menuChosen` is gone),
  * plus `diets` (the Mat chip row) and `foodCounts` (the Mat screen's own child/adult steppers).
  * v2 (Oct 2026): `child` became `celebrants` (joint birthdays: siblings or 2–3 kindergarten
  * friends), `theme` became optional (chosen later, on Planen) and `home.type` gained 'lokale'/'ute'.
  * Older records are upgraded in storage/PartyRepository.ts `migrate`.
  */
-export const SCHEMA_VERSION = 4 as const;
+export const SCHEMA_VERSION = 5 as const;
 
 /** The ages the app plans for (3–10). A 1-year-old's party is a family coffee party, not this. */
 export const MIN_AGE = 3;
@@ -144,9 +147,11 @@ export interface Party {
   /** Optional: chosen on Planen («Velg tema»). null = the neutral brand look and neutral texts. */
   theme: ThemeId | null;
   home: { type: PlaceType | null; garden: boolean | null };
-  /** Invited children, not counting the birthday children. 1..40 */
-  kidsInvited: number;
-  siblingsAttending: number;
+  /**
+   * Children at the party IN TOTAL, the birthday children included («Hvor mange barn blir det?»).
+   * The one children number: Planen, Mat, to-dos and texts all show it as is. 2..40
+   */
+  children: number;
   hostAdults: number;
   /** The main dish, picked on the Mat screen. null = not chosen yet: nothing assumes a menu. */
   menu: MenuChoice | null;

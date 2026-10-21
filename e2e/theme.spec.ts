@@ -26,7 +26,7 @@ async function setup(page: Page) {
   await expect(visible(page, 'date-result')).not.toContainText('Velg');
   await visible(page, 'next').click();
   await expect(
-    page.getByRole('heading', { name: 'Hvor mange barn inviterer dere?' }).filter({ visible: true }),
+    page.getByRole('heading', { name: 'Hvor mange barn blir det?' }).filter({ visible: true }),
   ).toBeVisible();
   await visible(page, 'next').click();
   await visible(page, 'place-hus').click();

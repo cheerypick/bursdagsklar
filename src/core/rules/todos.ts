@@ -51,7 +51,7 @@ export function buildTasks(p: Party): TaskPlan {
   const has = (id: Party['haveAtHome'][number]) => p.haveAtHome.includes(id);
 
   const rows: (Task | false)[] = [
-    { id: 'guestList', date: T, title: 'Lag gjestelisten', detail: `${p.kidsInvited} barn`, auto: true },
+    { id: 'guestList', date: T, title: 'Lag gjestelisten', detail: `${p.children} barn`, auto: true },
     {
       id: 'sendInvite',
       date: front(19),
@@ -62,8 +62,9 @@ export function buildTasks(p: Party): TaskPlan {
     {
       id: 'printCards',
       date: front(18),
-      title: `Skriv ut ${p.kidsInvited} invitasjonskort`,
-      detail: 'A6, to per A4',
+      // no count here: the one children number includes the birthday children, who get no card
+      title: 'Skriv ut invitasjonskortene',
+      detail: 'A6, to per A4. Ett til hver gjest',
       link: { label: 'Se kortet', route: '/invitasjon' },
     },
     pinata &&

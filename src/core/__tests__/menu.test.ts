@@ -115,15 +115,15 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
 });
 
 describe('a joint party with mixed ages', () => {
-  // Ali (4) and Sara (8): 14 invited + 2 birthday children; portions follow the OLDEST (8, band C)
+  // Ali (4) and Sara (8): 16 children in total (14 guests + the 2 birthday children); portions follow the OLDEST (8, band C)
   const joint = emma({
     celebrants: [
       { id: 'c1', name: 'Ali', age: 4 },
       { id: 'c2', name: 'Sara', age: 8 },
     ],
-    kidsInvited: 14,
+    children: 16,
   });
-  it('counts both birthday children and uses the oldest child’s portions', () => {
+  it('takes the total as is (both birthday children included) and uses the oldest child’s portions', () => {
     const hc = headCount(joint);
     expect(hc.kidsComing).toBe(16);
     const plan = partyFoodPlan(joint)!;
@@ -136,7 +136,7 @@ describe('a joint party with mixed ages', () => {
     expect(line(plan, 'kake').why).toContain('Ett lys-sett per bursdagsbarn');
   });
   it('a 4-year-old alone would get 1,5 per child', () => {
-    const plan = partyFoodPlan(emma({ celebrants: [{ id: 'c1', name: 'Ali', age: 4 }], kidsInvited: 14 }))!;
+    const plan = partyFoodPlan(emma({ celebrants: [{ id: 'c1', name: 'Ali', age: 4 }], children: 15 }))!;
     expect(line(plan, 'grillpolser').why).toContain('ca. 1,5 per barn');
   });
 });
@@ -272,13 +272,14 @@ describe('guest count: one source of truth (the party)', () => {
     expect(foodCounts(emma())).toEqual({ kids: hc.kidsComing, adults: hc.adultsEating });
     expect(partyFoodPlan(emma({ menu: { kind: 'grillpolser' } }))!.forWhom).toBe('for 13 barn og 4 voksne');
   });
-  it("changing the invited children changes the party, the food, Planen's numbers and the to-dos", () => {
+  it("changing the children changes the party, the food, Planen's numbers and the to-dos, with no ±1", () => {
     const before = emma({ menu: { kind: 'grillpolser' } });
-    const p = withGuestCounts(before, { kidsInvited: 14 });
-    expect(p.kidsInvited).toBe(14);
+    const p = withGuestCounts(before, { children: 15 });
+    expect(p.children).toBe(15);
     expect(headCount(p).kidsComing).toBe(15);
     expect(foodCounts(p).kids).toBe(15);
     expect(foodCardSummary(p)!.line).toContain('for 15 barn');
+    expect(buildTasks(p).tasks.find((t) => t.id === 'guestList')?.detail).toBe('15 barn');
     expect(line(partyFoodPlan(p)!, 'grillpolser').amount).not.toBe(line(partyFoodPlan(before)!, 'grillpolser').amount);
     // the party-wide reminder that counts the goodie bags follows too
     const fill = (q: typeof p) => buildTasks(q).tasks.find((t) => t.id === 'bakeMuffins')?.detail ?? '';
@@ -298,9 +299,18 @@ describe('guest count: one source of truth (the party)', () => {
     expect(low.hostAdults).toBe(0);
     expect(headCount(low).adultsEating).toBe(b.adultsMin);
   });
-  it('the invited children stay inside 1–40', () => {
-    expect(withGuestCounts(emma(), { kidsInvited: 0 }).kidsInvited).toBe(1);
-    expect(withGuestCounts(emma(), { kidsInvited: 99 }).kidsInvited).toBe(40);
+  it('the children stay inside the birthday children + 1 … 40', () => {
+    expect(withGuestCounts(emma(), { children: 0 }).children).toBe(2);
+    expect(withGuestCounts(emma(), { children: 99 }).children).toBe(40);
+    const three = emma({
+      celebrants: [
+        { id: 'c1', name: 'A', age: 5 },
+        { id: 'c2', name: 'B', age: 5 },
+        { id: 'c3', name: 'C', age: 5 },
+      ],
+    });
+    expect(guestBounds(three).kidsMin).toBe(4);
+    expect(withGuestCounts(three, { children: 1 }).children).toBe(4);
   });
   it('card ids and titles', () => {
     expect(menuCardOf({ kind: 'wienerpolser' })).toBe('polser');

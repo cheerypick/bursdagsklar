@@ -59,8 +59,18 @@ interface Index {
   ids: string[];
 }
 
+/**
+ * A party saved before the one children number (schemaVersion 4): `kidsInvited` counted the invited
+ * children WITHOUT the birthday children, plus an unused `siblingsAttending`.
+ */
+type PartyV4 = Omit<Party, 'schemaVersion' | 'children'> & {
+  schemaVersion: 4;
+  kidsInvited: number;
+  siblingsAttending?: number;
+};
+
 /** A party saved by the first Mat screen (schemaVersion 3): its own child/adult counts, no item flags. */
-type PartyV3 = Omit<Party, 'schemaVersion' | 'foodItems'> & {
+type PartyV3 = Omit<PartyV4, 'schemaVersion' | 'foodItems'> & {
   schemaVersion: 3;
   foodCounts?: { kids: number; adults: number } | null;
 };
@@ -106,10 +116,27 @@ function migrateV2(r: PartyV2): PartyV3 {
  * (the food follows the party's numbers again, which «Endre» on Mat now edits), and every food line
  * starts included (`foodItems: {}`).
  */
-function migrateV3(r: PartyV3): Party {
+function migrateV3(r: PartyV3): PartyV4 {
   const { foodCounts: _dropped, ...rest } = r;
   void _dropped;
-  return { ...rest, schemaVersion: SCHEMA_VERSION, foodItems: {} };
+  return { ...rest, schemaVersion: 4, foodItems: {} };
+}
+
+/**
+ * v4 → v5: one children number. The stored invited count N becomes N + the birthday children (plus
+ * any siblings), the same real head-count as before, now as the total that Planen, Mat and the texts show.
+ */
+function migrateV4(r: PartyV4): Party {
+  const { kidsInvited, siblingsAttending, ...rest } = r;
+  const invited = typeof kidsInvited === 'number' ? kidsInvited : 0;
+  const siblings = typeof siblingsAttending === 'number' ? siblingsAttending : 0;
+  const celebrants = Array.isArray(rest.celebrants) ? rest.celebrants.length : 1;
+  return {
+    ...rest,
+    schemaVersion: SCHEMA_VERSION,
+    foodItems: rest.foodItems && typeof rest.foodItems === 'object' ? rest.foodItems : {},
+    children: invited + celebrants + siblings,
+  };
 }
 
 /**
@@ -122,11 +149,13 @@ export function migrate(raw: unknown): Party | null {
   if (typeof r.id !== 'string') return null;
   switch (r.schemaVersion as number) {
     case 1:
-      return migrateV3(migrateV2(migrateV1(r as unknown as PartyV1)));
+      return migrateV4(migrateV3(migrateV2(migrateV1(r as unknown as PartyV1))));
     case 2:
-      return migrateV3(migrateV2(r as unknown as PartyV2));
+      return migrateV4(migrateV3(migrateV2(r as unknown as PartyV2)));
     case 3:
-      return migrateV3(r as unknown as PartyV3);
+      return migrateV4(migrateV3(r as unknown as PartyV3));
+    case 4:
+      return migrateV4(r as unknown as PartyV4);
     case SCHEMA_VERSION: {
       const p = r as Party;
       // defensive: a record without the map (hand-edited) still opens with everything included

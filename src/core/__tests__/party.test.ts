@@ -22,6 +22,14 @@ import { invitationCard, render, genitive, themeTexts, TEMPLATES } from '../text
 import { THEMES } from '../themes';
 import { buildTasks } from '../rules/todos';
 import { foodCounts } from '../rules/menu';
+import { headCount } from '../rules/people';
+
+/** Emma's party as schemaVersion 4 stored it: 12 INVITED children, Emma not counted. */
+function emmaV4() {
+  const { children: _c, ...rest } = emma();
+  void _c;
+  return { ...rest, schemaVersion: 4, kidsInvited: 12, siblingsAttending: 0 };
+}
 
 const draft = {
   ...EMPTY_DRAFT,
@@ -30,7 +38,7 @@ const draft = {
   dateText: '7. november',
   start: '12:00',
   end: '14:00',
-  kidsInvited: 12,
+  children: 13,
   place: 'hus' as const,
 };
 
@@ -102,6 +110,36 @@ describe('setup: who (1–3 children), when, how many, where — no theme', () =
     // an age the app no longer plans for (1–2) is cleared, so the parent picks again
     expect(normalizeDraft({ name: 'Liv', age: 2 }).celebrants[0].age).toBeNull();
   });
+  it('one children number: the total, birthday children included (default 12)', () => {
+    expect(EMPTY_DRAFT.children).toBe(12);
+    // an old draft counted the invited children without the birthday children: 12 + Emma = 13
+    expect(normalizeDraft({ name: 'Emma', age: 5, kidsInvited: 12 }).children).toBe(13);
+    const joint = {
+      celebrants: [
+        { id: 'c1', name: 'Emma', age: 5 },
+        { id: 'c2', name: 'Jonas', age: 7 },
+      ],
+      kidsInvited: 10,
+    };
+    expect(normalizeDraft(joint).children).toBe(12);
+    // a current draft keeps its number as is
+    expect(normalizeDraft({ ...joint, children: 9 }).children).toBe(9);
+  });
+  it('the party keeps the setup number as is: 12 children means 12 everywhere', () => {
+    const p = createParty(
+      { ...draft, children: 12 },
+      { id: 'x', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' },
+    );
+    expect(p.children).toBe(12);
+    expect(headCount(p).kidsComing).toBe(12);
+    expect(summarize(p, '2026-10-19').menuLine).toBe('Mat for 12 barn og 4 voksne');
+    expect(buildTasks(p).tasks.find((t) => t.id === 'guestList')?.detail).toBe('12 barn');
+    // never fewer than the birthday children plus one guest
+    expect(
+      createParty({ ...draft, children: 1 }, { id: 'y', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' })
+        .children,
+    ).toBe(2);
+  });
 });
 
 describe('createParty', () => {
@@ -109,7 +147,7 @@ describe('createParty', () => {
     const p = createParty(draft, { id: 'abc', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' });
     expect(p).toMatchObject({
       id: 'abc',
-      schemaVersion: 4,
+      schemaVersion: 5,
       createdAt: '2026-10-19T08:00:00.000Z',
       updatedAt: '2026-10-19T08:00:00.000Z',
       plannedFrom: '2026-10-19',
@@ -117,7 +155,7 @@ describe('createParty', () => {
       // no theme until the parent picks one on Planen
       theme: null,
       home: { type: 'hus', garden: null },
-      kidsInvited: 12,
+      children: 13,
       hostAdults: 2,
       // nothing the parent hasn't chosen: no piñata, skattejakt or muffins yet
       programme: { includePinata: false, includeSkattejakt: false },
@@ -275,8 +313,8 @@ describe('PartyRepository (one record per party)', () => {
     await repo.saveDraft(null);
     expect(await repo.loadDraft()).toBeNull();
   });
-  it('upgrades a v1 party (one child) to v4 (celebrants), keeping its theme', async () => {
-    const { celebrants, diets: _d, foodItems: _f, ...rest } = emma();
+  it('upgrades a v1 party (one child) to the current version (celebrants), keeping its theme', async () => {
+    const { celebrants, diets: _d, foodItems: _f, ...rest } = emmaV4();
     const v1 = {
       ...rest,
       menuChosen: true,
@@ -284,7 +322,7 @@ describe('PartyRepository (one record per party)', () => {
       child: { name: celebrants[0].name, age: celebrants[0].age },
     };
     const p = migrate(v1)!;
-    expect(p.schemaVersion).toBe(4);
+    expect(p.schemaVersion).toBe(5);
     expect(p.celebrants).toEqual([{ id: 'c1', name: 'Emma', age: 5 }]);
     expect(p).not.toHaveProperty('child');
     expect(p.theme).toBe('enhjorning');
@@ -297,10 +335,10 @@ describe('PartyRepository (one record per party)', () => {
     expect((await createPartyRepository(store).get(v1.id))?.celebrants[0].name).toBe('Emma');
   });
   it('upgrades a v2 party: a pre-filled menu the parent never picked becomes «not chosen»', async () => {
-    const { diets: _d, foodItems: _f, ...rest } = emma();
+    const { diets: _d, foodItems: _f, ...rest } = emmaV4();
     const v2 = { ...rest, schemaVersion: 2, menu: { kind: 'wienerpolser' }, menuChosen: false };
     const p = migrate(v2)!;
-    expect(p).toMatchObject({ schemaVersion: 4, menu: null, diets: [], foodItems: {} });
+    expect(p).toMatchObject({ schemaVersion: 5, menu: null, diets: [], foodItems: {}, children: 13 });
     expect(p).not.toHaveProperty('foodCounts');
     expect(p).not.toHaveProperty('menuChosen');
     // a menu the parent did pick survives
@@ -313,16 +351,44 @@ describe('PartyRepository (one record per party)', () => {
     expect(summarize(loaded!, '2026-10-19').menuLine).toBe('Mat for 13 barn og 4 voksne');
   });
   it("upgrades a v3 party: the Mat screen's own counts are dropped, every food line is included", async () => {
-    const { foodItems: _f, ...rest } = emma();
+    const { foodItems: _f, ...rest } = emmaV4();
     const v3 = { ...rest, schemaVersion: 3, menu: { kind: 'grillpolser' }, foodCounts: { kids: 20, adults: 9 } };
     const p = migrate(v3)!;
-    expect(p).toMatchObject({ schemaVersion: 4, menu: { kind: 'grillpolser' }, foodItems: {}, kidsInvited: 12 });
+    expect(p).toMatchObject({ schemaVersion: 5, menu: { kind: 'grillpolser' }, foodItems: {}, children: 13 });
     expect(p).not.toHaveProperty('foodCounts');
     // one source of truth: the food follows the party's own numbers again
     expect(foodCounts(p)).toEqual({ kids: 13, adults: 4 });
     const store = memoryStore();
     await store.setItem(`bursdagsklar:party:${v3.id}`, JSON.stringify(v3));
     expect((await createPartyRepository(store).get(v3.id))?.foodItems).toEqual({});
+  });
+  it('upgrades a v4 party: the invited count N becomes N + the birthday children, same food', async () => {
+    const v4 = { ...emmaV4(), menu: { kind: 'grillpolser' }, foodItems: { polsebrod: { included: false } } };
+    const p = migrate(v4)!;
+    expect(p.schemaVersion).toBe(5);
+    expect(p.children).toBe(13);
+    expect(p).not.toHaveProperty('kidsInvited');
+    expect(p).not.toHaveProperty('siblingsAttending');
+    expect(p.foodItems).toEqual({ polsebrod: { included: false } });
+    // the same real head-count as before: 13 children eat, 4 adults
+    expect(headCount(p)).toMatchObject({ kidsComing: 13, adultsEating: 4 });
+    expect(p).toEqual(emma({ foodItems: { polsebrod: { included: false } } }));
+    // a joint party: 10 invited + Emma + Jonas = 12
+    const jointV4 = {
+      ...emmaV4(),
+      kidsInvited: 10,
+      celebrants: [
+        { id: 'c1', name: 'Emma', age: 5 },
+        { id: 'c2', name: 'Jonas', age: 7 },
+      ],
+    };
+    expect(migrate(jointV4)!.children).toBe(12);
+    // through the repository (what a reload does)
+    const store = memoryStore();
+    await store.setItem(`bursdagsklar:party:${v4.id}`, JSON.stringify(v4));
+    const loaded = await createPartyRepository(store).get(v4.id);
+    expect(loaded?.children).toBe(13);
+    expect(summarize(loaded!, '2026-10-19').menuLine).toBe('Grillpølser for 13 barn og 4 voksne');
   });
   it('ignores unknown schema versions and junk', () => {
     expect(migrate({ ...emma(), schemaVersion: 99 })).toBeNull();

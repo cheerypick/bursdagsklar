@@ -35,11 +35,13 @@ describe('core rules in nb and en', () => {
   afterEach(() => void i18n.changeLanguage('nb'));
 
   it('the time reason: weekday and weekend, both languages', () => {
-    expect(defaultPartyTime(5, false).why).toBe('etter barnehagen – maten blir middag');
+    expect(defaultPartyTime(5, false).why).toBe('etter barnehagen – passer fint rundt middag');
     expect(defaultPartyTime(8, true).why).toBe('etter lunsj, før middag');
     inLanguage('en', () => {
-      expect(defaultPartyTime(5, false).why).toBe('after kindergarten – the food is dinner');
+      expect(defaultPartyTime(5, false).why).toBe('after kindergarten – fits nicely around dinner');
       expect(defaultPartyTime(8, true).why).toBe('after lunch, before dinner');
+      expect(defaultPartyTime(5, true).why).toBe('middle of the day – fits nicely around lunch');
+      expect(defaultPartyTime(8, false).why).toBe('after school – fits nicely around dinner');
       // the time itself never changes with the language
       expect(defaultPartyTime(5, true)).toMatchObject({ start: '12:00', end: '14:00' });
     });

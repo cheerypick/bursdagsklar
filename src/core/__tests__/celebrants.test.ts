@@ -59,7 +59,7 @@ describe('joint birthday: the rules', () => {
   });
   it('the time reason uses the YOUNGEST child', () => {
     expect(defaultPartyTime(youngestAge(jointEmmaJonas().celebrants), false).why).toBe(
-      'etter barnehagen – maten blir middag',
+      'etter barnehagen – passer fint rundt middag',
     );
     // and the weekend time: Emma (5) decides, not Jonas (7)
     expect(defaultPartyTime(youngestAge(jointEmmaJonas().celebrants), true)).toMatchObject({

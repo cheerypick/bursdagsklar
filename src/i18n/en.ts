@@ -361,10 +361,10 @@ export const en: LanguageResource = {
   loading: 'Loading …',
   rules: {
     time: {
-      weekendSmall: 'middle of the day – the food is lunch',
+      weekendSmall: 'middle of the day – fits nicely around lunch',
       weekendBig: 'after lunch, before dinner',
-      weekdaySmall: 'after kindergarten – the food is dinner',
-      weekdayBig: 'after school and after-school care – the food is dinner',
+      weekdaySmall: 'after kindergarten – fits nicely around dinner',
+      weekdayBig: 'after school – fits nicely around dinner',
     },
     food: {
       kidsTimes: '{{kids}} × {{per}}',

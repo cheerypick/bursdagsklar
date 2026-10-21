@@ -366,10 +366,10 @@ export const nb = {
   loading: 'Laster …',
   rules: {
     time: {
-      weekendSmall: 'midt på dagen – maten blir lunsj',
+      weekendSmall: 'midt på dagen – passer fint rundt lunsj',
       weekendBig: 'etter lunsj, før middag',
-      weekdaySmall: 'etter barnehagen – maten blir middag',
-      weekdayBig: 'etter skole og SFO – maten blir middag',
+      weekdaySmall: 'etter barnehagen – passer fint rundt middag',
+      weekdayBig: 'etter skole og SFO – passer fint rundt middag',
     },
     food: {
       kidsTimes: '{{kids}} × {{per}}',

@@ -30,7 +30,7 @@ jobs:
       - name: Export web
         run: npm run export:web
         env:
-          EXPO_BASE_URL: /bursdagsklar
+          EXPO_BASE_URL: ''
           EXPO_NO_TELEMETRY: 1
       # Safari on every iPhone is WebKit; a page once rendered in Chromium and stayed
       # blank in Safari. The e2e flow runs in both engines, at phone and desktop width.

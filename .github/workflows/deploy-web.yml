@@ -1,6 +1,7 @@
 name: Deploy web to GitHub Pages
 
-# One-time setup in the repo: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# One-time setup in the repo: Settings → Pages → Build and deployment → Source: "GitHub Actions",
+# Custom domain: bursdagsklar.no (DNS: apex A records to GitHub Pages, www CNAME to cheerypick.github.io).
 on:
   push:
     branches: [main]
@@ -26,10 +27,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - name: Export web for https://<owner>.github.io/bursdagsklar/
+      # Custom domain: the site lives at the domain root, so the base path is empty.
+      # public/CNAME (copied into dist) keeps bursdagsklar.no set on every deploy.
+      - name: Export web for https://bursdagsklar.no/
         run: npm run export:web
         env:
-          EXPO_BASE_URL: /${{ github.event.repository.name }}
+          EXPO_BASE_URL:
           EXPO_NO_TELEMETRY: 1
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

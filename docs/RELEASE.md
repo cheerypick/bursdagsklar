@@ -3,10 +3,11 @@
 ## Web: GitHub Pages
 
 1. Once: **Settings → Pages → Build and deployment → Source: «GitHub Actions»**.
-2. Every push to `main` runs `.github/workflows/deploy-web.yml`: install, tests, `expo export` with base `/bursdagsklar`, deploy.
-3. The app is then at `https://cheerypick.github.io/bursdagsklar/`.
+2. Custom domain: **Settings → Pages → Custom domain: `bursdagsklar.no`**, then tick «Enforce HTTPS». DNS: four `A` records on the apex to GitHub Pages, `www` as a `CNAME` to `cheerypick.github.io`.
+3. Every push to `main` runs `.github/workflows/deploy-web.yml`: install, tests, `expo export` with an empty base (the site lives at the domain root), deploy.
+4. The app is then at `https://bursdagsklar.no/`. `public/CNAME` is copied into the export, so the domain is part of every deploy.
 
-A custom domain (e.g. bursdagsklar.no) later: add it under Settings → Pages, and change `EXPO_BASE_URL` in the workflow to an empty value.
+Serving under a sub-path instead (e.g. `https://<owner>.github.io/bursdagsklar/`) needs `EXPO_BASE_URL=/bursdagsklar` at export; without it the page loads blank, because the scripts are looked up at the wrong path.
 
 ## Native apps: iOS and Android with EAS
 

@@ -5,10 +5,10 @@
  */
 import templates from './templates.json';
 import type { Party } from '../model';
-import { formatLong, formatRangeCompact, formatDayMonth, capitalize } from '../rules/dates';
-import { buildTasks } from '../rules/todos';
+import { formatLong, formatRangeCompact, capitalize } from '../rules/dates';
 import { THEMES, themeById } from '../themes';
 import { agesText, celebrantNames } from '../rules/celebrants';
+import { cardReplyLine, resolveInvitation } from '../rules/invitation';
 
 export type Ctx = Record<string, string | number | boolean | undefined | null>;
 
@@ -121,11 +121,18 @@ export function genitive(name: string): string {
   return /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
 }
 
-/** The invitation card preview on «Festen er klar» (milestone 1: no address or contact yet). */
-export function invitationCard(p: Party): { headline: string; name: string; line: string; when: string; rsvp: string } {
+/** The invitation card preview on «Festen er klar» and on Invitasjon (address and reply line from the invitation screen). */
+export function invitationCard(p: Party): {
+  headline: string;
+  name: string;
+  line: string;
+  when: string;
+  rsvp: string;
+  /** The address from the invitation screen; '' until she types one. */
+  where: string;
+} {
   const card = templates.texts.invitation.card;
   const theme = themeTexts(p.theme);
-  const { rsvpDeadline } = buildTasks(p);
   const ctx: Ctx = {
     tema_fest: theme.fest,
     barn: celebrantNames(p.celebrants),
@@ -143,6 +150,8 @@ export function invitationCard(p: Party): { headline: string; name: string; line
     name: render(card.navn, ctx),
     line: render(card.linje, ctx),
     when: render(card.naar, ctx),
-    rsvp: `Svar innen ${formatDayMonth(rsvpDeadline)}`,
+    // Invitasjon: the svarfrist and reply mode the parent chose (default: the day before the party)
+    rsvp: cardReplyLine(p),
+    where: resolveInvitation(p).address,
   };
 }

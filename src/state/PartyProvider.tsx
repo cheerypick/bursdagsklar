@@ -16,7 +16,9 @@ import {
   withTicksCleared,
   withMenu,
   withTheme,
+  withInvitation,
   type DietTag,
+  type InvitationSettings,
   type GoodieBagItemId,
   type HomeItemId,
   type MenuChoice,
@@ -62,6 +64,8 @@ interface PartyState {
    * The caller navigates to the start screen.
    */
   startOver: () => Promise<void>;
+  /** Invitasjon: the invitation screen's fields (undefined in the patch = back to the default). */
+  setInvitation: (patch: Partial<InvitationSettings>) => void;
 }
 
 const Ctx = createContext<PartyState | null>(null);
@@ -184,6 +188,11 @@ export function PartyProvider({
     [update],
   );
 
+  const setInvitation = useCallback(
+    (patch: Partial<InvitationSettings>) => update((p) => withInvitation(p, patch)),
+    [update],
+  );
+
   const startOver = useCallback(async () => {
     // a change still waiting to be saved would write the old party back after the reset
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -214,6 +223,7 @@ export function PartyProvider({
       removeCustomItem,
       setGoodieBagItem,
       startOver,
+      setInvitation,
     }),
     [
       ready,
@@ -235,6 +245,7 @@ export function PartyProvider({
       removeCustomItem,
       setGoodieBagItem,
       startOver,
+      setInvitation,
     ],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

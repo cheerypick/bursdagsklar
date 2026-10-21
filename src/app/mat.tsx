@@ -22,6 +22,7 @@ import {
   forWhom,
   guestBounds,
   headCount,
+  helpingParents,
   partyFoodPlan,
   type Dish,
   type FoodLine,
@@ -318,6 +319,11 @@ export default function MatScreen() {
               onChange={(adults) => setGuestCounts({ adults })}
             />
             <Text variant="small">{nb.food.guests.adultsHint}</Text>
+            {helpingParents(party) > 0 ? (
+              <Text variant="small" testID="guest-adults-helpers">
+                {nb.invitation.parentsHelpFood(helpingParents(party))}
+              </Text>
+            ) : null}
           </View>
           <Text variant="small" style={{ color: colors.ink }}>
             {nb.food.guests.appliesToParty}

@@ -196,3 +196,12 @@ The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) i
 
 - **`overrides.xcode.uuid = ^11.1.1`** (21 Oct 2026). `expo-splash-screen` → `@expo/config-plugins` → `xcode@3.0.1` asks for `uuid@^7`, which npm flags as deprecated on every install. `xcode` only calls `uuid.v4()`, which uuid 11 still exports for CommonJS, so the override is safe. uuid 12+ is ESM-only and would break `require('uuid')` in `xcode` on Node 20, so stay on 11. Remove the override once `@expo/config-plugins` ships an `xcode` that no longer needs it (check with `npm ls uuid`).
 - **ESLint stays on 9** (21 Oct 2026). ESLint 10 was tried: `eslint-plugin-react@7.37.5` (pulled in by `eslint-config-expo@58`) crashes on load with `contextOrFilename.getFilename is not a function`, because ESLint 10 removed that API, and `eslint-plugin-import` does not list ESLint 10 as supported either. npm therefore keeps warning that `eslint@9.39.5` is deprecated. Move to ESLint 10 when `eslint-config-expo` and `eslint-plugin-react` support it.
+
+## Invitasjon
+
+- Teksten lages i `src/core/rules/invitation.ts` (`buildInvitation`): navn og alder (felles bursdag: «Emma og Jonas fyller 5 og 7 år»), ukedag + dato, tid, adresse (feltet på Invitasjon-skjermen; tomt hjemme → «hjemme hos oss»), temaets egen åpningslinje når et tema er valgt (ellers nøytral tekst). Ingen AI, samme fest gir samme tekst.
+- Valgene lagres på festen som `invitation` (valgfritt felt, ingen ny schemaVersion): adresse, telefon, «noen foreldre blir og hjelper til» (forhåndskrysset når yngste bursdagsbarn er 3–4), søsken (av), svarfrist (standard dagen før festen), svarmåte («Gi beskjed hvis dere ikke kommer» / «Gi beskjed om dere kommer») og egen redigert tekst («Lag teksten på nytt» fjerner den).
+- Svar håndterer vertene selv; appen samler ingen svar.
+- Foreldre som hjelper til regnes med i maten: 1 per 4 gjestebarn, rundet opp (gjestebarn = barn totalt minus bursdagsbarna). De er en del av de voksne som blir, så `headCount` bruker det største av hjelpere og det vanlige anslaget, ikke summen.
+- «Kopier tekst»: utklippstavlen på web. På iOS/Android åpner den delingsarket (som har «Kopier»), fordi appen ikke har en utklippsmodul ennå (`expo-clipboard`).
+- Etter MVP (ikke bygget): foreldre laster opp sitt eget bilde til invitasjonen. Trenger bildehosting (f.eks. Cloudinary).

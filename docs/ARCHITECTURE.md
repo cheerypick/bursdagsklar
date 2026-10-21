@@ -189,3 +189,10 @@ The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) i
 | Date input | Text field (accepts many formats).                                                                                                                                                                                  | Same text field; a native date picker is a later improvement.                            |
 | Fonts      | Downloaded with the page.                                                                                                                                                                                           | Bundled in the app.                                                                      |
 | Updates    | Every push to `main` deploys.                                                                                                                                                                                       | New binary through EAS Build + store review (EAS Update can ship JS-only changes later). |
+
+## Avhengigheter (dependencies)
+
+`package.json` cannot hold comments, so the reasons for its special entries live here.
+
+- **`overrides.xcode.uuid = ^11.1.1`** (21 Oct 2026). `expo-splash-screen` → `@expo/config-plugins` → `xcode@3.0.1` asks for `uuid@^7`, which npm flags as deprecated on every install. `xcode` only calls `uuid.v4()`, which uuid 11 still exports for CommonJS, so the override is safe. uuid 12+ is ESM-only and would break `require('uuid')` in `xcode` on Node 20, so stay on 11. Remove the override once `@expo/config-plugins` ships an `xcode` that no longer needs it (check with `npm ls uuid`).
+- **ESLint stays on 9** (21 Oct 2026). ESLint 10 was tried: `eslint-plugin-react@7.37.5` (pulled in by `eslint-config-expo@58`) crashes on load with `contextOrFilename.getFilename is not a function`, because ESLint 10 removed that API, and `eslint-plugin-import` does not list ESLint 10 as supported either. npm therefore keeps warning that `eslint@9.39.5` is deprecated. Move to ESLint 10 when `eslint-config-expo` and `eslint-plugin-react` support it.

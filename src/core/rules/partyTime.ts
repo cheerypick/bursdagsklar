@@ -16,9 +16,10 @@ interface WhyRow {
 }
 
 const WHY: WhyRow[] = [
-  { maxAge: 6, weekday: 'etter barnehagen, før middag', weekend: 'etter lunsj, før middag' },
+  // a weekday party around 16.30–18.30 IS dinner, and children go to bed around 19 (Ekaterina, 21 Oct 2026)
+  { maxAge: 6, weekday: 'etter barnehagen, før leggetid', weekend: 'etter lunsj, før middag' },
   { maxAge: 9, weekday: 'etter skole og SFO', weekend: 'etter lunsj, før middag' },
-  { maxAge: 10, weekday: 'etter skolen, før middag', weekend: 'etter lunsj, før middag' },
+  { maxAge: 10, weekday: 'etter skolen, før leggetid', weekend: 'etter lunsj, før middag' },
 ];
 
 export function defaultPartyTime(age: number, weekend: boolean): { start: HHMM; end: HHMM; why: string } {

@@ -13,7 +13,7 @@
  * Every key the app writes starts with `bursdagsklar:`; `reset()` («Start på nytt») removes them all.
  */
 import type { MenuChoice, Party } from '../model';
-import { SCHEMA_VERSION } from '../model';
+import { GOODIE_BAG_ITEMS, SCHEMA_VERSION } from '../model';
 import { normalizeDraft, type SetupDraft } from '../party';
 import { clampAge } from '../rules/celebrants';
 
@@ -59,11 +59,14 @@ interface Index {
   ids: string[];
 }
 
+/** A party saved before Handleliste (schemaVersion 5): no list state, no goodie-bag choice. */
+type PartyV5 = Omit<Party, 'schemaVersion' | 'shopping' | 'goodieBags'> & { schemaVersion: 5 };
+
 /**
  * A party saved before the one children number (schemaVersion 4): `kidsInvited` counted the invited
  * children WITHOUT the birthday children, plus an unused `siblingsAttending`.
  */
-type PartyV4 = Omit<Party, 'schemaVersion' | 'children'> & {
+type PartyV4 = Omit<PartyV5, 'schemaVersion' | 'children'> & {
   schemaVersion: 4;
   kidsInvited: number;
   siblingsAttending?: number;
@@ -126,17 +129,37 @@ function migrateV3(r: PartyV3): PartyV4 {
  * v4 → v5: one children number. The stored invited count N becomes N + the birthday children (plus
  * any siblings), the same real head-count as before, now as the total that Planen, Mat and the texts show.
  */
-function migrateV4(r: PartyV4): Party {
+function migrateV4(r: PartyV4): PartyV5 {
   const { kidsInvited, siblingsAttending, ...rest } = r;
   const invited = typeof kidsInvited === 'number' ? kidsInvited : 0;
   const siblings = typeof siblingsAttending === 'number' ? siblingsAttending : 0;
   const celebrants = Array.isArray(rest.celebrants) ? rest.celebrants.length : 1;
   return {
     ...rest,
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: 5,
     foodItems: rest.foodItems && typeof rest.foodItems === 'object' ? rest.foodItems : {},
     children: invited + celebrants + siblings,
   };
+}
+
+/** v5 → v6: Handleliste. Nothing ticked, no own items, nothing picked for the goodie bags. */
+function migrateV5(r: PartyV5): Party {
+  return { ...r, schemaVersion: SCHEMA_VERSION, goodieBags: { contents: [] }, shopping: { ticked: [], custom: [] } };
+}
+
+/** Defensive: a current record with a missing or hand-edited field still opens. */
+function normalizeCurrent(p: Party): Party {
+  const foodItems = p.foodItems && typeof p.foodItems === 'object' ? p.foodItems : {};
+  const contents = Array.isArray(p.goodieBags?.contents) ? p.goodieBags.contents : [];
+  const goodieBags = { contents: GOODIE_BAG_ITEMS.filter((id) => contents.includes(id)) };
+  const s = p.shopping;
+  const shopping = {
+    ticked: Array.isArray(s?.ticked) ? s.ticked.filter((x): x is string => typeof x === 'string') : [],
+    custom: Array.isArray(s?.custom)
+      ? s.custom.filter((c) => c && typeof c.id === 'string' && typeof c.text === 'string')
+      : [],
+  };
+  return { ...p, foodItems, goodieBags, shopping };
 }
 
 /**
@@ -149,18 +172,17 @@ export function migrate(raw: unknown): Party | null {
   if (typeof r.id !== 'string') return null;
   switch (r.schemaVersion as number) {
     case 1:
-      return migrateV4(migrateV3(migrateV2(migrateV1(r as unknown as PartyV1))));
+      return migrateV5(migrateV4(migrateV3(migrateV2(migrateV1(r as unknown as PartyV1)))));
     case 2:
-      return migrateV4(migrateV3(migrateV2(r as unknown as PartyV2)));
+      return migrateV5(migrateV4(migrateV3(migrateV2(r as unknown as PartyV2))));
     case 3:
-      return migrateV4(migrateV3(r as unknown as PartyV3));
+      return migrateV5(migrateV4(migrateV3(r as unknown as PartyV3)));
     case 4:
-      return migrateV4(r as unknown as PartyV4);
-    case SCHEMA_VERSION: {
-      const p = r as Party;
-      // defensive: a record without the map (hand-edited) still opens with everything included
-      return p.foodItems && typeof p.foodItems === 'object' ? p : { ...p, foodItems: {} };
-    }
+      return migrateV5(migrateV4(r as unknown as PartyV4));
+    case 5:
+      return normalizeCurrent(migrateV5(r as unknown as PartyV5));
+    case SCHEMA_VERSION:
+      return normalizeCurrent(r as Party);
     default:
       // Unknown (newer or corrupt) record: keep it on disk, but do not load it.
       return null;

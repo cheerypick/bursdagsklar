@@ -115,7 +115,7 @@ export function buildTasks(p: Party): TaskPlan {
       date: at(4),
       title: 'Handle tørrvarer',
       detail: dryDetail(p),
-      link: { label: 'Handleliste', route: '/mat' },
+      link: { label: 'Handleliste', route: '/handleliste' },
     },
     bake && {
       id: 'bakeCakeBase',
@@ -151,7 +151,7 @@ export function buildTasks(p: Party): TaskPlan {
       date: at(1),
       title: 'Handle ferskvarer',
       detail: menu ? `${mainItemWord(menu)}, frukt og grønt` : 'Frukt og grønt. Velg meny under Mat',
-      link: { label: 'Handleliste', route: '/mat' },
+      link: { label: 'Handleliste', route: '/handleliste' },
     },
     bake && {
       id: 'bakeMuffins',
@@ -198,7 +198,7 @@ function dryDetail(p: Party): string {
             : [];
   const first = candidates.find(([id]) => isIncluded(p, id))?.[1];
   const saft = isIncluded(p, 'saft');
-  // no candy: it moves to the goodie bags (godteposer) in a later PR
+  // no candy: it moves to the goodie bags (godteposer) (picked on Handleliste)
   if (first && saft) return `${first} og saft`;
   return first ?? (saft ? 'Saft' : 'Det som står på handlelista');
 }

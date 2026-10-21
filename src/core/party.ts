@@ -179,6 +179,9 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     menu: null,
     diets: [],
     foodItems: {},
+    // nothing for the goodie bags until she picks it on Handleliste («Forslag til innhold»)
+    goodieBags: { contents: [] },
+    shopping: { ticked: [], custom: [] },
     cake: {
       mode: 'bake',
       // one shared cake for everyone; the youngest decides the flavour

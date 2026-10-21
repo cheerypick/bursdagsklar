@@ -173,7 +173,7 @@ export function customDish(m: Extract<MenuChoice, { kind: 'egen' }>, p: Pick<Peo
 // ---------------- extras (§6.7) ----------------
 
 /** `candleAges`: one candle set per birthday child (age + 1 each); defaults to `p.age`. */
-/** No candy here: it belongs to the goodie bags (godteposer), a later PR. See docs/ARCHITECTURE.md. */
+/** No candy here: it belongs to the goodie bags (godteposer), picked on Handleliste. See docs/ARCHITECTURE.md. */
 export function extras(p: People, opts: { muffins: boolean; candleAges?: number[] }) {
   const saftLitres = (p.kidsComing * C.SAFT_DL_CHILD + p.adultsEating * C.SAFT_DL_ADULT) / 10;
   const fruitG = p.kidsComing * C.FRUIT_G_CHILD + p.adultsEating * C.FRUIT_G_ADULT;

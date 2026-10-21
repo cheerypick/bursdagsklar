@@ -23,7 +23,7 @@ export default function Ready() {
 
   const title = (
     <>
-      <Text variant="h1" color={colors.onPrimary} style={{ marginBottom: 6 }}>
+      <Text variant="h1" color={colors.onPrimary} style={{ marginBottom: 6 }} testID="ready-title">
         {readyTitle(party)}
       </Text>
       <Text variant="lede" color={colors.readyText}>

@@ -107,11 +107,20 @@ describe('conditions', () => {
     expect(ids).not.toContain('bakeCakeBase');
     expect(ids).not.toContain('bakeMuffins');
   });
-  it('wienerpølser has no grill check; homemade pizza adds the dough task', () => {
+  it('wienerpølser has no grill check; homemade pizza adds the dough task only when she makes the dough', () => {
     expect(buildTasks(emma({ menu: { kind: 'wienerpolser' } })).tasks.map((t) => t.id)).not.toContain('checkGrill');
-    expect(buildTasks(emma({ menu: { kind: 'pizza', style: 'hjemmelaget' } })).tasks.map((t) => t.id)).toContain(
+    expect(buildTasks(emma({ menu: { kind: 'pizza', style: 'hjemmelaget' } })).tasks.map((t) => t.id)).not.toContain(
       'makeDough',
     );
+    expect(
+      buildTasks(emma({ menu: { kind: 'pizza', style: 'hjemmelaget', dough: 'selv' } })).tasks.map((t) => t.id),
+    ).toContain('makeDough');
+    // pølser + pizza: the grill check stays
+    expect(
+      buildTasks(
+        emma({ menu: { kind: 'flere', dishes: [{ kind: 'grillpolser' }, { kind: 'pizza', style: 'hjemmelaget' }] } }),
+      ).tasks.map((t) => t.id),
+    ).toContain('checkGrill');
     expect(buildTasks(emma({ menu: { kind: 'pizza', style: 'bestilt' } })).tasks.map((t) => t.id)).toContain(
       'orderPizza',
     );

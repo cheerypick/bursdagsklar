@@ -45,13 +45,15 @@ test('Mat: choose Pølser, see the amounts, change the guests (the party), reloa
   await expect(page.getByText('Kommer snart')).toHaveCount(0);
 
   // nothing is pre-picked
-  for (const id of ['polser', 'pizza', 'taco', 'pasta', 'annet'])
+  for (const id of ['polser', 'pizza', 'annet'])
     await expect(visible(page, `menu-card-${id}`)).not.toHaveAttribute('aria-checked', 'true');
+  // taco and pasta are hidden for now
+  for (const id of ['taco', 'pasta']) await expect(page.getByTestId(`menu-card-${id}`)).toHaveCount(0);
   await expect(visible(page, 'food-amounts')).toHaveCount(0);
 
   // Pølser needs one more tap: grill or kjele
   await visible(page, 'menu-card-polser').click();
-  await expect(visible(page, 'menu-how')).toContainText('Grill eller kjele?');
+  await expect(visible(page, 'menu-polser')).toContainText('Grill eller kjele?');
   await expect(visible(page, 'food-amounts')).toHaveCount(0);
   await visible(page, 'menu-how-grillpolser').getByRole('button').click();
 
@@ -230,7 +232,7 @@ test('One children number: 12 in setup is 12 on Planen, Mat and Festen er klar; 
   await expect(visible(page, 'plan-meta')).toContainText('· 12 barn');
   // Mat: 12
   await visible(page, 'plan-card-food').click();
-  await visible(page, 'menu-card-taco').click();
+  await visible(page, 'menu-card-pizza').click();
   await expect(visible(page, 'food-for-whom')).toHaveText('For 12 barn og 4 voksne');
 
   // Endre: the same 12, to 14
@@ -249,7 +251,7 @@ test('One children number: 12 in setup is 12 on Planen, Mat and Festen er klar; 
   await expect(visible(page, 'plan-meta')).toContainText('· 14 barn');
   await expect(visible(page, 'plan-card-food')).toContainText('for 14 barn og 4 voksne');
   await page.goto('/klar');
-  await expect(visible(page, 'screen-ready')).toContainText('Taco for 14 barn og 4 voksne');
+  await expect(visible(page, 'screen-ready')).toContainText('Hjemmelaget pizza for 14 barn og 4 voksne');
   await page.goto('/gjoremal');
   await expect(visible(page, 'screen-todo')).toContainText('14 barn');
   await expect(visible(page, 'screen-todo')).toContainText('Og fyll 14 godteposer');
@@ -269,9 +271,11 @@ test('Mat: «Noe annet» calculates only drinks, snacks and cake; switching dish
   await expect(visible(page, 'food-amount-saft')).toHaveText('2 flasker saft');
   await expect(visible(page, 'food-line-grillpolser')).toHaveCount(0);
 
-  await visible(page, 'menu-change').click();
+  // unpick «Noe annet», pick Pizza (homemade by default), then switch to frozen
+  await visible(page, 'menu-card-annet').click();
+  await expect(visible(page, 'food-amounts')).toHaveCount(0);
   await visible(page, 'menu-card-pizza').click();
-  await expect(visible(page, 'food-amounts')).toHaveCount(0); // which pizza? not assumed
+  await expect(visible(page, 'menu-chosen-title')).toHaveText('Hjemmelaget pizza');
   await visible(page, 'menu-how-frossen').getByRole('button').click();
   await expect(visible(page, 'menu-chosen-title')).toHaveText('Frossenpizza');
   await expect(visible(page, 'food-line-frossenpizza')).toBeVisible();

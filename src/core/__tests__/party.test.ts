@@ -345,7 +345,9 @@ describe('PartyRepository (one record per party)', () => {
     expect(p).not.toHaveProperty('foodCounts');
     expect(p).not.toHaveProperty('menuChosen');
     // a menu the parent did pick survives
-    expect(migrate({ ...v2, menu: { kind: 'taco' }, menuChosen: true })!.menu).toEqual({ kind: 'taco' });
+    expect(migrate({ ...v2, menu: { kind: 'grillpolser' }, menuChosen: true })!.menu).toEqual({ kind: 'grillpolser' });
+    // … unless it is a dish that is hidden for now (taco, pasta): then it opens with nothing picked
+    expect(migrate({ ...v2, menu: { kind: 'taco' }, menuChosen: true })!.menu).toBeNull();
     // and an old party opens fine through the repository, with no menu chosen
     const store = memoryStore();
     await store.setItem(`bursdagsklar:party:${v2.id}`, JSON.stringify(v2));

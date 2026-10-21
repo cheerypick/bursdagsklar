@@ -2,7 +2,19 @@
  * Creating and updating a Party, and the derived numbers the screens show.
  * Pure functions: the screens never compute rules themselves.
  */
-import type { Celebrant, DietTag, HHMM, HomeItemId, ISODate, MenuChoice, Party, PlaceType, ThemeId } from './model';
+import type {
+  Celebrant,
+  DietTag,
+  Dish,
+  HHMM,
+  HomeItemId,
+  ISODate,
+  MenuChoice,
+  Party,
+  PlaceType,
+  ThemeId,
+} from './model';
+import { menuDishes, menuFromDishes, withDishOn, type MenuCardId } from './rules/dishes';
 import { MAX_CELEBRANTS, SCHEMA_VERSION } from './model';
 import {
   clampChildren,
@@ -204,8 +216,15 @@ export function withDate(p: Party, date: ISODate, today: ISODate): Party {
 
 /** Mat step 1: the main dish (null clears it, back to «not chosen»). */
 export function withMenu(p: Party, menu: MenuChoice | null): Party {
-  if (menu && menu.kind === 'annet') return { ...p, menu: { kind: 'annet', text: menu.text.slice(0, 60) } };
-  return { ...p, menu };
+  const dishes = menuDishes(menu).map((d) =>
+    d.kind === 'annet' ? { kind: 'annet' as const, text: d.text.slice(0, 60) } : d,
+  );
+  return { ...p, menu: menuFromDishes(dishes) };
+}
+
+/** Mat: the dish on one card (Pølser, Pizza, Noe annet), or null to unpick that card. Other cards stay. */
+export function withDish(p: Party, card: MenuCardId, dish: Dish | null): Party {
+  return withMenu(p, withDishOn(p.menu, card, dish));
 }
 
 /** Mat chip row: toggles one dietary need. */
@@ -290,10 +309,11 @@ export function homeItemsFor(p: Party): HomeItemId[] {
     'pizzahjul',
     'stor-kjele',
   ];
+  const kinds = menuDishes(p.menu).map((d) => d.kind);
   return all.filter((id) => {
-    if (id === 'pizzahjul') return p.menu?.kind === 'pizza';
-    if (id === 'stor-kjele') return p.menu?.kind === 'wienerpolser' || p.menu?.kind === 'pasta';
-    if (id === 'grill') return p.menu?.kind === 'grillpolser';
+    if (id === 'pizzahjul') return kinds.includes('pizza');
+    if (id === 'stor-kjele') return kinds.includes('wienerpolser') || kinds.includes('pasta');
+    if (id === 'grill') return kinds.includes('grillpolser');
     if (id === 'laken-fiskedam' || id === 'fiskestang') return p.programme.includeSkattejakt;
     if (id === 'muffinsformer') return p.cake.muffins;
     return true;

@@ -152,11 +152,12 @@ export const nb = {
   food: {
     eyebrow: 'Mat',
     title: 'Hva skal dere spise?',
-    lede: (forWhom: string) => `Velg én hovedrett. Vi regner ut mengdene ${forWhom}.`,
+    lede: (forWhom: string) =>
+      `Velg pølser eller pizza, og legg gjerne til noe annet. Vi regner ut mengdene ${forWhom}.`,
     step1: 'Hovedrett',
     cards: {
       polser: { label: 'Pølser', sub: 'Med lompe og brød' },
-      pizza: { label: 'Pizza', sub: 'Hjemmelaget eller frossen' },
+      pizza: { label: 'Pizza', sub: 'I langpanne' },
       taco: { label: 'Taco', sub: 'Med alt tilbehør' },
       pasta: { label: 'Pasta', sub: 'Pastasalat eller med saus' },
       annet: { label: 'Noe annet', sub: 'Skriv selv' },
@@ -174,6 +175,31 @@ export const nb = {
       salat: 'Pastasalat',
       varm: 'Pasta med tomatsaus',
     },
+    /** Pizza: the base («Bunn») and the topping chips («Fyll»). */
+    pizza: {
+      doughTitle: 'Bunn',
+      dough: {
+        ferdigdeig: 'Ferdig pizzadeig',
+        ferdigstekt: 'Ferdigstekte bunner',
+        miks: 'Pizzamiks',
+        selv: 'Lag deigen selv',
+      },
+      doughSelfSmall: 'Eller lag deigen selv (hvetemel og gjær)',
+      toppingsTitle: 'Fyll',
+      toppingsLede: 'Trykk på det dere vil ha. Ost og pizzasaus er alltid med.',
+      toppings: {
+        skinke: 'Skinke',
+        pepperoni: 'Pepperoni',
+        sopp: 'Sopp',
+        ananas: 'Ananas',
+        mais: 'Mais',
+        paprika: 'Paprika',
+        kebab: 'Kebab',
+        rommedressing: 'Rømmedressing',
+      },
+    },
+    /** Pølser and pizza both picked: only shown when ALLOW_POLSER_AND_PIZZA is true (off for the MVP). */
+    shareNote: 'Halvparten pølser, halvparten pizza. Mengdene under er regnet ut for det.',
     annetLabel: 'Hva skal dere servere?',
     annetPlaceholder: 'F.eks. kyllingsuppe eller wraps',
     annetHelp: 'Mengden til hovedretten bestemmer du. Vi regner ut drikke, frukt og kake.',

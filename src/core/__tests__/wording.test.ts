@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emma } from '../__fixtures__/emma';
 import { nb } from '../../i18n/nb';
 import templates from '../texts/templates.json';
-import { DIET_TAGS, type FoodItemState, type MenuChoice } from '../model';
+import { DIET_TAGS, PIZZA_TOPPINGS, type FoodItemState, type MenuChoice } from '../model';
 import { shoppingList } from '../rules/food';
 import { foodCardSummary, foodPlan } from '../rules/menu';
 
@@ -16,6 +16,14 @@ const MENUS: MenuChoice[] = [
   { kind: 'grillpolser' },
   { kind: 'wienerpolser' },
   { kind: 'pizza', style: 'hjemmelaget' },
+  { kind: 'pizza', style: 'hjemmelaget', dough: 'ferdigstekt', toppings: [...PIZZA_TOPPINGS] },
+  { kind: 'pizza', style: 'hjemmelaget', dough: 'miks', toppings: ['pepperoni', 'rommedressing'] },
+  { kind: 'pizza', style: 'hjemmelaget', dough: 'selv', toppings: [] },
+  { kind: 'flere', dishes: [{ kind: 'grillpolser' }, { kind: 'pizza', style: 'hjemmelaget' }] },
+  {
+    kind: 'flere',
+    dishes: [{ kind: 'wienerpolser' }, { kind: 'pizza', style: 'frossen' }, { kind: 'annet', text: 'Vårruller' }],
+  },
   { kind: 'pizza', style: 'frossen' },
   { kind: 'pizza', style: 'bestilt', takeawaySize: '30' },
   { kind: 'pizza', style: 'bestilt', takeawaySize: '40' },

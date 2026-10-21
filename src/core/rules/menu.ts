@@ -3,7 +3,8 @@
  * reason line («Ca. 2 per barn og 1,5 per voksen = 32 pølser, pluss et par ekstra. 4 pk Gilde Grillpølser (10 stk) = 40»). Pure and deterministic: the amounts
  * come from rules/food.ts and rules/constants.ts, the words are fixed templates. No AI.
  */
-import type { DietTag, FoodCounts, FoodItemState, MenuChoice, Party } from '../model';
+import type { DietTag, Dish, FoodCounts, FoodItemState, MenuChoice, Party, PizzaTopping } from '../model';
+import { dishCard, dishShare, menuDishes, type MenuCardId } from './dishes';
 import * as C from './constants';
 import { band } from './constants';
 import { oldestAge } from './celebrants';
@@ -16,12 +17,17 @@ import {
   enoughFor,
   extras,
   formatGrams,
-  homemadePizza,
+  homemadeFor,
   lomperWhy,
   pasta,
+  PIZZA_DOUGH_LINE,
+  PIZZA_TOPPING_LINE_ID,
   pizzaCount,
-  pizzaUnits,
+  pizzaSlices,
   polsebrodWhy,
+  shareLead,
+  shareWord,
+  toppingAmount,
   sausages,
   sausageWhy,
   taco,
@@ -33,30 +39,14 @@ const n = (x: number) => nb.format(x);
 const pct = (x: number) => `${Math.round(x * 100)} %`;
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-/** The cards in step 1, in order. «pizza» and «polser» need one more tap (how) before amounts show. */
-export type MenuCardId = 'polser' | 'pizza' | 'taco' | 'pasta' | 'annet';
-export const MENU_CARDS: readonly MenuCardId[] = ['polser', 'pizza', 'taco', 'pasta', 'annet'];
-
+/** The card of the (first) dish: Planen's Mat card picture. null while nothing is chosen. */
 export function menuCardOf(menu: MenuChoice | null): MenuCardId | null {
-  if (!menu) return null;
-  switch (menu.kind) {
-    case 'grillpolser':
-    case 'wienerpolser':
-      return 'polser';
-    case 'pizza':
-      return 'pizza';
-    case 'taco':
-      return 'taco';
-    case 'pasta':
-      return 'pasta';
-    case 'annet':
-    case 'egen':
-      return 'annet';
-  }
+  const first = menuDishes(menu)[0];
+  return first ? dishCard(first) : null;
 }
 
 /** «Grillpølser», «Hjemmelaget pizza», «Pastasalat», or the parent's own words for «Noe annet». */
-export function menuTitle(menu: MenuChoice): string {
+export function dishTitle(menu: Dish): string {
   switch (menu.kind) {
     case 'grillpolser':
       return 'Grillpølser';
@@ -73,6 +63,14 @@ export function menuTitle(menu: MenuChoice): string {
     case 'egen':
       return menu.name || 'Egen meny';
   }
+}
+
+/** «Grillpølser og hjemmelaget pizza»: every dish, joined in plain Norwegian. */
+export function menuTitle(menu: MenuChoice): string {
+  const titles = menuDishes(menu).map(dishTitle);
+  if (titles.length === 0) return 'Mat';
+  const lower = titles.map((t, i) => (i === 0 ? t : t.charAt(0).toLowerCase() + t.slice(1)));
+  return lower.length === 1 ? lower[0] : `${lower.slice(0, -1).join(', ')} og ${lower[lower.length - 1]}`;
 }
 
 /**
@@ -116,10 +114,15 @@ export interface FoodLine {
 /** A raw line before the parent's choices are applied. */
 export type RawLine = Omit<FoodLine, 'toggleable' | 'included'>;
 
-export type FoodSectionId = 'main' | 'drikke' | 'snacks' | 'kake' | 'hensyn';
+/** One section per main dish (`main-polser`, `main-pizza`, `main-annet` …), then drinks, fruit, cake. */
+export type MainSectionId = `main-${MenuCardId}`;
+export type FoodSectionId = MainSectionId | 'drikke' | 'snacks' | 'kake' | 'hensyn';
+export const isMainSection = (id: FoodSectionId): id is MainSectionId => id.startsWith('main-');
 
 export interface FoodSection {
   id: FoodSectionId;
+  /** Main-dish sections: the card it belongs to. */
+  card?: MenuCardId;
   title: string;
   lines: FoodLine[];
 }
@@ -137,7 +140,7 @@ export interface FoodPlanInput {
 }
 
 /** Sections whose lines get a tap toggle. «Til kaken» is a pointer, the diet lines follow their chips. */
-const TOGGLE_SECTIONS: readonly FoodSectionId[] = ['main', 'drikke', 'snacks'];
+const TOGGLE_SECTIONS: readonly FoodSectionId[] = ['drikke', 'snacks'];
 /** Lines that are not something to buy: «Din egen» (her own dish) and the oven time for frozen pizza. */
 const NOT_TOGGLEABLE = new Set(['egen', 'ovnstid']);
 
@@ -160,7 +163,7 @@ function perPerson(child: number, adult: number, unit = '', c: FoodCounts): stri
 }
 
 function mainLines(
-  menu: MenuChoice,
+  menu: Dish,
   people: People,
   c: FoodCounts,
   items: Readonly<Record<string, FoodItemState>>,
@@ -214,66 +217,23 @@ function mainLines(
       ];
     }
     case 'pizza': {
-      const units = pizzaUnits(people);
-      const unitWhy = `${perPerson(C.PIZZA_SLICES_PER_CHILD[b], C.PIZZA_SLICES_PER_ADULT, 'stykker', c)} + ${pct(C.PIZZA_BUFFER)} ekstra = ${units} stykker`;
-      if (menu.style === 'hjemmelaget') {
-        const trays = pizzaCount(units, 'hjemmelaget');
-        const h = homemadePizza(trays);
-        const cheeseOnly = trays - h.hamTrays;
-        return [
-          {
-            id: 'langpanner',
-            name: 'Pizza i langpanne',
-            amount: plural(trays, 'langpanne', 'langpanner'),
-            why: `${unitWhy}, ca. ${C.PIZZA_UNITS_PER.langpanne} per langpanne`,
-          },
-          {
-            id: 'hvetemel',
-            name: 'Hvetemel',
-            amount: formatGrams(h.flourG),
-            packs: `${h.flourPacks} pk à 1 kg`,
-            why: `${n(h.flourDl)} dl, 8 dl per langpanne`,
-          },
-          {
-            id: 'gjaer',
-            name: 'Fersk gjær',
-            amount: `${h.yeastG} g`,
-            packs: `${h.yeastPacks} pk à 50 g`,
-            why: '25 g per langpanne',
-          },
-          {
-            id: 'pizzasaus',
-            name: 'Pizzasaus',
-            amount: plural(h.sauceJars, 'glass', 'glass'),
-            why: 'Ett glass per langpanne',
-          },
-          {
-            id: 'pizzaost',
-            name: 'Revet ost',
-            amount: formatGrams(h.cheeseG),
-            packs: `${h.cheesePacks} pk à 350 g`,
-            why: '300 g per langpanne',
-          },
-          {
-            id: 'pizzaskinke',
-            name: 'Skinke',
-            amount: `${h.hamG} g`,
-            packs: `${h.hamPacks} pk à 150 g`,
-            why:
-              cheeseOnly > 0
-                ? `150 g per langpanne, på ${h.hamTrays} av ${trays}. Én i fire er bare med ost`
-                : '150 g per langpanne',
-          },
-        ];
-      }
-      const pizzas = pizzaCount(units, 'frossen');
+      const sl = pizzaSlices(people);
+      const lead = sl.share < 1 ? `${shareLead(sl.share)}: ` : '';
+      const kidPart = `${c.kids} barn × ${n(sl.perChild)}`;
+      const adultPart = c.adults > 0 ? ` + ${plural(c.adults, 'voksen', 'voksne')} × ${n(sl.perAdult)}` : '';
+      const calc =
+        sl.share < 1
+          ? `${lead}${kidPart}${adultPart} = ${sl.all} biter, halvparten er ${sl.slices}`
+          : `${kidPart}${adultPart} = ${sl.slices} biter`;
+      if (menu.style === 'hjemmelaget') return homemadeLines(menu, people, calc);
+      const pizzas = pizzaCount(sl.slices, 'frossen');
       const rounds = Math.ceil(pizzas / C.FROZEN_PIZZAS_PER_ROUND - 1e-9);
       return [
         {
           id: 'frossenpizza',
           name: 'Frossenpizza',
           amount: `${pizzas} stk`,
-          why: `${unitWhy}, ca. ${C.PIZZA_UNITS_PER.frossen} per pizza`,
+          why: `${calc}. Ca. ${C.PIZZA_UNITS_PER.frossen} biter per pizza`,
         },
         {
           id: 'ovnstid',
@@ -402,16 +362,130 @@ function mainLines(
           id: 'egen',
           name: menuTitle(menu),
           amount: 'Din egen',
-          why: 'Mengden til hovedretten bestemmer du. Drikke, frukt og kake under er regnet ut',
+          why: 'Mengden bestemmer du. Den kommer i tillegg til det andre, og drikke, frukt og kake er regnet ut',
         },
       ];
   }
 }
 
+/** How far one topping pack goes, in words (the amounts are assumptions, see constants.ts). */
+const TOPPING_RATE: Record<PizzaTopping, string> = {
+  skinke: 'Ca. en halv pakke per langpanne',
+  pepperoni: 'Én pakke per langpanne',
+  sopp: 'Én boks per langpanne',
+  ananas: 'Én boks per langpanne',
+  mais: 'En halv boks per langpanne',
+  paprika: 'Én paprika per langpanne',
+  kebab: 'Én pakke per 2 langpanner',
+  rommedressing: 'Én flaske per ca. 15 personer',
+};
+
+/**
+ * Ferdigstekte bunner in words: «13 barn ÷ 4 + 4 voksne ÷ 2 = 6 bunner, rundet opp. 3 pk à 2». Each part
+ * is rounded up to whole bunner (so 13 ÷ 4 counts as 4).
+ */
+export function roundBasesWhy(rb: NonNullable<ReturnType<typeof homemadeFor>['rb']>, people: People): string {
+  const parts: string[] = [];
+  if (people.kidsComing > 0) parts.push(`${people.kidsComing} barn ÷ ${rb.kidsPer}`);
+  if (people.adultsEating > 0) parts.push(`${plural(people.adultsEating, 'voksen', 'voksne')} ÷ ${rb.adultsPer}`);
+  const sum = `${parts.join(' + ')} = ${plural(rb.all, 'bunn', 'bunner')}, rundet opp`;
+  const head = rb.share < 1 ? `${shareLead(rb.share)}: ${sum}, ${shareWord(rb.share)} er ${rb.bases}` : sum;
+  return `${head}. ${rb.packs} pk à ${rb.perPack}`;
+}
+
+/** Homemade pizza: the trays, the base she picked, sauce and cheese (always), then one line per topping chip. */
+function homemadeLines(menu: Extract<Dish, { kind: 'pizza' }>, people: People, calc: string): RawLine[] {
+  const { h, rb } = homemadeFor(menu, people);
+  const rounds = h.dough === 'ferdigstekt' && rb !== undefined;
+  // ready-baked round bases: 2 bunner are about one langpanne, so «per langpanne» reads «per 2 bunner»
+  const per = (t: string) =>
+    rounds ? t.replace('per 2 langpanner', 'per 4 bunner').replace('per langpanne', 'per 2 bunner') : t;
+  const out: RawLine[] = [
+    rounds
+      ? {
+          id: 'langpanner',
+          name: 'Pizza',
+          amount: plural(rb.bases, 'bunn', 'bunner'),
+          why: roundBasesWhy(rb, people),
+        }
+      : {
+          id: 'langpanner',
+          name: 'Pizza',
+          amount: plural(h.trays, 'langpanne', 'langpanner'),
+          why: `${calc}. ${C.PIZZA_SLICES_PER_LANGPANNE} biter per langpanne`,
+        },
+  ];
+  const d = PIZZA_DOUGH_LINE[h.dough];
+  if (h.dough === 'ferdigdeig')
+    out.push({
+      id: d.id,
+      name: d.name,
+      amount: `${h.doughPacks} pk`,
+      why: `Én pakke per langpanne, f.eks. ${C.PIZZA_DOUGH_PRODUCT.ferdigdeig.examples}`,
+    });
+  else if (h.dough === 'ferdigstekt')
+    out.push({
+      id: d.id,
+      name: d.name,
+      amount: `${h.doughPacks} pk`,
+      packs: `à ${C.PIZZA_DOUGH_PRODUCT.ferdigstekt.perPack} bunner`,
+      why: `F.eks. ${C.PIZZA_DOUGH_PRODUCT.ferdigstekt.examples}`,
+    });
+  else if (h.dough === 'miks')
+    out.push({
+      id: d.id,
+      name: d.name,
+      amount: `${h.doughPacks} pk`,
+      why: `${C.PIZZA_DOUGH_PRODUCT.miks.examples}. Bare tilsett vann. Én pakke per langpanne`,
+    });
+  else
+    out.push(
+      {
+        id: 'hvetemel',
+        name: 'Hvetemel',
+        amount: formatGrams(h.flourG),
+        packs: `${h.flourPacks} pk à 1 kg`,
+        why: `${n(h.flourDl)} dl, ${C.PIZZA_SELF_FLOUR_DL} dl per langpanne`,
+      },
+      {
+        id: 'gjaer',
+        name: 'Fersk gjær',
+        amount: `${h.yeastG} g`,
+        packs: `${h.yeastPacks} pk à 50 g`,
+        why: `${C.PIZZA_SELF_YEAST_G} g per langpanne`,
+      },
+    );
+  out.push(
+    {
+      id: 'pizzasaus',
+      name: 'Pizzasaus',
+      amount: plural(h.sauceJars, 'glass', 'glass'),
+      why: per(`${C.PIZZA_SAUCE.name}. Ca. et halvt glass per langpanne`),
+    },
+    {
+      id: 'pizzaost',
+      name: 'Revet ost',
+      amount: plural(h.cheeseBags, 'pose', 'poser'),
+      packs: `à ${C.PIZZA_CHEESE.bagG} g`,
+      why: per(`${C.PIZZA_CHEESE.name}. Ca. ${C.PIZZA_CHEESE.gPerLangpanne} g per langpanne`),
+    },
+  );
+  for (const t of h.toppings) {
+    const prod = C.PIZZA_TOPPING_PRODUCT[t.id];
+    out.push({
+      id: PIZZA_TOPPING_LINE_ID[t.id],
+      name: prod.name,
+      amount: toppingAmount(t.id, t.packs),
+      why: per(`${prod.product}. ${TOPPING_RATE[t.id]}`),
+    });
+  }
+  return out;
+}
+
 export type DietGroup =
   'polser' | 'pizza-hjemmelaget' | 'pizza-frossen' | 'taco' | 'pasta-salat' | 'pasta-varm' | 'annet';
 
-export function dietGroup(menu: MenuChoice): DietGroup {
+export function dietGroup(menu: Dish): DietGroup {
   switch (menu.kind) {
     case 'grillpolser':
     case 'wienerpolser':
@@ -438,7 +512,7 @@ export const DIET_LABELS: Record<DietTag, string> = {
 const DIET_TEXT: Record<DietTag, Record<DietGroup, [string, string]>> = {
   glutenfri: {
     polser: ['1 pk glutenfrie pølsebrød eller lomper', 'Pølser kan inneholde gluten. Sjekk merkingen'],
-    'pizza-hjemmelaget': ['1 pk glutenfri pizzamel eller -bunn', 'Stekes først, på eget brett'],
+    'pizza-hjemmelaget': [`1 ${C.PIZZA_GLUTENFRI}`, `Eller ${C.PIZZA_GLUTENFRI_ALT}. Stekes først, på eget brett`],
     'pizza-frossen': ['1 glutenfri frossenpizza', 'Stekes først, på eget brett'],
     taco: ['1 pk glutenfrie tortillas', 'Sjekk at tacokrydderet er uten gluten'],
     'pasta-salat': ['1 pk glutenfri pasta (500 g)', 'Kokes i egen kjele og blandes i egen bolle'],
@@ -474,12 +548,35 @@ const DIET_TEXT: Record<DietTag, Record<DietGroup, [string, string]>> = {
   },
 };
 
+/** Short dish word for a diet line when several dishes are chosen: «Glutenfri, pizza». */
+const DIET_DISH_WORD: Record<DietGroup, string> = {
+  polser: 'pølser',
+  'pizza-hjemmelaget': 'pizza',
+  'pizza-frossen': 'pizza',
+  taco: 'taco',
+  'pasta-salat': 'pasta',
+  'pasta-varm': 'pasta',
+  annet: 'egen rett',
+};
+
+/**
+ * One line per ticked need and dish. With one dish the id is `diet-glutenfri`; with several, the first
+ * dish keeps `diet-glutenfri` and the next get `diet-glutenfri-pizza-hjemmelaget` and so on.
+ */
 export function dietLines(menu: MenuChoice, diets: readonly DietTag[]): RawLine[] {
-  const g = dietGroup(menu);
-  return C_DIET_ORDER.filter((t) => diets.includes(t)).map((t) => {
-    const [extra, note] = DIET_TEXT[t][g];
-    return { id: `diet-${t}`, name: DIET_LABELS[t], amount: extra, why: note };
-  });
+  const groups = [...new Set(menuDishes(menu).map(dietGroup))];
+  const many = groups.length > 1;
+  return C_DIET_ORDER.filter((t) => diets.includes(t)).flatMap((t) =>
+    groups.map((g, i) => {
+      const [extra, note] = DIET_TEXT[t][g];
+      return {
+        id: i === 0 ? `diet-${t}` : `diet-${t}-${g}`,
+        name: many ? `${DIET_LABELS[t]}, ${DIET_DISH_WORD[g]}` : DIET_LABELS[t],
+        amount: extra,
+        why: note,
+      };
+    }),
+  );
 }
 const C_DIET_ORDER: readonly DietTag[] = ['glutenfri', 'laktosefri', 'vegetar', 'ingen-svin'];
 
@@ -487,11 +584,24 @@ const C_DIET_ORDER: readonly DietTag[] = ['glutenfri', 'laktosefri', 'vegetar', 
 export function foodPlan(input: FoodPlanInput): FoodPlan {
   const c = clampFoodCounts(input.counts);
   const people: People = { kidsComing: c.kids, adultsEating: c.adults, age: input.age };
+  const share = dishShare(input.menu);
   const e = extras(people, { muffins: false });
   const juiceL = Math.round(((c.kids * C.JUICE_DL_CHILD + c.adults * C.SAFT_DL_ADULT) / 10) * 10) / 10;
   const waterL = Math.max(1, Math.ceil(((c.kids + c.adults) * C.WATER_DL_PER_PERSON) / 10 - 1e-9));
-  const raw: { id: FoodSectionId; title: string; lines: RawLine[] }[] = [
-    { id: 'main', title: 'Hovedrett', lines: mainLines(input.menu, people, c, input.items ?? {}) },
+  // one section per dish; pølser and pizza together each cover their share of the portions
+  const mains = menuDishes(input.menu).map((d) => ({
+    id: `main-${dishCard(d)}` as MainSectionId,
+    card: dishCard(d),
+    title: dishTitle(d),
+    lines: mainLines(
+      d,
+      { ...people, share: d.kind === 'annet' || d.kind === 'egen' ? 1 : share },
+      c,
+      input.items ?? {},
+    ),
+  }));
+  const raw: { id: FoodSectionId; card?: MenuCardId; title: string; lines: RawLine[] }[] = [
+    ...mains,
     {
       id: 'drikke',
       title: 'Drikke',
@@ -540,12 +650,12 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
     },
   ];
   const diet = dietLines(input.menu, input.diets);
-  if (diet.length) raw.splice(1, 0, { id: 'hensyn', title: 'Allergier og hensyn', lines: diet });
+  if (diet.length) raw.splice(mains.length, 0, { id: 'hensyn', title: 'Allergier og hensyn', lines: diet });
   const items = input.items ?? {};
   const sections: FoodSection[] = raw.map((sec) => ({
     ...sec,
     lines: sec.lines.map((l) => {
-      const toggleable = TOGGLE_SECTIONS.includes(sec.id) && !NOT_TOGGLEABLE.has(l.id);
+      const toggleable = (isMainSection(sec.id) || TOGGLE_SECTIONS.includes(sec.id)) && !NOT_TOGGLEABLE.has(l.id);
       return { ...l, toggleable, included: !toggleable || items[l.id]?.included !== false };
     }),
   }));
@@ -554,9 +664,10 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
 
 /** The Mat screen for a party, or null while no menu is chosen. */
 export function partyFoodPlan(p: Party): FoodPlan | null {
-  if (!p.menu) return null;
+  if (menuDishes(p.menu).length === 0) return null;
   return foodPlan({
-    menu: p.menu,
+    // a party saved with a menu is never empty here: menuDishes(p.menu) has at least one dish
+    menu: p.menu!,
     counts: foodCounts(p),
     age: oldestAge(p.celebrants),
     diets: p.diets,
@@ -575,22 +686,24 @@ const SAUSAGE_SIDES = ['lomper', 'polsebrod'];
 export function foodCardSummary(p: Party): { title: string; line: string } | null {
   const plan = partyFoodPlan(p);
   if (!plan) return null;
-  const mainSection = plan.sections.find((s) => s.id === 'main')!.lines;
-  const main = mainSection[0];
-  const saft = plan.sections.find((s) => s.id === 'drikke')!.lines.find((l) => l.id === 'saft')!;
-  let first: string | null = null;
-  if (main.included) {
+  const firsts: string[] = [];
+  for (const sec of plan.sections.filter((x) => isMainSection(x.id))) {
+    const main = sec.lines[0];
+    if (!main?.included) continue;
+    let first: string | null = null;
     if (main.amount.endsWith(' stk')) first = `${main.amount.slice(0, -4)} ${main.name.toLowerCase()}`;
-    else if (main.id === 'langpanner') first = main.amount;
+    else if (main.id === 'langpanner') first = `${main.amount} pizza`;
+    if (first && (main.id === 'grillpolser' || main.id === 'wienerpolser')) {
+      const sides = sec.lines
+        .filter((l) => SAUSAGE_SIDES.includes(l.id) && l.included)
+        .map((l) => l.name.toLowerCase());
+      if (sides.length) first += ` med ${sides.join(' og ')}`;
+    }
+    if (first) firsts.push(first);
   }
-  if (first && (main.id === 'grillpolser' || main.id === 'wienerpolser')) {
-    const sides = mainSection
-      .filter((l) => SAUSAGE_SIDES.includes(l.id) && l.included)
-      .map((l) => l.name.toLowerCase());
-    if (sides.length) first += ` med ${sides.join(' og ')}`;
-  }
+  const saft = plan.sections.find((s) => s.id === 'drikke')!.lines.find((l) => l.id === 'saft')!;
   return {
     title: plan.title,
-    line: [first, saft.included ? saft.amount : null, plan.forWhom].filter(Boolean).join(' · '),
+    line: [firsts.join(' + ') || null, saft.included ? saft.amount : null, plan.forWhom].filter(Boolean).join(' · '),
   };
 }

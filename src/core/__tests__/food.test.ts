@@ -116,37 +116,36 @@ describe('sausages (spec §6.4, her amounts 21 Oct 2026)', () => {
   });
 });
 
-describe('pizza (spec §6.5)', () => {
-  it('45 units for Emma', () => expect(pizzaUnits(P)).toBe(45));
-  it('frossen 6, bestilt vanlig 6, bestilt stor 4, hjemmelaget 3 langpanner', () => {
-    expect(pizzaCount(45, 'frossen')).toBe(6);
-    expect(pizzaCount(45, 'bestilt', '30')).toBe(6);
-    expect(pizzaCount(45, 'bestilt', '40')).toBe(4);
-    expect(pizzaCount(45, 'hjemmelaget')).toBe(3);
+describe('pizza (spec §6.5, reworked 21 Oct 2026)', () => {
+  it('38 pieces for Emma: 13 × 2 + 4 × 3, no extra percentage', () => expect(pizzaUnits(P)).toBe(38));
+  it('frossen 5, bestilt vanlig 5, bestilt stor 3, hjemmelaget 4 langpanner (12 biter each)', () => {
+    expect(pizzaCount(38, 'frossen')).toBe(5);
+    expect(pizzaCount(38, 'bestilt', '30')).toBe(5);
+    expect(pizzaCount(38, 'bestilt', '40')).toBe(3);
+    expect(pizzaCount(38, 'hjemmelaget')).toBe(4);
   });
-  it('homemade ×3: flour, yeast, sauce, cheese, ham', () => {
-    expect(homemadePizza(3)).toMatchObject({
-      squares: 72,
+  it('homemade ×4, default (ferdig pizzadeig, skinke): 4 pk deig, 2 glass saus, 2 poser ost, 2 pk skinke', () => {
+    expect(homemadePizza(4, { eaters: 17 })).toMatchObject({
+      dough: 'ferdigdeig',
+      doughPacks: 4,
+      sauceJars: 2,
+      cheeseG: 800,
+      cheeseBags: 2,
+      toppings: [{ id: 'skinke', packs: 2 }],
+    });
+  });
+  it('lag deigen selv ×3: flour and yeast', () => {
+    expect(homemadePizza(3, { dough: 'selv' })).toMatchObject({
       flourDl: 24,
       flourPacks: 2,
       yeastG: 75,
       yeastPacks: 2,
-      waterDl: 9,
-      oilSs: 6,
-      saltTs: 3,
-      sauceDl: 7.5,
-      sauceJars: 3,
-      cheeseG: 900,
-      cheesePacks: 3,
-      hamG: 450,
-      hamPacks: 3,
     });
   });
-  it('sanity: 15 guests + birthday child aged 8, 2 adults → 57 units, 5 large or 8 regular', () => {
+  it('7–10 år: 3 pieces per child, following the oldest birthday child', () => {
     const u = pizzaUnits({ kidsComing: 16, adultsEating: 2, age: 8 });
-    expect(u).toBe(57);
-    expect(pizzaCount(u, 'bestilt', '40')).toBe(5);
-    expect(pizzaCount(u, 'bestilt', '30')).toBe(8);
+    expect(u).toBe(16 * 3 + 2 * 3);
+    expect(pizzaCount(u, 'hjemmelaget')).toBe(5);
   });
 });
 

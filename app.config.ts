@@ -2,8 +2,9 @@ import type { ExpoConfig } from 'expo/config';
 
 /**
  * One config for iOS, Android and web.
- * EXPO_BASE_URL sets where the web build lives: "/bursdagsklar" on GitHub Pages
- * (https://cheerypick.github.io/bursdagsklar/), empty for a site at the domain root.
+ * EXPO_BASE_URL sets where the web build lives. The site is served at the root of
+ * https://bursdagsklar.no/, so it is empty (the default). Set it only to serve the
+ * build under a sub-path, e.g. "/bursdagsklar" for https://<owner>.github.io/bursdagsklar/.
  */
 const baseUrl = process.env.EXPO_BASE_URL ?? '';
 

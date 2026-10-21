@@ -1,6 +1,6 @@
 // After `expo export --platform web`:
 // - copy index.html to 404.html so GitHub Pages serves the app for deep links
-//   such as /bursdagsklar/plan (Pages has no SPA fallback);
+//   such as https://bursdagsklar.no/plan (Pages has no SPA fallback);
 // - add .nojekyll so folders that start with "_" (Expo's _expo/) are served.
 import { copyFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

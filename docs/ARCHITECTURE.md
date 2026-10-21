@@ -87,6 +87,52 @@ Also on Oda that day: Gilde Favorittwiener 24 stk (ca. 1,56 kg), Strøm-Larsen W
 
 **Before → after, Emma (13 barn, 4 voksne, 5 år):** grillpølser 50 (5 pk) → 50 (5 pk), now from 3 per child + 2 per adult instead of a percentage; wienerpølser 48 (6 pk à 8) → 48 (6 pk à 8); lomper 50 (5 pk) → 30 (3 pk à 10); pølsebrød 24 (3 pk à 8) → 32 (4 pk à 8); «Ketchup, sennep og sprøstekt løk: 1 av hver» → «Ketchup og sennep: 1 av hver» + «Sprøstekt løk: 2 poser». On Handleliste: «5 pk grillpølser», «3 pk lomper», «4 pk pølsebrød», «Ketchup og sennep: 1 av hver», «2 poser sprøstekt løk» (Tørrvarer), saft «Eller jus».
 
+### Menu: Pølser, Pizza, Noe annet, and several at once (21 Oct 2026)
+
+- **Cards:** the Mat screen shows **Pølser, Pizza and Noe annet**. Taco and pasta are hidden for now
+  (`HIDDEN_MENU_CARDS` in `src/core/rules/dishes.ts`); their rules, texts and tests stay, so they can come back
+  (e.g. for older children) by removing the id there. A saved party with taco or pasta opens with that dish
+  unpicked (`withoutHiddenDishes`, run in `PartyRepository.migrate`), never a crash.
+- **Several dishes:** the cards are checkboxes. `Party.menu` is still one `MenuChoice`: one dish is stored as
+  before, two or more as `{ kind: 'flere', dishes }` (`menuFromDishes`), so no schema bump. Pølser and pizza
+  together each cover **half** of the portions (`dishShare`), rounded up to whole packs per item, and the reason
+  lines say «Halvparten pølser, halvparten pizza». «Noe annet» comes on top and halves nothing.
+- **Sections:** one main section per dish: `main-polser`, `main-pizza`, `main-annet` (`isMainSection`).
+
+### Pizza: homemade in a langpanne, ready-made dough by default (21 Oct 2026)
+
+Ekaterina's rule: **1 langpanne = 12 biter; 2 biter per barn (3 for 7–10 år, the oldest birthday child decides),
+3 per voksen**, rounded up to whole langpanner, no extra percentage. Emma (13 barn, 4 voksne, 5 år):
+13 × 2 + 4 × 3 = 38 biter → 4 langpanner. The reason line says exactly that.
+
+Products read on Oda (oda.com) on 21 Oct 2026, public pages, no prices. Every «per langpanne» amount is an
+**assumption** (Oda says nothing about how far a pack goes, except Peppes «Familie 3–4 personer» and Toro's
+«melmiks til en langpannepizza» on toro.no). Constants: `src/core/rules/constants.ts` (pizza section).
+
+| Line id             | What                                                  | Product (Oda)                                                                                                                                                                                                                                           | Amount per langpanne                             |
+| ------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `langpanner`        | Pizza i langpanne (or «Pizza på ferdigstekte bunner») | –                                                                                                                                                                                                                                                       | 12 biter                                         |
+| `pizzadeig`         | Ferdig pizzadeig (**default**)                        | Peppes Pizzabunn original 550 g ([oda](https://oda.com/no/products/4633-peppes-pizza-pizzabunn-original-familie-3-4-person/)), REMA 1000 Fersk stor pizzabunn 550 g ([oda](https://oda.com/no/products/69115-r-fersk-stor-pizzabunn/))                  | 1 pk (assumption)                                |
+| `pizzabunner`       | Ferdigstekte bunner                                   | Staur Fjellbakeri 2 stk ca. 29 cm ([oda](https://oda.com/no/products/36162-staur-fjellbakeri-pizzabunn-hvete-ca-29cm-2stk/)), Villa Paradiso Pronto 2 stk ([oda](https://oda.com/no/products/63698-villa-paradiso-pronto-italienske-pizzabunner-2stk/)) | 1 pk à 2 (assumption: 2 × 29 cm ≈ one langpanne) |
+| `pizzamiks`         | Pizzamiks                                             | Toro Pizzabunn Familiepakke 370 g ([oda](https://oda.com/no/products/6307-toro-pizzabunn-familiepakke/))                                                                                                                                                | 1 pk (toro.no)                                   |
+| `hvetemel`, `gjaer` | Lag deigen selv (last, small option)                  | siktet hvetemel 1 kg, fersk gjær 50 g                                                                                                                                                                                                                   | 8 dl mel, 25 g gjær                              |
+| `pizzasaus`         | Pizzasaus (always)                                    | Mutti Pizzasaus klassisk 400 g ([oda](https://oda.com/no/products/37097-mutti-pizzasaus-klassisk/))                                                                                                                                                     | ½ glass                                          |
+| `pizzaost`          | Revet ost (always)                                    | TINE Norvegia revet 400 g ([oda](https://oda.com/no/products/64931-tine-norvegia-revet/))                                                                                                                                                               | 200 g                                            |
+| `pizzaskinke`       | Skinke (chip, **on by default**)                      | Gilde Smårettskinke strimlet 200 g ([oda](https://oda.com/no/products/2536-gilde-smarettskinke-strimlet/))                                                                                                                                              | ½ pk                                             |
+| `pepperoni`         | Pepperoni (chip)                                      | Grilstad Pepperoni 100 g ([oda](https://oda.com/no/products/16999-grilstad-pepperoni/))                                                                                                                                                                 | 1 pk                                             |
+| `sopp`              | Sopp (chip)                                           | REMA 1000 Sjampinjong skivet 184 g ([oda](https://oda.com/no/products/28216-r-sjampinjong-skivet/))                                                                                                                                                     | 1 boks                                           |
+| `ananas`            | Ananas (chip)                                         | REMA 1000 Ananas i biter 3 × 227 g ([oda](https://oda.com/no/products/13363-r-ananas-i-biter-3pk/))                                                                                                                                                     | 1 boks                                           |
+| `mais`              | Mais (chip)                                           | REMA 1000 Maiskorn 340 g ([oda](https://oda.com/no/products/8792-r-maiskorn/))                                                                                                                                                                          | ½ boks                                           |
+| `paprika`           | Paprika (chip)                                        | Stor paprika rød, 2 stk ([oda](https://oda.com/no/products/27626-stor-paprika-rod-2-3-stk-nederland-spania/))                                                                                                                                           | 1 stk                                            |
+| `kebab`             | Kebab (chip)                                          | Kanda Kebab av storfekjøtt 300 g ([oda](https://oda.com/no/products/32384-kanda-kebab-av-storfekjott-til-2-personer/))                                                                                                                                  | ½ pk                                             |
+| `rommedressing`     | Rømmedressing (chip)                                  | Idun Rømmedressing 435 g ([oda](https://oda.com/no/products/6562-idun-rommedressing/))                                                                                                                                                                  | 1 flaske per ca. 15 personer                     |
+| `diet-glutenfri`    | Glutenfri chip                                        | Brisk Glutenfri pizzabunn 300 g ([oda](https://oda.com/no/products/15945-brisk-glutenfri-pizzabunn-lettstekt/)) or Norgesmøllene Pizzabunn glutenfri 300 g ([oda](https://oda.com/no/products/26684-norgesmollene-pizzabunn-glutenfri/))                | 1 extra                                          |
+
+Frozen pizza stays as the second choice under Pizza (`frossenpizza`, 8 biter per pizza). The dough to-do
+(«Lag pizzadeigen») only appears when she picks «Lag deigen selv».
+
+### Later: godteposer (goodie bags)
+
 ### Handleliste (shopping list)
 
 `rules/shopping.ts` builds the list from the party every time (`handleliste(party)`), so a new menu, a line deselected on Mat or a new children count updates it. Only two things are stored on the party (schema v6):

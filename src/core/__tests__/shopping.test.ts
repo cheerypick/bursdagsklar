@@ -194,6 +194,57 @@ describe('Handleliste follows the Mat screen and the party', () => {
   });
 });
 
+describe('Handleliste with homemade pizza and with pølser + pizza (PR #5)', () => {
+  const pizza = (extra: Partial<Party> = {}) =>
+    emma({
+      menu: { kind: 'pizza', style: 'hjemmelaget', toppings: ['skinke', 'pepperoni', 'paprika', 'sopp'] },
+      ...extra,
+    });
+  const groupOf = (p: Party, id: string) => handleliste(p).groups.find((g) => g.items.some((i) => i.id === id))?.id;
+
+  it('dough, sauce, cheese and each topping chip, in sensible store sections; not the trays themselves', () => {
+    const p = pizza();
+    expect(item(p, 'pizzadeig')).toMatchObject({ qty: '4 pk', text: '4 pk ferdig pizzadeig' });
+    expect(groupOf(p, 'pizzadeig')).toBe('brod');
+    expect(item(p, 'pizzasaus')).toMatchObject({ qty: '2 glass', text: '2 glass pizzasaus' });
+    expect(groupOf(p, 'pizzasaus')).toBe('torrvarer');
+    expect(item(p, 'pizzaost')).toMatchObject({ qty: '2 poser', text: '2 poser revet ost' });
+    expect(groupOf(p, 'pizzaost')).toBe('kjott');
+    expect(groupOf(p, 'pizzaskinke')).toBe('kjott');
+    expect(item(p, 'pepperoni')).toMatchObject({ qty: '4 pk', text: '4 pk pepperoni' });
+    expect(groupOf(p, 'pepperoni')).toBe('kjott');
+    expect(groupOf(p, 'paprika')).toBe('frukt');
+    expect(item(p, 'sopp')).toMatchObject({ qty: '4 bokser', text: '4 bokser sopp' });
+    expect(groupOf(p, 'sopp')).toBe('torrvarer');
+    expect(ids(p)).not.toContain('langpanner');
+    expect(ids(p)).not.toContain('ananas');
+  });
+  it('the other bases: ferdigstekte bunner by the bread, pizzamiks and flour with the dry goods', () => {
+    const rounds = emma({ menu: { kind: 'pizza', style: 'hjemmelaget', dough: 'ferdigstekt' } });
+    expect(groupOf(rounds, 'pizzabunner')).toBe('brod');
+    expect(groupOf(emma({ menu: { kind: 'pizza', style: 'hjemmelaget', dough: 'miks' } }), 'pizzamiks')).toBe(
+      'torrvarer',
+    );
+    const self = emma({ menu: { kind: 'pizza', style: 'hjemmelaget', dough: 'selv' } });
+    expect(groupOf(self, 'hvetemel')).toBe('torrvarer');
+    expect(groupOf(self, 'gjaer')).toBe('kjott');
+  });
+  it('glutenfri: the Brisk base is on the list', () => {
+    expect(item(pizza({ diets: ['glutenfri'] }), 'diet-glutenfri')?.name).toBe('1 Brisk Glutenfri pizzabunn 300 g');
+  });
+  it('pølser + pizza: both, with the halved amounts, and one glutenfri extra per dish', () => {
+    const p = emma({
+      menu: { kind: 'flere', dishes: [{ kind: 'grillpolser' }, { kind: 'pizza', style: 'hjemmelaget' }] },
+      diets: ['glutenfri'],
+    });
+    expect(item(p, 'grillpolser')?.qty).toBe('3 pk');
+    expect(item(p, 'pizzadeig')?.qty).toBe('2 pk');
+    expect(groupOf(p, 'diet-glutenfri')).toBe('brod');
+    expect(item(p, 'diet-glutenfri-pizza-hjemmelaget')?.name).toBe('1 Brisk Glutenfri pizzabunn 300 g');
+    expect(shareText(handleliste(p))).toContain('☐ 2 pk ferdig pizzadeig');
+  });
+});
+
 describe('shareText', () => {
   it('plain Norwegian, groups, ☐ lines, only what is not ticked yet', () => {
     let p = withCustomItem(withGoodieBagItem(emma(), 'popcorn', true), 'Sugerør');

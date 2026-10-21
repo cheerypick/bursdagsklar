@@ -97,11 +97,90 @@ export const CONDIMENT_PER_EATERS = 25;
 /** Sprøstekt løk, 100 g bags: ca. 5 g per pølse, ca. 2 pølser per person → one bag per ca. 10 people (I). */
 export const CRISPY_ONION_PER_EATERS = 10;
 
-// ---- pizza (§6.5) ----
-export const PIZZA_SLICES_PER_CHILD: Record<Band, number> = { A: 1.5, B: 2, C: 2.5, D: 3 };
-export const PIZZA_SLICES_PER_ADULT = 2.5;
-export const PIZZA_BUFFER = 0.25; // (I)
-export const PIZZA_UNITS_PER = { frossen: 8, bestilt30: 8, bestilt40: 14, langpanne: 16 }; // (I)
+// ---- pizza (§6.5, reworked 21 Oct 2026) ----
+/**
+ * Ekaterina's rule (21 Oct 2026): 1 langpanne = 12 biter; 2 biter per barn, 3 per voksen. For 7–10 år we use
+ * 3 per barn, following the OLDEST birthday child like every other portion. No extra percentage on top:
+ * the rounding up to whole langpanner is the margin. Emma (13 barn, 4 voksne, 5 år): 26 + 12 = 38 biter
+ * → 4 langpanner (48 biter).
+ */
+export const PIZZA_SLICES_PER_CHILD: Record<Band, number> = { A: 2, B: 2, C: 3, D: 3 };
+export const PIZZA_SLICES_PER_ADULT = 3;
+export const PIZZA_SLICES_PER_LANGPANNE = 12;
+/** Frozen and takeaway pizza: pieces per pizza (I). Homemade uses PIZZA_SLICES_PER_LANGPANNE. */
+export const PIZZA_UNITS_PER = { frossen: 8, bestilt30: 8, bestilt40: 14 }; // (I)
+
+/**
+ * Homemade pizza: products and pack sizes read on Oda (oda.com) on 21 Oct 2026 (public product pages,
+ * no prices; /home/user/tab/files/oda-pizza-sortiment.md at the time). Every «per langpanne» amount is
+ * an ASSUMPTION (ANTAGELSE) of ours; Oda's pages say nothing about how far a pack goes, except Peppes
+ * «Familie 3–4 personer» and Toro's «melmiks til en langpannepizza» (toro.no).
+ *
+ * Dough («Bunn»), default first:
+ * - Ferdig pizzadeig (DEFAULT): Peppes Pizza Pizzabunn original 550 g, «Familie 3–4 personer»
+ *   https://oda.com/no/products/4633-peppes-pizza-pizzabunn-original-familie-3-4-person/ , or
+ *   REMA 1000 Fersk stor pizzabunn 550 g https://oda.com/no/products/69115-r-fersk-stor-pizzabunn/ .
+ *   Fresh rolled dough. ASSUMPTION: 1 pk = 1 langpanne (= 12 biter).
+ * - Ferdigstekte bunner: Staur Fjellbakeri Pizzabunn hvete ca. 29 cm 2 stk (360 g)
+ *   https://oda.com/no/products/36162-staur-fjellbakeri-pizzabunn-hvete-ca-29cm-2stk/ , Villa Paradiso Pronto
+ *   italienske pizzabunner 2 stk (500 g) https://oda.com/no/products/63698-villa-paradiso-pronto-italienske-pizzabunner-2stk/ .
+ *   ASSUMPTION: 2 round bases of ca. 29 cm (ca. 2 × 660 cm²) ≈ one langpanne (ca. 30 × 40 cm), so
+ *   1 pk à 2 = 1 langpanne = 12 biter (6 per bunn).
+ * - Pizzamiks: Toro Pizzabunn Familiepakke 370 g https://oda.com/no/products/6307-toro-pizzabunn-familiepakke/ ,
+ *   just add water. toro.no: «melmiks til en langpannepizza» → 1 pk = 1 langpanne.
+ * - Lag deigen selv: Norgesmøllene siktet hvetemel 1 kg https://oda.com/no/products/35-norgesmollene-siktet-hvetemel/ +
+ *   Idun fersk gjær 50 g https://oda.com/no/products/41-idun-mh-fersk-gjaer-original/ (ca. 8 dl mel and 25 g gjær per
+ *   langpanne, ASSUMPTION).
+ * - Glutenfri (the glutenfri chip): Brisk Glutenfri pizzabunn lettstekt 300 g
+ *   https://oda.com/no/products/15945-brisk-glutenfri-pizzabunn-lettstekt/ , or Norgesmøllene Pizzabunn glutenfri
+ *   300 g (mix) https://oda.com/no/products/26684-norgesmollene-pizzabunn-glutenfri/ .
+ *
+ * Always on: Mutti Pizzasaus klassisk 400 g https://oda.com/no/products/37097-mutti-pizzasaus-klassisk/ , ca. ½ glass per
+ * langpanne (ASSUMPTION); TINE Norvegia revet 400 g https://oda.com/no/products/64931-tine-norvegia-revet/ , ca. 200 g
+ * per langpanne (ASSUMPTION).
+ *
+ * Topping chips (default ON: skinke only). All amounts per langpanne are ASSUMPTIONS:
+ * - Skinke: Gilde Smårettskinke strimlet 200 g https://oda.com/no/products/2536-gilde-smarettskinke-strimlet/ , ½ pk
+ * - Pepperoni: Grilstad Pepperoni 100 g https://oda.com/no/products/16999-grilstad-pepperoni/ , 1 pk
+ * - Sopp: REMA 1000 Sjampinjong skivet 184 g (boks) https://oda.com/no/products/28216-r-sjampinjong-skivet/ , 1 boks
+ * - Ananas: REMA 1000 Ananas i biter 3 × 227 g https://oda.com/no/products/13363-r-ananas-i-biter-3pk/ , 1 boks (227 g)
+ * - Mais: REMA 1000 Maiskorn 340 g (boks) https://oda.com/no/products/8792-r-maiskorn/ , ½ boks
+ * - Paprika: Stor paprika rød, 2 stk per pose https://oda.com/no/products/27626-stor-paprika-rod-2-3-stk-nederland-spania/ , 1 paprika
+ * - Kebab: Kanda Kebab av storfekjøtt 300 g https://oda.com/no/products/32384-kanda-kebab-av-storfekjott-til-2-personer/ , ½ pk (1 pk per 2 langpanner)
+ * - Rømmedressing: Idun Rømmedressing 435 g https://oda.com/no/products/6562-idun-rommedressing/ , 1 flaske per
+ *   ca. 15 personer who eat pizza (not per langpanne)
+ */
+export const PIZZA_DOUGH_PRODUCT = {
+  ferdigdeig: { examples: 'Peppes Pizzabunn original 550 g eller REMA 1000 Fersk stor pizzabunn 550 g' },
+  ferdigstekt: { examples: 'Staur Fjellbakeri 2 stk (ca. 29 cm) eller Villa Paradiso Pronto 2 stk', perPack: 2 },
+  miks: { examples: 'Toro Pizzabunn Familiepakke 370 g' },
+} as const;
+/** Ferdigstekte bunner: round bases per langpanne's worth (12 biter). ASSUMPTION. */
+export const PIZZA_ROUND_BASES_PER_LANGPANNE = 2;
+/** Lag deigen selv, per langpanne (ASSUMPTION). */
+export const PIZZA_SELF_FLOUR_DL = 8;
+export const PIZZA_SELF_FLOUR_G = 480;
+export const PIZZA_SELF_YEAST_G = 25;
+export const PIZZA_GLUTENFRI = 'Brisk Glutenfri pizzabunn 300 g';
+export const PIZZA_GLUTENFRI_ALT = 'Norgesmøllene Pizzabunn glutenfri 300 g (mix)';
+/** Pizzasaus: Mutti 400 g, half a jar per langpanne (ASSUMPTION). */
+export const PIZZA_SAUCE = { name: 'Mutti Pizzasaus 400 g', perLangpanne: 0.5 } as const;
+/** Revet ost: TINE Norvegia revet 400 g, 200 g per langpanne (ASSUMPTION). */
+export const PIZZA_CHEESE = { name: 'TINE Norvegia revet 400 g', bagG: 400, gPerLangpanne: 200 } as const;
+/**
+ * Topping packs and how many packs per langpanne (all ASSUMPTIONS, see the Oda list above).
+ * `perEaters` instead of `perLangpanne`: one pack per that many people eating pizza (rømmedressing).
+ */
+export const PIZZA_TOPPING_PRODUCT = {
+  skinke: { name: 'Skinke', product: 'Gilde Smårettskinke strimlet 200 g', unit: 'pk', perLangpanne: 0.5 },
+  pepperoni: { name: 'Pepperoni', product: 'Grilstad Pepperoni 100 g', unit: 'pk', perLangpanne: 1 },
+  sopp: { name: 'Sopp', product: 'REMA 1000 Sjampinjong skivet, boks 184 g', unit: 'boks', perLangpanne: 1 },
+  ananas: { name: 'Ananas', product: 'REMA 1000 Ananas i biter, boks 227 g (3-pk)', unit: 'boks', perLangpanne: 1 },
+  mais: { name: 'Mais', product: 'REMA 1000 Maiskorn, boks 340 g', unit: 'boks', perLangpanne: 0.5 },
+  paprika: { name: 'Paprika', product: 'Rød paprika (selges 2 i posen)', unit: 'stk', perLangpanne: 1 },
+  kebab: { name: 'Kebab', product: 'Kanda Kebab av storfekjøtt 300 g', unit: 'pk', perLangpanne: 0.5 },
+  rommedressing: { name: 'Rømmedressing', product: 'Idun Rømmedressing 435 g', unit: 'flaske', perEaters: 15 },
+} as const;
 export const FROZEN_PIZZAS_PER_ROUND = 2;
 export const FROZEN_ROUND_MIN = 15;
 

@@ -2,7 +2,9 @@
  * Deterministic food rules (spec §6.4–6.8). Pure functions, no UI.
  * The Mat screen shows them through rules/menu.ts (amounts plus a reason line per item).
  */
-import type { AllergyTag, MenuChoice, Party, ShoppingItem } from '../model';
+import type { AllergyTag, Dish, MenuChoice, Party, PizzaDough, PizzaTopping, ShoppingItem } from '../model';
+import { PIZZA_TOPPINGS } from '../model';
+import { dishShare, menuDishes } from './dishes';
 import * as C from './constants';
 import { band, ceilSafe } from './constants';
 import { oldestAge } from './celebrants';
@@ -31,6 +33,11 @@ export interface People {
   kidsComing: number;
   adultsEating: number;
   age: number;
+  /**
+   * The part of the portions this dish covers: 1 (missing) = all of them; ½ each when pølser and pizza
+   * are both chosen (rules/menu.ts `dishShare`). Packs are still rounded up per item.
+   */
+  share?: number;
 }
 
 // ---------------- sausages ----------------
@@ -50,9 +57,12 @@ export function sausages(
   const withPolsebrod = opts.withPolsebrod ?? true;
   const both = withLomper && withPolsebrod;
   const perChild = C.SAUSAGE_PER_CHILD[band(p.age)];
+  const portion = p.share ?? 1;
   const raw = p.kidsComing * perChild + p.adultsEating * C.SAUSAGE_PER_ADULT;
-  /** Sausages the per-person rule asks for, before rounding up to packs. */
-  const need = ceilSafe(raw);
+  /** What the whole party would need if sausages were the only dish. */
+  const needAll = ceilSafe(raw);
+  /** Sausages the per-person rule asks for, before rounding up to packs (half of it when pizza is chosen too). */
+  const need = ceilSafe(raw * portion);
   const pack = C.SAUSAGE_PACK[kind];
   const sausagePacks = packs(need, pack);
   const bought = sausagePacks * pack;
@@ -68,6 +78,9 @@ export function sausages(
   return {
     raw,
     perChild,
+    /** This dish's part of the portions: 1, or ½ with pizza too. */
+    portion,
+    needAll,
     need,
     pack,
     packs: sausagePacks,
@@ -102,7 +115,12 @@ export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<t
   const kids = `${p.kidsComing} barn × ${nb.format(s.perChild)}`;
   const adults = `${p.adultsEating} ${p.adultsEating === 1 ? 'voksen' : 'voksne'} × ${nb.format(C.SAUSAGE_PER_ADULT)}`;
   const sum = p.adultsEating > 0 ? `${kids} + ${adults}` : kids;
-  const line = `${sum} = ${s.need}. ${s.packs} pk ${product.name} à ${product.count} = ${s.bought}`;
+  // pølser and pizza both picked: «Halvparten pølser, halvparten pizza. 13 barn × 3 + 4 voksne × 2 = 47, halvparten er 24»
+  const count =
+    s.portion < 1
+      ? `${shareLead(s.portion)}. ${sum} = ${s.needAll}, ${shareWord(s.portion)} er ${s.need}`
+      : `${sum} = ${s.need}`;
+  const line = `${count}. ${s.packs} pk ${product.name} à ${product.count} = ${s.bought}`;
   const big = Math.floor(s.packs / C.GRILL_STORPAKNING_PACKS);
   if (kind !== 'grillpolser' || big < 1) return line;
   const rest = s.packs - big * C.GRILL_STORPAKNING_PACKS;
@@ -160,9 +178,30 @@ export function enoughFor(
 
 // ---------------- pizza ----------------
 
+/** «Halvparten pølser, halvparten pizza»: the lead of a reason line when two dishes share the portions. */
+export function shareLead(share: number): string {
+  return share >= 1 ? '' : share === 0.5 ? 'Halvparten pølser, halvparten pizza' : 'Hovedrettene deler porsjonene';
+}
+/** «halvparten», «en tredjedel» */
+export function shareWord(share: number): string {
+  return share === 0.5 ? 'halvparten' : share > 0.3 && share < 0.34 ? 'en tredjedel' : `${Math.round(share * 100)} %`;
+}
+
+/**
+ * Pizza pieces: 2 per child (3 for 7–10 år, the oldest birthday child decides), 3 per adult, no extra
+ * percentage (Ekaterina, 21 Oct 2026). With pølser too, half of it.
+ */
+export function pizzaSlices(p: People) {
+  const perChild = C.PIZZA_SLICES_PER_CHILD[band(p.age)];
+  const perAdult = C.PIZZA_SLICES_PER_ADULT;
+  const share = p.share ?? 1;
+  const all = ceilSafe(p.kidsComing * perChild + p.adultsEating * perAdult);
+  return { perChild, perAdult, share, all, slices: ceilSafe(all * share) };
+}
+
+/** Pieces of pizza to make (see pizzaSlices). */
 export function pizzaUnits(p: People): number {
-  const base = C.PIZZA_SLICES_PER_CHILD[band(p.age)];
-  return ceilSafe((p.kidsComing * base + p.adultsEating * C.PIZZA_SLICES_PER_ADULT) * (1 + C.PIZZA_BUFFER));
+  return pizzaSlices(p).slices;
 }
 
 export function pizzaCount(
@@ -174,35 +213,172 @@ export function pizzaCount(
     style === 'frossen'
       ? C.PIZZA_UNITS_PER.frossen
       : style === 'hjemmelaget'
-        ? C.PIZZA_UNITS_PER.langpanne
+        ? C.PIZZA_SLICES_PER_LANGPANNE
         : size === '40'
           ? C.PIZZA_UNITS_PER.bestilt40
           : C.PIZZA_UNITS_PER.bestilt30;
   return packs(units, per);
 }
 
-/** Homemade: per-langpanne dough and topping, scaled (spec §6.5). */
-export function homemadePizza(trays: number) {
-  const hamTrays = trays - Math.floor(trays / 4); // one tray in four is cheese-only
+/** The toppings of a homemade pizza: missing = the default (skinke only). */
+export function pizzaToppings(t: readonly PizzaTopping[] | undefined): PizzaTopping[] {
+  const picked = t ?? DEFAULT_PIZZA_TOPPINGS;
+  return PIZZA_TOPPINGS.filter((x) => picked.includes(x));
+}
+export const DEFAULT_PIZZA_TOPPINGS: readonly PizzaTopping[] = ['skinke'];
+
+/** Packs of one topping for N langpanner (constants.ts PIZZA_TOPPING_PRODUCT; amounts are assumptions). */
+export function toppingPacks(t: PizzaTopping, trays: number, eaters: number): number {
+  const prod = C.PIZZA_TOPPING_PRODUCT[t];
+  if ('perEaters' in prod) return Math.max(1, packs(eaters, prod.perEaters));
+  return Math.max(1, ceilSafe(trays * prod.perLangpanne));
+}
+
+/**
+ * Homemade pizza for N langpanner (12 biter each): the dough for the chosen base, pizzasaus and revet
+ * ost (always), and one pack count per topping chip. Rounded up to whole packs.
+ */
+export function homemadePizza(
+  trays: number,
+  opts: { dough?: PizzaDough; toppings?: readonly PizzaTopping[]; eaters?: number } = {},
+) {
+  const dough = opts.dough ?? 'ferdigdeig';
+  const toppings = pizzaToppings(opts.toppings);
+  const eaters = opts.eaters ?? 0;
   return {
     trays,
-    squares: trays * 24,
-    flourDl: trays * 8,
-    flourG: trays * 480,
-    flourPacks: packs(trays * 480, 1000),
-    yeastG: trays * 25,
-    yeastPacks: packs(trays * 25, 50),
-    waterDl: trays * 3,
-    oilSs: trays * 2,
-    saltTs: trays,
-    sauceDl: trays * 2.5,
-    sauceJars: packs(trays * 2.5, 2.5),
-    cheeseG: trays * 300,
-    cheesePacks: packs(trays * 300, 350),
-    hamTrays,
-    hamG: hamTrays * 150,
-    hamPacks: packs(hamTrays * 150, 150),
+    slices: trays * C.PIZZA_SLICES_PER_LANGPANNE,
+    dough,
+    /** Ferdig pizzadeig, ferdigstekte bunner (packs of 2) or pizzamiks: one pack per langpanne. */
+    doughPacks: trays,
+    roundBases: trays * C.PIZZA_ROUND_BASES_PER_LANGPANNE,
+    flourDl: trays * C.PIZZA_SELF_FLOUR_DL,
+    flourG: trays * C.PIZZA_SELF_FLOUR_G,
+    flourPacks: packs(trays * C.PIZZA_SELF_FLOUR_G, 1000),
+    yeastG: trays * C.PIZZA_SELF_YEAST_G,
+    yeastPacks: packs(trays * C.PIZZA_SELF_YEAST_G, 50),
+    sauceJars: Math.max(1, ceilSafe(trays * C.PIZZA_SAUCE.perLangpanne)),
+    cheeseG: trays * C.PIZZA_CHEESE.gPerLangpanne,
+    cheeseBags: packs(trays * C.PIZZA_CHEESE.gPerLangpanne, C.PIZZA_CHEESE.bagG),
+    toppings: toppings.map((t) => ({ id: t, packs: toppingPacks(t, trays, eaters) })),
   };
+}
+
+/** Homemade pizza for one party: N langpanner from the pieces, then homemadePizza. */
+export function homemadeFor(m: Extract<Dish, { kind: 'pizza' }>, p: People) {
+  const sl = pizzaSlices(p);
+  const trays = Math.max(1, pizzaCount(sl.slices, 'hjemmelaget'));
+  const eaters = ceilSafe((p.kidsComing + p.adultsEating) * sl.share);
+  return { sl, h: homemadePizza(trays, { dough: m.dough, toppings: m.toppings, eaters }) };
+}
+
+/** Names and ids of the homemade pizza lines (Mat screen and shopping list use the same ids). */
+export const PIZZA_DOUGH_LINE: Record<PizzaDough, { id: string; name: string }> = {
+  ferdigdeig: { id: 'pizzadeig', name: 'Ferdig pizzadeig' },
+  ferdigstekt: { id: 'pizzabunner', name: 'Ferdigstekte pizzabunner' },
+  miks: { id: 'pizzamiks', name: 'Pizzamiks' },
+  selv: { id: 'hvetemel', name: 'Hvetemel' },
+};
+/** Topping line ids: skinke keeps the old `pizzaskinke`. */
+export const PIZZA_TOPPING_LINE_ID: Record<PizzaTopping, string> = {
+  skinke: 'pizzaskinke',
+  pepperoni: 'pepperoni',
+  sopp: 'sopp',
+  ananas: 'ananas',
+  mais: 'mais',
+  paprika: 'paprika',
+  kebab: 'kebab',
+  rommedressing: 'rommedressing',
+};
+
+const UNIT_WORD: Record<string, [string, string]> = {
+  pk: ['pk', 'pk'],
+  boks: ['boks', 'bokser'],
+  stk: ['stk', 'stk'],
+  flaske: ['flaske', 'flasker'],
+};
+/** «2 bokser», «1 flaske» */
+export function toppingAmount(t: PizzaTopping, n: number): string {
+  const [one, many] = UNIT_WORD[C.PIZZA_TOPPING_PRODUCT[t].unit];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+function pizzaShoppingLines(m: Extract<Dish, { kind: 'pizza' }>, p: People) {
+  const { h } = homemadeFor(m, p);
+  const out: (Omit<ShoppingItem, 'display'> & { display: string })[] = [];
+  const base = { trip: 'torrvarer' as const, ruleRef: 'menu.pizza' };
+  const d = PIZZA_DOUGH_LINE[h.dough];
+  if (h.dough === 'selv') {
+    out.push({
+      ...base,
+      id: 'hvetemel',
+      name: 'Hvetemel',
+      need: h.flourG,
+      unit: 'g',
+      packSize: 1000,
+      packs: h.flourPacks,
+      display: `${h.flourPacks} pk à 1 kg`,
+    });
+    out.push({
+      ...base,
+      id: 'gjaer',
+      name: 'Fersk gjær',
+      need: h.yeastG,
+      unit: 'g',
+      packSize: 50,
+      packs: h.yeastPacks,
+      display: `${h.yeastPacks} pk à 50 g`,
+      trip: 'ferskvarer',
+    });
+  } else {
+    const packSize = h.dough === 'ferdigstekt' ? C.PIZZA_ROUND_BASES_PER_LANGPANNE : undefined;
+    out.push({
+      ...base,
+      id: d.id,
+      name: d.name,
+      need: h.doughPacks,
+      unit: 'pk',
+      packSize,
+      packs: h.doughPacks,
+      display: `${h.doughPacks} pk`,
+      trip: h.dough === 'miks' ? 'torrvarer' : 'ferskvarer',
+    });
+  }
+  out.push({
+    ...base,
+    id: 'pizzasaus',
+    name: 'Pizzasaus',
+    need: h.sauceJars,
+    unit: 'glass',
+    packs: h.sauceJars,
+    display: `${h.sauceJars} glass`,
+  });
+  out.push({
+    ...base,
+    id: 'pizzaost',
+    name: 'Revet ost',
+    need: h.cheeseG,
+    unit: 'g',
+    packSize: C.PIZZA_CHEESE.bagG,
+    packs: h.cheeseBags,
+    display: `${h.cheeseBags} pose${h.cheeseBags === 1 ? '' : 'r'} à 400 g`,
+    trip: 'ferskvarer',
+  });
+  for (const t of h.toppings) {
+    const prod = C.PIZZA_TOPPING_PRODUCT[t.id];
+    const unit = prod.unit === 'flaske' ? 'flaske' : prod.unit === 'boks' ? 'boks' : prod.unit === 'stk' ? 'stk' : 'pk';
+    out.push({
+      ...base,
+      id: PIZZA_TOPPING_LINE_ID[t.id],
+      name: prod.name,
+      need: t.packs,
+      unit,
+      packs: t.packs,
+      display: toppingAmount(t.id, t.packs),
+      trip: unit === 'boks' || unit === 'flaske' ? 'torrvarer' : 'ferskvarer',
+    });
+  }
+  return out;
 }
 
 // ---------------- taco ----------------
@@ -323,17 +499,24 @@ export const MENU_NAMES: Record<MenuChoice['kind'], string> = {
   pasta: 'Pasta',
   annet: 'Egen hovedrett',
   egen: 'Egen meny',
+  flere: 'Flere retter',
 };
 
-/** Short word for the main item on a shopping trip («Pølser, frukt og grønt»). */
+/** Short word for the main item on a shopping trip («Pølser, frukt og grønt»; «Pølser og pizzadeig» for two). */
 export function mainItemWord(menu: MenuChoice | null): string {
-  if (!menu) return 'Maten';
+  const words = menuDishes(menu).map(dishItemWord);
+  if (words.length === 0) return 'Maten';
+  const lower = words.map((w, i) => (i === 0 ? w : w.charAt(0).toLowerCase() + w.slice(1)));
+  return lower.length === 1 ? lower[0] : `${lower.slice(0, -1).join(', ')} og ${lower[lower.length - 1]}`;
+}
+
+function dishItemWord(menu: Dish): string {
   switch (menu.kind) {
     case 'grillpolser':
     case 'wienerpolser':
       return 'Pølser';
     case 'pizza':
-      return menu.style === 'hjemmelaget' ? 'Ost og skinke' : 'Pizza';
+      return menu.style === 'hjemmelaget' ? 'Pizzadeig og ost' : 'Pizza';
     case 'taco':
       return 'Kjøttdeig og tortillas';
     case 'pasta':
@@ -350,11 +533,101 @@ export function shoppingList(party: Party): ShoppingItem[] {
   // joint birthday: portions follow the OLDEST birthday child's band (it feeds the most, and it's safe)
   const p: People = { kidsComing: hc.kidsComing, adultsEating: hc.adultsEating, age: oldestAge(party.celebrants) };
   const out: ShoppingItem[] = [];
-  const m = party.menu;
+  // several dishes (pølser + pizza): each covers its share of the portions, rounded up per item
+  const share = dishShare(party.menu);
+  for (const m of menuDishes(party.menu)) dishItems(m, { ...p, share }, party, out);
 
-  if (!m) {
-    // no menu chosen yet: only the extras below
-  } else if (m.kind === 'grillpolser' || m.kind === 'wienerpolser') {
+  const e = extras(p, { muffins: party.cake.muffins, candleAges: party.celebrants.map((c) => c.age) });
+  out.push(
+    item({
+      id: 'saft',
+      name: 'Saft',
+      need: e.saftLitres,
+      unit: 'l',
+      packs: e.saftBottles,
+      display: `${e.saftBottles} flasker (blir ca. ${nb.format(e.saftLitres)} liter)`,
+      trip: 'torrvarer',
+      ruleRef: 'extras.saft',
+    }),
+  );
+  out.push(
+    item({
+      id: 'frukt',
+      name: 'Frukt og grønt',
+      need: e.fruitG,
+      unit: 'g',
+      display: e.fruitDisplay,
+      trip: 'ferskvarer',
+      ruleRef: 'extras.frukt',
+    }),
+  );
+  out.push(
+    item({
+      id: 'godteposer',
+      name: 'Godteposer',
+      need: e.goodyBags,
+      unit: 'stk',
+      display: `${e.goodyBags}`,
+      trip: 'torrvarer',
+      ruleRef: 'extras.godteposer',
+    }),
+  );
+  out.push(
+    item({
+      id: 'kakelys',
+      name: 'Kakelys',
+      why: party.celebrants.length > 1 ? 'Ett lys-sett per bursdagsbarn' : undefined,
+      need: e.candles,
+      unit: 'stk',
+      display: `${e.candles}`,
+      trip: 'torrvarer',
+      ruleRef: 'extras.kakelys',
+      homeItemId: 'kakelys',
+    }),
+  );
+  out.push(
+    item({
+      id: 'pappkrus-og-fat',
+      name: 'Tallerkener, kopper og servietter',
+      need: 1,
+      unit: 'pk',
+      display: 'til alle',
+      trip: 'torrvarer',
+      ruleRef: 'extras.tableware',
+      homeItemId: 'pappkrus-og-fat',
+    }),
+  );
+  out.push(
+    item({
+      id: 'ballonger',
+      name: 'Ballonger',
+      need: 1,
+      unit: 'pk',
+      display: '1 pk',
+      trip: 'torrvarer',
+      ruleRef: 'extras.ballonger',
+      homeItemId: 'ballonger',
+    }),
+  );
+  out.push(
+    item({
+      id: 'bursdagskrone',
+      name: 'Bursdagskrone',
+      need: 1,
+      unit: 'stk',
+      display: '1',
+      trip: 'torrvarer',
+      ruleRef: 'extras.krone',
+      homeItemId: 'bursdagskrone',
+    }),
+  );
+
+  return out.filter((i) => (!i.homeItemId || !party.haveAtHome.includes(i.homeItemId)) && isIncluded(party, i.id));
+}
+
+/** The shopping items for one dish (pushes into `out`). `p.share` is its part of the portions. */
+function dishItems(m: Dish, p: People, party: Party, out: ShoppingItem[]) {
+  if (m.kind === 'grillpolser' || m.kind === 'wienerpolser') {
     const s = sausages(m.kind, p, {
       withLomper: party.foodItems?.lomper?.included !== false,
       withPolsebrod: party.foodItems?.polsebrod?.included !== false,
@@ -440,71 +713,7 @@ export function shoppingList(party: Party): ShoppingItem[] {
   } else if (m.kind === 'pizza') {
     const units = pizzaUnits(p);
     if (m.style === 'hjemmelaget') {
-      const h = homemadePizza(pizzaCount(units, 'hjemmelaget'));
-      out.push(
-        item({
-          id: 'hvetemel',
-          name: 'Hvetemel',
-          need: h.flourG,
-          unit: 'g',
-          packSize: 1000,
-          packs: h.flourPacks,
-          display: `${h.flourPacks} pk à 1 kg`,
-          trip: 'torrvarer',
-          ruleRef: 'menu.pizza',
-        }),
-      );
-      out.push(
-        item({
-          id: 'gjaer',
-          name: 'Fersk gjær',
-          need: h.yeastG,
-          unit: 'g',
-          packSize: 50,
-          packs: h.yeastPacks,
-          display: `${h.yeastPacks} pk à 50 g`,
-          trip: 'ferskvarer',
-          ruleRef: 'menu.pizza',
-        }),
-      );
-      out.push(
-        item({
-          id: 'pizzasaus',
-          name: 'Pizzasaus',
-          need: h.sauceDl,
-          unit: 'dl',
-          packs: h.sauceJars,
-          display: `${h.sauceJars} glass`,
-          trip: 'torrvarer',
-          ruleRef: 'menu.pizza',
-        }),
-      );
-      out.push(
-        item({
-          id: 'pizzaost',
-          name: 'Revet ost',
-          need: h.cheeseG,
-          unit: 'g',
-          packSize: 350,
-          packs: h.cheesePacks,
-          display: `${h.cheesePacks} pk à 350 g`,
-          trip: 'ferskvarer',
-          ruleRef: 'menu.pizza',
-        }),
-      );
-      out.push(
-        item({
-          id: 'pizzaskinke',
-          name: 'Skinke i strimler',
-          need: h.hamG,
-          unit: 'g',
-          packSize: 150,
-          packs: h.hamPacks,
-          display: `${h.hamPacks} pk à 150 g`,
-          trip: 'ferskvarer',
-          ruleRef: 'menu.pizza',
-        }),
-      );
+      for (const l of pizzaShoppingLines(m, p)) out.push(item(l));
     } else {
       const size = m.takeawaySize ?? '30';
       const n = pizzaCount(units, m.style, size);
@@ -667,91 +876,4 @@ export function shoppingList(party: Party): ShoppingItem[] {
       }),
     );
   }
-
-  const e = extras(p, { muffins: party.cake.muffins, candleAges: party.celebrants.map((c) => c.age) });
-  out.push(
-    item({
-      id: 'saft',
-      name: 'Saft',
-      need: e.saftLitres,
-      unit: 'l',
-      packs: e.saftBottles,
-      display: `${e.saftBottles} flasker (blir ca. ${nb.format(e.saftLitres)} liter)`,
-      trip: 'torrvarer',
-      ruleRef: 'extras.saft',
-    }),
-  );
-  out.push(
-    item({
-      id: 'frukt',
-      name: 'Frukt og grønt',
-      need: e.fruitG,
-      unit: 'g',
-      display: e.fruitDisplay,
-      trip: 'ferskvarer',
-      ruleRef: 'extras.frukt',
-    }),
-  );
-  out.push(
-    item({
-      id: 'godteposer',
-      name: 'Godteposer',
-      need: e.goodyBags,
-      unit: 'stk',
-      display: `${e.goodyBags}`,
-      trip: 'torrvarer',
-      ruleRef: 'extras.godteposer',
-    }),
-  );
-  out.push(
-    item({
-      id: 'kakelys',
-      name: 'Kakelys',
-      why: party.celebrants.length > 1 ? 'Ett lys-sett per bursdagsbarn' : undefined,
-      need: e.candles,
-      unit: 'stk',
-      display: `${e.candles}`,
-      trip: 'torrvarer',
-      ruleRef: 'extras.kakelys',
-      homeItemId: 'kakelys',
-    }),
-  );
-  out.push(
-    item({
-      id: 'pappkrus-og-fat',
-      name: 'Tallerkener, kopper og servietter',
-      need: 1,
-      unit: 'pk',
-      display: 'til alle',
-      trip: 'torrvarer',
-      ruleRef: 'extras.tableware',
-      homeItemId: 'pappkrus-og-fat',
-    }),
-  );
-  out.push(
-    item({
-      id: 'ballonger',
-      name: 'Ballonger',
-      need: 1,
-      unit: 'pk',
-      display: '1 pk',
-      trip: 'torrvarer',
-      ruleRef: 'extras.ballonger',
-      homeItemId: 'ballonger',
-    }),
-  );
-  out.push(
-    item({
-      id: 'bursdagskrone',
-      name: 'Bursdagskrone',
-      need: 1,
-      unit: 'stk',
-      display: '1',
-      trip: 'torrvarer',
-      ruleRef: 'extras.krone',
-      homeItemId: 'bursdagskrone',
-    }),
-  );
-
-  return out.filter((i) => (!i.homeItemId || !party.haveAtHome.includes(i.homeItemId)) && isIncluded(party, i.id));
 }

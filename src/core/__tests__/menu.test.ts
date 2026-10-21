@@ -116,7 +116,7 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
 
   it('drinks, fruit and the cake note (no candy: it goes in the goodie bags later)', () => {
     const plan = emmaPlan({ kind: 'grillpolser' });
-    expect(plan.sections.map((s) => s.id)).toEqual(['main', 'drikke', 'snacks', 'kake']);
+    expect(plan.sections.map((s) => s.id)).toEqual(['main-polser', 'drikke', 'snacks', 'kake']);
     expect(line(plan, 'saft')).toMatchObject({ amount: '2 flasker saft' });
     expect(line(plan, 'saft').why).toBe(
       'ca. 5 dl per barn og 6 dl per voksen = ca. 8,9 liter. Jus i stedet: ca. 8,9 liter',
@@ -137,17 +137,16 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     });
   });
 
-  it('pizza: frossen 6 stk (3 runder à 15 min); hjemmelaget 3 langpanner', () => {
+  it('pizza: frossen 5 stk (3 runder à 15 min); hjemmelaget 4 langpanner', () => {
     const f = emmaPlan({ kind: 'pizza', style: 'frossen' });
-    expect(line(f, 'frossenpizza')).toMatchObject({ amount: '6 stk' });
-    expect(line(f, 'frossenpizza').why).toContain('= 45 stykker');
+    expect(line(f, 'frossenpizza')).toMatchObject({ amount: '5 stk' });
+    expect(line(f, 'frossenpizza').why).toBe('13 barn × 2 + 4 voksne × 3 = 38 biter. Ca. 8 biter per pizza');
     expect(line(f, 'ovnstid')).toMatchObject({ amount: 'ca. 45 min' });
-    const h = emmaPlan({ kind: 'pizza', style: 'hjemmelaget' });
+    const h = emmaPlan({ kind: 'pizza', style: 'hjemmelaget', dough: 'selv' });
     expect(h.title).toBe('Hjemmelaget pizza');
-    expect(line(h, 'langpanner').amount).toBe('3 langpanner');
-    expect(line(h, 'hvetemel')).toMatchObject({ amount: 'ca. 1,5 kg', packs: '2 pk à 1 kg' });
-    expect(line(h, 'gjaer')).toMatchObject({ amount: '75 g', packs: '2 pk à 50 g' });
-    expect(line(h, 'pizzaost')).toMatchObject({ packs: '3 pk à 350 g' });
+    expect(line(h, 'langpanner').amount).toBe('4 langpanner');
+    expect(line(h, 'hvetemel')).toMatchObject({ amount: 'ca. 2 kg', packs: '2 pk à 1 kg' });
+    expect(line(h, 'gjaer')).toMatchObject({ amount: '100 g', packs: '2 pk à 50 g' });
   });
 
   it('taco: kjøttdeig 6 pk, tortillas 6 pk à 8', () => {
@@ -173,7 +172,7 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
   it('«Noe annet»: the dish is hers; only drinks, snacks and cake are calculated', () => {
     const plan = emmaPlan({ kind: 'annet', text: 'Kyllingsuppe' });
     expect(plan.title).toBe('Kyllingsuppe');
-    const main = plan.sections.find((s) => s.id === 'main')!;
+    const main = plan.sections.find((s) => s.id === 'main-annet')!;
     expect(main.lines).toHaveLength(1);
     expect(main.lines[0]).toMatchObject({ name: 'Kyllingsuppe', amount: 'Din egen' });
     expect(line(plan, 'saft').amount).toBe('2 flasker saft');
@@ -247,7 +246,7 @@ describe('dietary chips', () => {
   it('each chip adds one note line with an extra portion, in a fixed order', () => {
     const plan = emmaPlan({ kind: 'grillpolser' }, undefined, ['ingen-svin', 'glutenfri']);
     const h = plan.sections.find((s) => s.id === 'hensyn')!;
-    expect(plan.sections.map((s) => s.id)).toEqual(['main', 'hensyn', 'drikke', 'snacks', 'kake']);
+    expect(plan.sections.map((s) => s.id)).toEqual(['main-polser', 'hensyn', 'drikke', 'snacks', 'kake']);
     expect(h.lines.map((l) => l.name)).toEqual(['Glutenfri', 'Ingen svin']);
     expect(h.lines[1]).toMatchObject({ amount: '1 pk kyllingpølser' });
   });
@@ -296,7 +295,7 @@ describe("item toggles (deselect what you don't need)", () => {
     for (const s of plan.sections) {
       for (const l of s.lines) {
         expect(l.included, l.id).toBe(true);
-        expect(l.toggleable, l.id).toBe(['main', 'drikke', 'snacks'].includes(s.id));
+        expect(l.toggleable, l.id).toBe(['main-polser', 'drikke', 'snacks'].includes(s.id));
       }
     }
     // «Din egen» and the frozen pizza's oven time are not things to buy

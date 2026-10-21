@@ -78,6 +78,42 @@ export interface FoodItemState {
   included: boolean;
 }
 
+/** «Forslag til innhold» for the goodie bags, the chips on Handleliste. */
+export type GoodieBagItemId =
+  'godteri' | 'popcorn' | 'rosiner' | 'klistremerker' | 'sapebobler' | 'viskelaer' | 'fruktstang';
+export const GOODIE_BAG_ITEMS: readonly GoodieBagItemId[] = [
+  'godteri',
+  'popcorn',
+  'rosiner',
+  'klistremerker',
+  'sapebobler',
+  'viskelaer',
+  'fruktstang',
+];
+
+export interface GoodieBags {
+  /** The suggestions she tapped, each a line on the list. Empty by default: nothing is assumed. */
+  contents: GoodieBagItemId[];
+}
+
+/** A free-text item she added herself on Handleliste («Legg til vare»). */
+export interface CustomShoppingItem {
+  /** Stable within the party ('egen-1', 'egen-2' …). */
+  id: string;
+  text: string;
+}
+
+/**
+ * Handleliste state. The list itself is generated from the party (rules/shopping.ts) every time, so a
+ * menu change, a deselected food line or a new children count updates it; only the ticks and her
+ * own items are stored. A tick is keyed by the item's stable id (`grillpolser`, `godteri`, `egen-1`),
+ * so it survives a change in the amounts.
+ */
+export interface ShoppingState {
+  ticked: string[];
+  custom: CustomShoppingItem[];
+}
+
 export interface CakeChoice {
   mode: 'bake' | 'buy';
   cakeId: string;
@@ -100,6 +136,9 @@ export interface TaskState {
 }
 
 /**
+ * v6 (Oct 2026): Handleliste. `shopping` (ticked item ids + her own items) and `goodieBags`
+ * (`contents`: the goodie-bag suggestions she picked; none by default). Old parties get an empty list
+ * state and no goodie-bag contents.
  * v4 (Oct 2026): `foodCounts` is gone: the Mat screen edits the party's own numbers (one source of
  * truth for the guest count), and `foodItems` holds the per-line `included` flag (deselect pølsebrød).
  * v5 (Oct 2026): ONE children number. `children` is the total number of children at the party,
@@ -111,7 +150,7 @@ export interface TaskState {
  * friends), `theme` became optional (chosen later, on Planen) and `home.type` gained 'lokale'/'ute'.
  * Older records are upgraded in storage/PartyRepository.ts `migrate`.
  */
-export const SCHEMA_VERSION = 5 as const;
+export const SCHEMA_VERSION = 6 as const;
 
 /** The ages the app plans for (3–10). A 1-year-old's party is a family coffee party, not this. */
 export const MIN_AGE = 3;
@@ -159,9 +198,13 @@ export interface Party {
   diets: DietTag[];
   /** Per food line: included or deselected (see FoodItemState). Empty = everything included. */
   foodItems: Record<string, FoodItemState>;
-  // TODO(godteposer): goodie bags come in a later PR as their own field, e.g.
-  // `goodieBags: { included: boolean }` (included by default, with opt-out). Candy lives there, not
-  // in the food. See docs/ARCHITECTURE.md «Later: godteposer».
+  /**
+   * Goodie bags (godteposer): what she picked from «Forslag til innhold» on Handleliste. Nothing is
+   * pre-selected (everyone fills the bags with what they want); candy is never part of the food.
+   */
+  goodieBags: GoodieBags;
+  /** Handleliste: what she has ticked off (by stable item id) and her own free-text items. */
+  shopping: ShoppingState;
   cake: CakeChoice;
   programme: { includePinata: boolean; includeSkattejakt: boolean };
   guests: Guest[];

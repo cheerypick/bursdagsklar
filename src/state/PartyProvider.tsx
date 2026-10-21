@@ -7,11 +7,17 @@ import {
   normalizeDraft,
   toggleTask as toggleTaskRule,
   toggleDiet as toggleDietRule,
+  withGoodieBagItem,
+  withCustomItem,
   withFoodItem,
   withGuestCounts,
+  withoutCustomItem,
+  withTick,
+  withTicksCleared,
   withMenu,
   withTheme,
   type DietTag,
+  type GoodieBagItemId,
   type HomeItemId,
   type MenuChoice,
   type ISODate,
@@ -41,6 +47,15 @@ interface PartyState {
   setFoodItem: (id: string, included: boolean) => void;
   /** «Endre» on Mat: the party's own guest numbers (children in total, adults eating). */
   setGuestCounts: (change: { children?: number; adults?: number }) => void;
+  /** Handleliste: tick an item off (by its stable id) or back on. */
+  setTick: (id: string, ticked: boolean) => void;
+  /** «Nullstill avkrysninger»: nothing ticked (her own items stay). */
+  clearTicks: () => void;
+  /** «Legg til vare»: her own free-text item. */
+  addCustomItem: (text: string) => void;
+  removeCustomItem: (id: string) => void;
+  /** «Forslag til innhold» for the goodie bags: put a suggestion on the list or take it off. */
+  setGoodieBagItem: (id: GoodieBagItemId, picked: boolean) => void;
   /**
    * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
    * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
@@ -160,6 +175,15 @@ export function PartyProvider({
     [update],
   );
 
+  const setTick = useCallback((id: string, ticked: boolean) => update((p) => withTick(p, id, ticked)), [update]);
+  const clearTicks = useCallback(() => update(withTicksCleared), [update]);
+  const addCustomItem = useCallback((text: string) => update((p) => withCustomItem(p, text)), [update]);
+  const removeCustomItem = useCallback((id: string) => update((p) => withoutCustomItem(p, id)), [update]);
+  const setGoodieBagItem = useCallback(
+    (id: GoodieBagItemId, picked: boolean) => update((p) => withGoodieBagItem(p, id, picked)),
+    [update],
+  );
+
   const startOver = useCallback(async () => {
     // a change still waiting to be saved would write the old party back after the reset
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -184,6 +208,11 @@ export function PartyProvider({
       toggleDiet,
       setFoodItem,
       setGuestCounts,
+      setTick,
+      clearTicks,
+      addCustomItem,
+      removeCustomItem,
+      setGoodieBagItem,
       startOver,
     }),
     [
@@ -200,6 +229,11 @@ export function PartyProvider({
       toggleDiet,
       setFoodItem,
       setGuestCounts,
+      setTick,
+      clearTicks,
+      addCustomItem,
+      removeCustomItem,
+      setGoodieBagItem,
       startOver,
     ],
   );

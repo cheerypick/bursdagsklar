@@ -76,6 +76,47 @@ export function themeTexts(id: string | null | undefined): ThemeTexts {
 }
 
 /** The genitive used in headings: «Emmas», «Hans'». Only for ONE name; see `partyTitle` for joint parties. */
+/**
+ * Splits a long name line into `lines` lines at the spaces nearest to equal lengths (a balanced break),
+ * so «Ingrid Alexandra og Matteo Federico fyller 5 og 7» reads in even lines instead of one long line and
+ * a short tail. Deterministic, the same on web and native (CSS `text-wrap: balance` is web-only).
+ * A line that still does not fit the width wraps on its own; nothing is ever cut off.
+ */
+export function balanceLines(text: string, lines: number): string {
+  const words = text.trim().split(/\s+/);
+  if (lines <= 1 || words.length < 2) return words.join(' ');
+  const n = Math.min(lines, words.length);
+  const out: string[] = [];
+  let i = 0;
+  for (let k = 1; k < n; k++) {
+    // take words while the line is closer to its share of what is left
+    const left = words.slice(i).join(' ').length;
+    const target = left / (n - k + 1);
+    let line = words[i++];
+    while (
+      i < words.length - (n - k) &&
+      Math.abs(line.length + 1 + words[i].length - target) < Math.abs(line.length - target)
+    )
+      line += ` ${words[i++]}`;
+    out.push(line);
+  }
+  out.push(words.slice(i).join(' '));
+  return out.join('\n');
+}
+
+/**
+ * The big name line on the invitation card: how many balanced lines and which font size (for the full
+ * card; the compact card scales it). Long names step down in size AND wrap; they are never truncated.
+ * ≤ 14 characters: one line at 44 · ≤ 22: one line at 38 · ≤ 34: two lines at 34 · ≤ 48: three lines
+ * at 30 · longer: three lines at 26.
+ */
+export function inviteNameLayout(text: string): { text: string; fontSize: number; lines: number } {
+  const len = text.trim().length;
+  const [lines, fontSize] =
+    len <= 14 ? [1, 44] : len <= 22 ? [1, 38] : len <= 34 ? [2, 34] : len <= 48 ? [3, 30] : [3, 26];
+  return { text: balanceLines(text, lines), fontSize, lines };
+}
+
 export function genitive(name: string): string {
   return /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
 }

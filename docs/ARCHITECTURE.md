@@ -54,7 +54,7 @@ Each party is **one self-contained record**:
 - `schemaVersion` + `migrate()` handle changes to the record. v3 (the Mat screen): `menu` is null until the parent picks one (v2's pre-filled menu with `menuChosen: false` opens as «not chosen»), plus `diets`. v4: `foodCounts` (v3's separate child/adult counts on the Mat screen) is dropped and `foodItems` is added (see below). v5: one children number. `children` is the total number of children at the party, birthday children included; it replaces v4's `kidsInvited` (invited children, birthday children not counted) and the unused `siblingsAttending`. A stored v4 party with `kidsInvited: N` becomes `children: N + celebrants (+ siblings)`, the same real head-count, so its food amounts do not change. Old setup drafts are upgraded the same way (`normalizeDraft`).
 - **One children number.** `children` is the total number of children at the party, birthday children included. Setup asks «Hvor mange barn blir det?» with the helper «Med Emma» (default 12), and Planen's header, Festen er klar, the Mat screen («For 12 barn og 4 voksne»), «Endre», the to-dos (gjestelisten, godteposer) and the shopping list all show that number as is. No rule or screen adds or subtracts the birthday children. The one place they are left out is internal: the not-yet-answered estimate of staying adults counts the guests' families (`children − celebrants`, `rules/people.ts`). The invitation-card to-do has no count («Skriv ut invitasjonskortene»). Bounds: at least the birthday children + 1, at most 40 (`minChildren`, `MAX_CHILDREN`).
 - **One source of truth for the guest count.** The party's own numbers (`children`, `hostAdults`, plus the RSVPs in `guests`) give the head-count (`rules/people.ts`), and Planen, the food, the to-dos and the shopping list all read it. The Mat screen shows «For 12 barn og 4 voksne» with «Endre», an inline editor that writes to the party (`withGuestCounts` in `party.ts`): children as the one children number, adults («Voksne som spiser») as the adults eating, applied through `hostAdults` (the RSVP'd and expected parents are the floor).
-- **Food item toggles.** Every quantity line on the Mat screen (main dish, drinks, fruit) has a tap toggle. `foodItems[lineId] = { included: false }` keeps a deselected line visible (greyed, struck through) and leaves it out of the Mat card on Planen, the shopping list (`shoppingList`) and the «Handle tørrvarer» to-do. Missing entry = included. The Mat lines and shopping items share ids (`polsebrod`, `saft`, `pizzaost` …), and a test checks that. Not toggleable: «Til kaken» (a pointer to Kake), the diet lines (their chip is the toggle), «Din egen» and the frozen pizza's oven time. Swipe-to-remove on iOS/Android is a possible later nicety; the tap toggle works everywhere.
+- **Food item toggles.** Every quantity line on the Mat screen (main dish, drinks, fruit) has a tap toggle. `foodItems[lineId] = { included: false }` keeps a deselected line visible (greyed, struck through) and leaves it out of the Mat card on Planen, Handleliste (`handleliste`) and the «Handle tørrvarer» to-do. Missing entry = included. The Mat lines and shopping items share ids (`polsebrod`, `saft`, `pizzaost` …), and a test checks that. Not toggleable: «Til kaken» (a pointer to Kake), the diet lines (their chip is the toggle), «Din egen» and the frozen pizza's oven time. Swipe-to-remove on iOS/Android is a possible later nicety; the tap toggle works everywhere.
 
 ### Sausages: real packs, one real-party sanity check (21 Oct 2026)
 
@@ -87,16 +87,25 @@ Also on Oda that day: Gilde Favorittwiener 24 stk (ca. 1,56 kg), Strøm-Larsen W
 
 **Before → after, Emma (13 barn, 4 voksne, 5 år):** grillpølser 50 (5 pk) → 40 (4 pk); wienerpølser 48 (6 pk à 8) → 40 (5 pk); lomper 50 (5 pk) → 20 (2 pk); pølsebrød 24 (3 pk à 8) → 24 (3 pk à 8); «Ketchup, sennep og sprøstekt løk: 1 av hver» → «Ketchup og sennep: 1 av hver» + «Sprøstekt løk: 2 poser».
 
-### Later: godteposer (goodie bags)
+### Handleliste (shopping list)
 
-Candy is **not food**: it is not on the Mat screen, in `extras()` or in the shopping list. It belongs to the goodie bags, which come in their own PR:
+`rules/shopping.ts` builds the list from the party every time (`handleliste(party)`), so a new menu, a line deselected on Mat or a new children count updates it. Only two things are stored on the party (schema v6):
 
-- Goodie bags are **included by default, with opt-out** (Ekaterina, 21 Oct 2026).
-- Suggested model: a `goodieBags: { included: boolean }` field on the party (schema bump, migrate to `{ included: true }`), the same `included` pattern as `foodItems`.
-- Contents per bag from `CANDY_G_CHILD` (100 g per child, kept in `rules/constants.ts` for this) and, when an RSVP says nøtter/peanøtt, nut-free candy (the rule that used to live in `extras()`).
-- What already exists and stays: the `godteposer` item (the bags themselves) in `shoppingList` and «fyll N godteposer» in the to-dos. Both should follow the opt-out.
+- `shopping.ticked`: the ids of the items she has ticked off, and `shopping.custom`: her own free-text items («Legg til vare», ids `egen-1`, `egen-2` …). Ticks are keyed by stable item ids (`grillpolser`, `saft`, `kakelys`, `pose-popcorn`, `egen-1`), so they survive a change in the amounts. «Nullstill avkrysninger» clears the ticks; «Start på nytt» clears everything.
+- `goodieBags.contents`: what she picked for the goodie bags.
 
-TODO(godteposer): build the above; candy shows up in the shopping list again only through the goodie bags.
+What is on the list, grouped by store section (Kjøtt og pålegg, Brød, Frukt og grønt, Drikke, Tørrvarer, Frysedisk, Fest og pynt, Godteposer, Egne varer; empty sections are hidden):
+
+- every **included** Mat line, with the same amounts and pack sizes («5 pk», «à 10, 50 stk i alt»). Left out: lines deselected on Mat, her own dish («Noe annet»), the oven time, the trays of homemade pizza (the ingredients are listed), tap water and the cake (Kake comes later);
+- drinks and fruit, also before a main dish is chosen (they don't depend on it; the list says to pick a main dish for the rest);
+- the dietary extras ticked on Mat («1 pk kyllingpølser»), in the right section; diet notes that are not something to buy are skipped;
+- party things: goodie bags (one per child, the one children number), candles (one set per birthday child), plates/cups/napkins for everyone eating, balloons and the birthday crown, unless «Har dere dette hjemme?» says they are at home.
+
+**Godteposer.** Candy is **not food**: it is not on the Mat screen or in `extras()`. Everyone fills the goodie bags with what they want (Ekaterina, 21 Oct 2026), so nothing inside them is on the list by default. Under the bags, «Forslag til innhold» shows chips, none pre-selected: Godteri, Popcorn, Rosiner, Klistremerker, Såpebobler, Viskelær/blyant, Fruktstang. A tap puts it on the list as a normal tickable item, about one per child (candy ca. 100 g per bag, `CANDY_G_CHILD`, nut-free when an RSVP says nøtter/peanøtt); a second tap takes it off. A small line says «Sunnere alternativer: rosiner, fruktstang og småleker.»
+
+**Del listen** (`shareText`) is plain Norwegian: «Handleliste – Emmas bursdag 15. nov», then each section with «☐ 5 pk grillpølser» lines, only what is not ticked yet. Native: the system share sheet (React Native `Share`). Web: the Web Share API where the browser has it (Safari on iPhone), otherwise the clipboard and a «Kopiert» toast. No backend: she sends it to whoever shops by message.
+
+The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) is no longer shown on any screen; it is kept for its tests and can be removed later.
 
 **Adding a server later** (yearly reminder email, two parents on one party, RSVP links): add a `RemotePartyRepository` (or a sync layer) that PUTs/GETs the same JSON by `id` and resolves conflicts on `updatedAt`. Screens and rules don't change. Keep children's data in Norway/EU and delete parties some time after the date.
 

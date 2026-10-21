@@ -408,9 +408,10 @@ function mainLines(
   }
 }
 
-type DietGroup = 'polser' | 'pizza-hjemmelaget' | 'pizza-frossen' | 'taco' | 'pasta-salat' | 'pasta-varm' | 'annet';
+export type DietGroup =
+  'polser' | 'pizza-hjemmelaget' | 'pizza-frossen' | 'taco' | 'pasta-salat' | 'pasta-varm' | 'annet';
 
-function dietGroup(menu: MenuChoice): DietGroup {
+export function dietGroup(menu: MenuChoice): DietGroup {
   switch (menu.kind) {
     case 'grillpolser':
     case 'wienerpolser':
@@ -519,7 +520,7 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
           amount: e.fruitDisplay,
           why: `${perPerson(C.FRUIT_G_CHILD, C.FRUIT_G_ADULT, 'g', c)}, f.eks. druer, epler, agurk og gulrot`,
         },
-        // no candy: it belongs to the goodie bags (godteposer), a later PR (docs/ARCHITECTURE.md)
+        // no candy: it belongs to the goodie bags (godteposer), picked on Handleliste (docs/ARCHITECTURE.md)
       ],
     },
     {

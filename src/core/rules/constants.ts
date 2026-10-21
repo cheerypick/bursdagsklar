@@ -144,8 +144,9 @@ export const CAKE_PIECES_FACTOR = 1.1; // (I)
 export const CAKE_PIECES_PER_LANGPANNE = 24;
 export const MUFFINS_PER_CHILD = 0.75; // (I)
 /**
- * Candy per child. NOT used by the food (Mat screen, shopping list): candy belongs to the goodie bags
- * (godteposer), included by default with opt-out, which come in a later PR (docs/ARCHITECTURE.md).
+ * Candy per goodie bag (one bag per child). NOT part of the food (Mat screen): candy belongs to the
+ * goodie bags (godteposer): «Godteri» is one of the suggestions on Handleliste, not pre-selected
+ * (party.goodieBags.contents, rules/shopping.ts).
  */
 export const CANDY_G_CHILD = 100;
 export const GOODY_BAG_PACK = 10; // (I)

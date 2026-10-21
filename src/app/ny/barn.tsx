@@ -33,7 +33,7 @@ export default function KidsStep() {
         moreLabel={nb.kids.more}
       />
       <Text variant="small" style={{ marginTop: 10 }}>
-        {nb.kids.adultsLater}
+        {(draftYoungest(draft) ?? 5) <= 4 ? nb.kids.adultsHelp : nb.kids.adultsCounted}
       </Text>
       <View
         style={{

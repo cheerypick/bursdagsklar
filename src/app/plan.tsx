@@ -59,7 +59,8 @@ export default function PlanScreen() {
       image: heroImage,
       title: nb.plan.cards.invite.title,
       sub: nb.plan.cards.invite.sub,
-      badge: nb.plan.cards.invite.badge,
+      // done-state: «Invitasjonen er sendt» ticked (on Invitasjon or the to-do «Send invitasjonen»)
+      badge: party.taskState.sendInvite?.done ? nb.invitation.cardSent : nb.plan.cards.invite.badge,
       route: '/invitasjon',
     },
     {

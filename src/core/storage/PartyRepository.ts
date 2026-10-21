@@ -18,6 +18,7 @@ import { withoutHiddenDishes } from '../rules/dishes';
 import { normalizeDraft, type SetupDraft } from '../party';
 import { clampAge } from '../rules/celebrants';
 import { THEMES } from '../themes';
+import { sanitizeInvitation } from '../rules/invitation';
 
 /** The minimal async key-value API both AsyncStorage and an in-memory test store implement. */
 export interface KeyValueStore {
@@ -173,7 +174,15 @@ export function migrate(raw: unknown): Party | null {
   // taco and pasta are hidden for now (rules/dishes.ts HIDDEN_MENU_CARDS): a party saved with one of them
   // opens with that dish unpicked, never a crash or an invisible dish
   // a theme that has since been removed (havfruer, Oct 2026) opens as «Uten tema», never as another theme
-  return p ? { ...p, menu: withoutHiddenDishes(p.menu), theme: knownTheme(p.theme) } : null;
+  if (!p) return null;
+  const { invitation: rawInvitation, ...rest } = p;
+  const invitation = sanitizeInvitation(rawInvitation);
+  return {
+    ...rest,
+    menu: withoutHiddenDishes(p.menu),
+    theme: knownTheme(p.theme),
+    ...(invitation ? { invitation } : {}),
+  };
 }
 
 /** The stored theme if it is still offered, else null (the neutral look). */

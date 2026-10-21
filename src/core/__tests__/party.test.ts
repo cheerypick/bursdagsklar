@@ -249,7 +249,9 @@ describe('texts (no AI: templates only)', () => {
       name: 'Emma',
       line: 'fyller 5',
       when: 'Lørdag 7. november kl. 12–14',
-      rsvp: 'Svar innen 31. oktober',
+      // Invitasjon: svarfrist defaults to the day before; reply mode «Gi beskjed hvis dere ikke kommer»
+      rsvp: 'Kan dere ikke komme? Si fra innen 6.\u00a0november',
+      where: '',
     });
   });
   it('renderer: slots, sections and tidy spaces', () => {

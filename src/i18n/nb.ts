@@ -58,7 +58,10 @@ export const nb = {
     title: 'Hvor mange barn blir det?',
     /** «Med Emma» / «Med Emma og Jonas»: the number is everyone, the birthday children included. */
     lede: (navn: string) => `Med ${navn}`,
-    adultsLater: 'Voksne teller vi når svarene kommer.',
+    /** Under the children number: how the adults are counted (Invitasjon: «noen foreldre blir og hjelper til»). */
+    adultsHelp: 'Med de minste blir gjerne noen foreldre og hjelper til. Dem regner vi med i maten.',
+    adultsCounted:
+      'Dere voksne er med i maten. Vil dere ha med foreldre som hjelper til, krysser du av for det i invitasjonen.',
     unit: 'barn',
     fewer: 'Færre barn',
     more: 'Flere barn',
@@ -117,7 +120,7 @@ export const nb = {
     section: 'Alt til festen',
     allDone: 'Alt er gjort. Kos dere på festen!',
     cards: {
-      invite: { title: 'Invitasjon', sub: 'Kort, tekst og melding til foreldrene', badge: 'Klar til å sendes' },
+      invite: { title: 'Invitasjon', sub: 'Kort og tekst, klar til å dele', badge: 'Klar til å sendes' },
       food: {
         title: 'Mat',
         sub: 'Velg hovedrett, så regner vi ut mengdene',
@@ -294,4 +297,47 @@ export const nb = {
   },
   notFound: { title: 'Denne siden finnes ikke', cta: 'Til forsiden' },
   loading: 'Laster …',
+  /** Invitasjon (from the Invitasjon card on Planen). The invitation text itself: core/rules/invitation.ts. */
+  invitation: {
+    eyebrow: 'Invitasjon',
+    title: 'Invitasjonen',
+    lede: 'Teksten lager vi fra planen. Fyll inn det som mangler, se over, og del den der dere pleier.',
+    preview: 'Slik ser kortet ut',
+    detailsTitle: 'Detaljer',
+    addressLabel: 'Adresse',
+    addressPlaceholder: 'F.eks. Bjerkeveien 12',
+    phoneLabel: 'Telefon for svar',
+    phonePlaceholder: 'F.eks. 900 00 000',
+    phoneTip: 'Tips: Legg gjerne til et telefonnummer, så er det lett å svare.',
+    parentsHelp: 'Vi vil gjerne at noen foreldre blir og hjelper til',
+    /** Under the checkbox when ticked: how many we count in the food. */
+    parentsHelpFood: (n: number) =>
+      n === 1
+        ? 'I maten regner vi med 1 forelder som hjelper til.'
+        : `I maten regner vi med ${n} foreldre som hjelper til.`,
+    siblings: 'Søsken er velkomne',
+    siblingsSub: 'Legger til «si gjerne fra hvor mange»',
+    replyTitle: 'Svar',
+    replyIfNot: 'Gi beskjed hvis dere ikke kommer',
+    replyIfComing: 'Gi beskjed om dere kommer',
+    rsvpLabel: 'Svarfrist',
+    rsvpEarlier: 'Tidligere svarfrist',
+    rsvpLater: 'Senere svarfrist',
+    textTitle: 'Teksten',
+    textHelp: 'Du kan endre teksten fritt før du deler den.',
+    textEdited: 'Du har endret teksten selv. Endringer over kommer med når du lager teksten på nytt.',
+    regenerate: 'Lag teksten på nytt',
+    regenerated: 'Teksten er laget på nytt',
+    copy: 'Kopier tekst',
+    copied: 'Kopiert',
+    copyFailed: 'Klarte ikke å kopiere. Prøv å markere teksten og kopiere den selv.',
+    share: 'Del invitasjonen',
+    shareFailed: 'Klarte ikke å dele. Prøv «Kopier tekst».',
+    shareTitle: (names: string) => `Bursdagsinvitasjon fra ${names}`,
+    sent: 'Invitasjonen er sendt',
+    sentSub: 'Kryss av når dere har sendt den',
+    backToPlan: 'Tilbake til planen',
+    /** Planen card done-state. */
+    cardSent: 'Sendt ✓',
+  },
 };

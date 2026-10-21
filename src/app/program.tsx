@@ -1,13 +1,14 @@
 import { ComingSoon } from '../features/ComingSoon';
 import { images } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 
 export default function Screen() {
+  const { t } = useTranslation();
   return (
     <ComingSoon
       image={images.pinata}
-      title={nb.soon.programme.title}
-      text={nb.soon.programme.text}
+      title={t('soon.programme.title')}
+      text={t('soon.programme.text')}
       tab="plan"
       showBack={true}
     />

@@ -4,6 +4,7 @@
  * `{^flag}…{/flag}` when it is falsy; then spaces and empty lines are tidied.
  */
 import templates from './templates.json';
+import { language, t } from '../../i18n/i18n';
 import type { Party } from '../model';
 import { formatLong, formatRangeCompact, formatDayMonth, capitalize } from '../rules/dates';
 import { buildTasks } from '../rules/todos';
@@ -51,27 +52,29 @@ type ThemeTexts = {
   leken: string;
 };
 
-/** Texts for parties without a (known) theme. */
-const NO_THEME: ThemeTexts = {
-  navn: 'Bursdag',
-  fest: 'bursdagsfest',
-  emoji: '🎈',
-  fargelegging: 'ballonger og kaker',
-  apning: { sma: 'Du er invitert i bursdag!', store: 'Bli med i bursdag!' },
-  leken: 'Hipp hipp hurra! Det blir bursdagsfest, og du er invitert.',
-};
+/** Texts for parties without a (known) theme, in the active language. */
+function noTheme(): ThemeTexts {
+  return {
+    navn: t('invite.noTheme.navn'),
+    fest: t('invite.noTheme.fest'),
+    emoji: '🎈',
+    fargelegging: t('invite.noTheme.fargelegging'),
+    apning: { sma: t('invite.noTheme.small'), store: t('invite.noTheme.big') },
+    leken: t('invite.noTheme.playful'),
+  };
+}
 
 /** The template slots for a theme, read from the single theme list in core/themes.ts. */
 export function themeTexts(id: string | null | undefined): ThemeTexts {
-  const t = id ? THEMES.find((x) => x.id === id) : undefined;
-  if (!t) return NO_THEME;
+  const th = id ? THEMES.find((x) => x.id === id) : undefined;
+  if (!th) return noTheme();
   return {
-    navn: t.name,
-    fest: t.fest,
-    emoji: t.emoji,
-    fargelegging: t.copy.colouring,
-    apning: { sma: t.copy.opening.small, store: t.copy.opening.big },
-    leken: t.copy.playful,
+    navn: th.name,
+    fest: th.fest,
+    emoji: th.emoji,
+    fargelegging: th.copy.colouring,
+    apning: { sma: th.copy.opening.small, store: th.copy.opening.big },
+    leken: th.copy.playful,
   };
 }
 
@@ -118,6 +121,8 @@ export function inviteNameLayout(text: string): { text: string; fontSize: number
 }
 
 export function genitive(name: string): string {
+  // en: «Emma's», «Hans'»; nb: «Emmas», «Hans'» (s, x and z get an apostrophe)
+  if (language() === 'en') return /s$/i.test(name) ? `${name}'` : `${name}'s`;
   return /[sxz]$/i.test(name) ? `${name}'` : `${name}s`;
 }
 
@@ -134,15 +139,19 @@ export function invitationCard(p: Party): { headline: string; name: string; line
     dato: capitalize(formatLong(p.date)),
     tid: formatRangeCompact(p.start, p.end),
   };
+  // nb: the templates (the source of truth for the invitation texts); other languages: invite.card.*
+  const nb = language() === 'nb';
   return {
     // a chosen theme has its own headline; without one the neutral template line is used
     headline:
-      p.theme && THEMES.some((t) => t.id === p.theme)
+      p.theme && THEMES.some((x) => x.id === p.theme)
         ? themeById(p.theme).copy.inviteHeadline
-        : render(card.overskrift, ctx),
+        : nb
+          ? render(card.overskrift, ctx)
+          : t('invite.card.headline', { fest: theme.fest }),
     name: render(card.navn, ctx),
-    line: render(card.linje, ctx),
-    when: render(card.naar, ctx),
-    rsvp: `Svar innen ${formatDayMonth(rsvpDeadline)}`,
+    line: nb ? render(card.linje, ctx) : t('invite.card.line', { ages: String(ctx.alder) }),
+    when: nb ? render(card.naar, ctx) : t('invite.card.when', { date: String(ctx.dato), time: String(ctx.tid) }),
+    rsvp: t('invite.card.rsvp', { date: formatDayMonth(rsvpDeadline) }),
   };
 }

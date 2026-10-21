@@ -35,7 +35,8 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     const plan = emmaPlan({ kind: 'grillpolser' });
     expect(plan.title).toBe('Grillpølser');
     expect(plan.forWhom).toBe('for 13 barn og 4 voksne');
-    expect(line(plan, 'grillpolser')).toEqual({
+    // toMatchObject: the line also carries the packs and the count as data (count, packCount, packSize)
+    expect(line(plan, 'grillpolser')).toMatchObject({
       id: 'grillpolser',
       name: 'Grillpølser',
       amount: '50 stk',

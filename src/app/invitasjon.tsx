@@ -1,13 +1,14 @@
 import { ComingSoon } from '../features/ComingSoon';
 import { images } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 
 export default function Screen() {
+  const { t } = useTranslation();
   return (
     <ComingSoon
       image={images.inviteArt}
-      title={nb.soon.invite.title}
-      text={nb.soon.invite.text}
+      title={t('soon.invite.title')}
+      text={t('soon.invite.text')}
       tab="plan"
       showBack={true}
     />

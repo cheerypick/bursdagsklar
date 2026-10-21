@@ -1,9 +1,11 @@
 import { Pressable, View } from 'react-native';
 import { shadow, TOUCH, useColors, useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 
-export function BackButton({ onPress, label = nb.common.back }: { onPress: () => void; label?: string }) {
+export function BackButton({ onPress, label }: { onPress: () => void; label?: string }) {
+  const { t } = useTranslation();
+  label ??= t('common.back');
   const styles = useStyles();
   const colors = useColors();
   return (
@@ -15,6 +17,7 @@ export function BackButton({ onPress, label = nb.common.back }: { onPress: () =>
 
 /** Back button + «Steg n av 5» progress dashes (setup). */
 export function TopBar({ onBack, step, of }: { onBack?: () => void; step?: number; of?: number }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { isShort } = useLayout();
@@ -22,7 +25,7 @@ export function TopBar({ onBack, step, of }: { onBack?: () => void; step?: numbe
     <View style={[styles.bar, isShort && styles.barShort]}>
       {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: TOUCH }} />}
       {step && of ? (
-        <View style={styles.progress} accessible accessibilityLabel={nb.common.step(step, of)}>
+        <View style={styles.progress} accessible accessibilityLabel={t('common.step', { n: step, of })}>
           {Array.from({ length: of }).map((_, i) => (
             <View key={i} style={[styles.dash, i < step && { backgroundColor: colors.green }]} />
           ))}

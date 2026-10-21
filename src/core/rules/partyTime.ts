@@ -1,6 +1,7 @@
 import type { HHMM, ISODate } from '../model';
 import { SHORT_NOTICE_DAYS } from './constants';
 import { diffDays, minutesOf, weekday } from './dates';
+import { t } from '../../i18n/i18n';
 
 /**
  * Default party time (spec §6.2, revised by Ekaterina 21 Oct 2026). Weekdays and weekends are treated
@@ -20,10 +21,10 @@ export function defaultPartyTime(age: number, weekend: boolean): { start: HHMM; 
   const small = age <= BARNEHAGE_MAX_AGE;
   if (weekend) {
     const [start, end] = small ? WEEKEND_TIME_SMALL : WEEKEND_TIME_BIG;
-    return { start, end, why: small ? 'midt på dagen – maten blir lunsj' : 'etter lunsj, før middag' };
+    return { start, end, why: t(small ? 'rules.time.weekendSmall' : 'rules.time.weekendBig') };
   }
   const [start, end] = WEEKDAY_TIME;
-  return { start, end, why: small ? 'etter barnehagen – maten blir middag' : 'etter skole og SFO – maten blir middag' };
+  return { start, end, why: t(small ? 'rules.time.weekdaySmall' : 'rules.time.weekdayBig') };
 }
 
 /** 15-minute steps for the «Endre» time picker. */

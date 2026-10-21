@@ -1,15 +1,27 @@
 /**
  * Pure logic for our own month calendar (src/ui/Calendar.tsx): the grid, Monday first,
- * Norwegian names, which days can be picked, and keyboard movement. No Date objects
+ * names in the active language (nb by default), which days can be picked, and keyboard movement. No Date objects
  * in local time, so no timezone or DST can move a day.
  */
 import type { ISODate } from '../model';
-import { addDays, capitalize, MONTHS, parts, toISO, weekday, WEEKDAYS } from './dates';
+import { addDays, capitalize, monthName, parts, toISO, weekday, weekdayName } from './dates';
+import { language } from '../../i18n/i18n';
 
 /** Column headers, Monday first. */
 export const WEEKDAY_HEADERS = ['ma', 'ti', 'on', 'to', 'fr', 'lø', 'sø'] as const;
 /** Full names for screen readers, same order as the headers. */
 export const WEEKDAY_NAMES_MONDAY_FIRST = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
+
+const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
+/** The column headers in the active language: «ma ti on …» / «Mo Tu We …». */
+export function weekdayHeaders(): readonly string[] {
+  if (language() === 'nb') return WEEKDAY_HEADERS;
+  return MONDAY_FIRST.map((wd) => weekdayName(wd, 'short').slice(0, 2));
+}
+/** Full weekday names, Monday first, in the active language (screen readers). */
+export function weekdayNamesMondayFirst(): readonly string[] {
+  return MONDAY_FIRST.map((wd) => weekdayName(wd));
+}
 
 /** A month: `m` is 1–12. */
 export interface YearMonth {
@@ -57,15 +69,16 @@ export function compareMonths(a: YearMonth, b: YearMonth): number {
   return d === 0 ? 0 : d < 0 ? -1 : 1;
 }
 
-/** «Oktober 2026» */
+/** «Oktober 2026» / «October 2026» */
 export function monthTitle(ym: YearMonth): string {
-  return `${capitalize(MONTHS[ym.m - 1])} ${ym.y}`;
+  return `${capitalize(monthName(ym.m))} ${ym.y}`;
 }
 
-/** «onsdag 11. november 2026» */
+/** «onsdag 11. november 2026» / «Wednesday 11 November 2026» */
 export function dayLabel(iso: ISODate): string {
   const { y, m, d } = parts(iso);
-  return `${WEEKDAYS[weekday(iso)]} ${d}. ${MONTHS[m - 1]} ${y}`;
+  const sep = language() === 'nb' ? '. ' : ' ';
+  return `${weekdayName(weekday(iso))} ${d}${sep}${monthName(m)} ${y}`;
 }
 
 export function isSelectable(iso: ISODate, min: ISODate, max: ISODate): boolean {

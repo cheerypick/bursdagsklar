@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native';
-import { shadow, TOUCH, useColors, themedStyles } from '../theme';
+import { shadow, TOUCH, useColors, useLayout, themedStyles } from '../theme';
 import { nb } from '../i18n/nb';
 import { Icon } from './Icon';
 
@@ -17,8 +17,9 @@ export function BackButton({ onPress, label = nb.common.back }: { onPress: () =>
 export function TopBar({ onBack, step, of }: { onBack?: () => void; step?: number; of?: number }) {
   const styles = useStyles();
   const colors = useColors();
+  const { isShort } = useLayout();
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, isShort && styles.barShort]}>
       {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: TOUCH }} />}
       {step && of ? (
         <View style={styles.progress} accessible accessibilityLabel={nb.common.step(step, of)}>
@@ -44,6 +45,7 @@ const useStyles = themedStyles((colors) => ({
     paddingBottom: 6,
     minHeight: 64,
   },
+  barShort: { paddingTop: 4, minHeight: 50 },
   icon: {
     width: TOUCH,
     height: TOUCH,

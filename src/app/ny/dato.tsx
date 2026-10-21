@@ -5,12 +5,11 @@ import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { DateField } from '../../features/setup/DateField';
 import { Calendar, Icon, Pill, Surface, Text } from '../../ui';
-import { fonts, radii, TOUCH, useColors, themedStyles } from '../../theme';
+import { fonts, radii, TOUCH, useColors, useLayout, themedStyles } from '../../theme';
 import { nb } from '../../i18n/nb';
 import {
   dateBounds,
   defaultPartyTime,
-  diffDays,
   formatLongCap,
   draftWithDate,
   draftYoungest,
@@ -18,7 +17,8 @@ import {
   fromMinutes,
   isWeekend,
   minutesOf,
-  SHORT_NOTICE_DAYS,
+  nowMinutesOslo,
+  partyNotice,
   type ISODate,
 } from '../../core';
 
@@ -26,6 +26,7 @@ export default function DateStep() {
   const styles = useStyles();
   const { draft, updateDraft, today } = useParty();
   const router = useRouter();
+  const { isShort } = useLayout();
   const [editTime, setEditTime] = useState(false);
   const [open, setOpen] = useState(true);
   // the time reason follows the youngest birthday child
@@ -52,7 +53,16 @@ export default function DateStep() {
     updateDraft({ start: fromMinutes(s), end: fromMinutes(e), timeEdited: true });
   };
 
-  const shortNotice = chosen ? diffDays(today, chosen) < SHORT_NOTICE_DAYS : false;
+  // the note looks at the time of day too: today at 16.30 when it is 21.01 has already been
+  const notice = chosen ? partyNotice(chosen, draft.start, today, nowMinutesOslo()) : null;
+  const noticeText =
+    notice === 'past'
+      ? nb.date.pastTime
+      : notice === 'soon'
+        ? nb.date.soonTime
+        : notice === 'short'
+          ? nb.date.shortNotice
+          : null;
 
   return (
     <SetupStep
@@ -74,7 +84,7 @@ export default function DateStep() {
         <DateField value={chosen} placeholder={nb.date.placeholder} />
       </Pressable>
       {open ? (
-        <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: isShort ? 4 : 12 }}>
           <Calendar testID="calendar" value={chosen} min={min} max={max} today={today} onChange={pick} />
         </View>
       ) : null}
@@ -115,7 +125,11 @@ export default function DateStep() {
             </View>
           ) : null}
 
-          {shortNotice ? <Text style={[styles.hint]}>{nb.date.shortNotice}</Text> : null}
+          {noticeText ? (
+            <Text style={[styles.hint]} testID="date-notice">
+              {noticeText}
+            </Text>
+          ) : null}
         </Surface>
       ) : null}
     </SetupStep>

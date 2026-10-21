@@ -13,7 +13,7 @@ import {
   type ISODate,
   type YearMonth,
 } from '../core';
-import { fonts, radii, themedStyles, useColors } from '../theme';
+import { fonts, radii, themedStyles, useColors, useLayout } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -38,6 +38,8 @@ interface Props {
 export function Calendar({ value, min, max, today, onChange, testID }: Props) {
   const styles = useStyles();
   const colors = useColors();
+  // short phone screens: slightly smaller rows (still ≥ 44 pt to tap), so all six weeks fit above «Neste»
+  const { isShort } = useLayout();
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const [month, setMonth] = useState<YearMonth>(() => monthOf(value ?? min));
   // the one day that is in the tab order (roving tabindex)
@@ -94,8 +96,8 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
   const title = monthTitle(month);
 
   return (
-    <View style={styles.wrap} testID={testID}>
-      <View style={styles.head}>
+    <View style={[styles.wrap, isShort && styles.wrapShort]} testID={testID}>
+      <View style={[styles.head, isShort && styles.headShort]}>
         <Pressable
           testID="calendar-prev"
           accessibilityRole="button"
@@ -103,7 +105,12 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
           accessibilityState={{ disabled: !prevOk }}
           disabled={!prevOk}
           onPress={() => go(-1)}
-          style={({ pressed }) => [styles.arrow, !prevOk && styles.arrowOff, pressed && styles.arrowPressed]}
+          style={({ pressed }) => [
+            styles.arrow,
+            isShort && styles.arrowShort,
+            !prevOk && styles.arrowOff,
+            pressed && styles.arrowPressed,
+          ]}
         >
           <Icon name="back" size={26} strokeWidth={2.6} color={colors.green} />
         </Pressable>
@@ -117,7 +124,12 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
           accessibilityState={{ disabled: !nextOk }}
           disabled={!nextOk}
           onPress={() => go(1)}
-          style={({ pressed }) => [styles.arrow, !nextOk && styles.arrowOff, pressed && styles.arrowPressed]}
+          style={({ pressed }) => [
+            styles.arrow,
+            isShort && styles.arrowShort,
+            !nextOk && styles.arrowOff,
+            pressed && styles.arrowPressed,
+          ]}
         >
           <Icon name="forward" size={26} strokeWidth={2.6} color={colors.green} />
         </Pressable>
@@ -125,7 +137,7 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
 
       <View style={styles.row} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         {WEEKDAY_HEADERS.map((d, i) => (
-          <View key={d} style={styles.cell}>
+          <View key={d} style={[styles.cell, styles.weekdayCell]}>
             <Text style={styles.weekday} accessibilityLabel={WEEKDAY_NAMES_MONDAY_FIRST[i]}>
               {d}
             </Text>
@@ -137,10 +149,10 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
         {weeks.map((week, wi) => (
           <View key={wi} style={styles.row}>
             {week.map((c, ci) => {
-              if (!c) return <View key={`e${ci}`} style={styles.cell} />;
+              if (!c) return <View key={`e${ci}`} style={[styles.cell, isShort && styles.cellShort]} />;
               const selected = c.iso === value;
               return (
-                <View key={c.iso} style={styles.cell}>
+                <View key={c.iso} style={[styles.cell, isShort && styles.cellShort]}>
                   <Pressable
                     nativeID={cellId(c.iso)}
                     testID={`day-${c.iso}`}
@@ -166,6 +178,7 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
                       focused?: boolean;
                     }) => [
                       styles.day,
+                      isShort && styles.dayShort,
                       c.isToday && !selected && styles.today,
                       (hovered || pressed) && !selected && !c.disabled && styles.dayHover,
                       selected && styles.selected,
@@ -194,6 +207,8 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
 }
 
 const CELL = 46;
+/** Short phone screens: still at least the 44 pt touch target. */
+const CELL_SHORT = 44;
 
 const useStyles = themedStyles((colors) => ({
   wrap: {
@@ -205,6 +220,7 @@ const useStyles = themedStyles((colors) => ({
     borderWidth: 2,
     borderColor: colors.line,
   },
+  wrapShort: { paddingTop: 8, paddingBottom: 8 },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -212,6 +228,7 @@ const useStyles = themedStyles((colors) => ({
     paddingHorizontal: 4,
     marginBottom: 6,
   },
+  headShort: { marginBottom: 0 },
   arrow: {
     width: 52,
     height: 52,
@@ -220,11 +237,14 @@ const useStyles = themedStyles((colors) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  arrowShort: { width: 44, height: 44, borderRadius: 22 },
   arrowPressed: { opacity: 0.75 },
   arrowOff: { opacity: 0.3 },
   title: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.ink, textAlign: 'center', flex: 1 },
   row: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: CELL + 4, paddingVertical: 2 },
+  cellShort: { minHeight: CELL_SHORT, paddingVertical: 0 },
+  weekdayCell: { minHeight: 26 },
   weekday: {
     fontFamily: fonts.bodyBold,
     fontSize: 13,
@@ -242,6 +262,7 @@ const useStyles = themedStyles((colors) => ({
     borderColor: 'transparent',
     outlineStyle: 'none',
   } as object,
+  dayShort: { width: CELL_SHORT, height: CELL_SHORT, borderRadius: CELL_SHORT / 2 },
   dayHover: { backgroundColor: colors.sage },
   today: { borderColor: colors.boxBorder },
   todayText: { fontFamily: fonts.bodyBold },

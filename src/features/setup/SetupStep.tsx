@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { Button, Screen, Text, TopBar } from '../../ui';
+import { useLayout } from '../../theme';
 import { nb } from '../../i18n/nb';
 
 /** who · when · how many · where (the theme is optional, later, on Planen). */
@@ -29,6 +30,8 @@ export function SetupStep({
   nextDisabled,
   testID,
 }: Props) {
+  // short phone screens: tighter spacing and a slightly smaller title, so the input fits above «Neste»
+  const { isShort } = useLayout();
   return (
     <Screen
       narrow
@@ -36,13 +39,16 @@ export function SetupStep({
       footer={<Button label={nextLabel} onPress={onNext} disabled={nextDisabled} testID="next" />}
     >
       <TopBar onBack={onBack} step={step} of={SETUP_STEPS} />
-      <View style={{ paddingHorizontal: 22, paddingTop: 18 }}>
+      <View style={{ paddingHorizontal: 22, paddingTop: isShort ? 6 : 18 }}>
         <Text variant="eyebrow">{nb.common.step(step, SETUP_STEPS)}</Text>
-        <Text variant="h1" style={{ marginTop: 10, marginBottom: 8 }}>
+        <Text
+          variant={isShort ? 'h1Small' : 'h1'}
+          style={{ marginTop: isShort ? 4 : 10, marginBottom: isShort ? 4 : 8 }}
+        >
           {title}
         </Text>
         {lede ? (
-          <Text variant="lede" style={{ marginBottom: 26 }}>
+          <Text variant="lede" style={{ marginBottom: isShort ? 10 : 26 }}>
             {lede}
           </Text>
         ) : null}

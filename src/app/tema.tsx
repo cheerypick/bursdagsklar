@@ -5,7 +5,7 @@ import { Loading } from '../features/Loading';
 import { LicenseNote } from '../features/LicenseNote';
 import { Button, Grid, Icon, Screen, Text, ThemeTile, TopBar } from '../ui';
 import { fonts, radii, shadow, themeImages, useColors, useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { THEMES } from '../core';
 
 /**
@@ -13,6 +13,7 @@ import { THEMES } from '../core';
  * repaints, so the parent sees it); «Uten tema» goes back to the neutral look.
  */
 export default function ThemePicker() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { ready, party, setTheme } = useParty();
@@ -23,27 +24,27 @@ export default function ThemePicker() {
   const back = () => (router.canGoBack() ? router.back() : router.replace('/plan'));
   const none = party.theme === null;
   return (
-    <Screen narrow testID="screen-theme" footer={<Button label={nb.theme.done} onPress={back} testID="theme-done" />}>
+    <Screen narrow testID="screen-theme" footer={<Button label={t('theme.done')} onPress={back} testID="theme-done" />}>
       <TopBar onBack={back} />
       <View style={{ paddingHorizontal: 22, paddingTop: 18 }}>
         <Text variant="h1" style={{ marginBottom: 8 }}>
-          {nb.theme.title}
+          {t('theme.title')}
         </Text>
         <Text variant="lede" style={{ marginBottom: 22 }}>
-          {nb.theme.lede}
+          {t('theme.lede')}
         </Text>
         <Pressable
           testID="theme-none"
           accessibilityRole="radio"
-          accessibilityLabel={nb.theme.none}
+          accessibilityLabel={t('theme.none')}
           accessibilityState={{ checked: none, selected: none }}
           onPress={() => setTheme(null)}
           style={[styles.none, none && styles.noneOn]}
         >
           <Text style={{ fontSize: 26 }}>🎈</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.noneLabel}>{nb.theme.none}</Text>
-            <Text variant="small">{nb.theme.noneSub}</Text>
+            <Text style={styles.noneLabel}>{t('theme.none')}</Text>
+            <Text variant="small">{t('theme.noneSub')}</Text>
           </View>
           {none ? (
             <View style={styles.check}>
@@ -51,17 +52,17 @@ export default function ThemePicker() {
             </View>
           ) : null}
         </Pressable>
-        <View style={{ marginTop: 16 }} accessibilityRole="radiogroup" accessibilityLabel={nb.theme.title}>
+        <View style={{ marginTop: 16 }} accessibilityRole="radiogroup" accessibilityLabel={t('theme.title')}>
           <Grid
             items={THEMES}
             columns={isWide ? 3 : 2}
-            keyOf={(t) => t.id}
-            render={(t) => (
+            keyOf={(th) => th.id}
+            render={(th) => (
               <ThemeTile
-                image={themeImages[t.id]}
-                label={t.name}
-                selected={party.theme === t.id}
-                onPress={() => setTheme(t.id)}
+                image={themeImages[th.id]}
+                label={th.name}
+                selected={party.theme === th.id}
+                onPress={() => setTheme(th.id)}
               />
             )}
           />

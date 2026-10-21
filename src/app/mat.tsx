@@ -5,7 +5,7 @@ import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { Button, CheckBox, ChoiceTile, Grid, Pill, PillRow, Screen, Stepper, Surface, Text, TopBar } from '../ui';
 import { fonts, images, radii, useColors, useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import {
   DIET_LABELS,
   DIET_TAGS,
@@ -42,9 +42,12 @@ const CARD_IMAGES: Record<MenuCardId, ImageSourcePropType> = {
 type PizzaDish = Extract<Dish, { kind: 'pizza' }>;
 /** Tapping the Pizza card picks the defaults Ekaterina chose: homemade in a langpanne, ready-made dough, skinke. */
 const DEFAULT_PIZZA: PizzaDish = { kind: 'pizza', style: 'hjemmelaget' };
-const SAUSAGE_OPTIONS: { id: 'grillpolser' | 'wienerpolser'; label: string }[] = [
-  { id: 'grillpolser', label: nb.food.options.grillpolser },
-  { id: 'wienerpolser', label: nb.food.options.wienerpolser },
+const SAUSAGE_OPTIONS: {
+  id: 'grillpolser' | 'wienerpolser';
+  labelKey: `food.options.${'grillpolser' | 'wienerpolser'}`;
+}[] = [
+  { id: 'grillpolser', labelKey: 'food.options.grillpolser' },
+  { id: 'wienerpolser', labelKey: 'food.options.wienerpolser' },
 ];
 /** The bases shown as pills; «Lag deigen selv» is a small text button under them. */
 const DOUGH_PILLS: PizzaDough[] = ['ferdigdeig', 'ferdigstekt', 'miks'];
@@ -63,6 +66,7 @@ const DOUGH_PILLS: PizzaDough[] = ['ferdigdeig', 'ferdigstekt', 'miks'];
  * Mat card on Planen and the shopping list (party.foodItems[id].included).
  */
 export default function MatScreen() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { ready, party, setMenu, toggleDiet, setFoodItem, setGuestCounts } = useParty();
@@ -115,7 +119,7 @@ export default function MatScreen() {
   const dough = pizza?.dough ?? 'ferdigdeig';
 
   const grid = (
-    <View accessibilityRole="list" accessibilityLabel={nb.food.step1}>
+    <View accessibilityRole="list" accessibilityLabel={t('food.step1')}>
       <Grid
         items={[...VISIBLE_MENU_CARDS]}
         columns={3}
@@ -126,8 +130,8 @@ export default function MatScreen() {
             multi
             testID={`menu-card-${id}`}
             image={CARD_IMAGES[id]}
-            label={nb.food.cards[id].label}
-            sub={nb.food.cards[id].sub}
+            label={t(`food.cards.${id}.label`)}
+            sub={t(`food.cards.${id}.sub`)}
             selected={Boolean(picked[id])}
             onPress={() => toggleCard(id)}
           />
@@ -135,7 +139,7 @@ export default function MatScreen() {
       />
       {shared ? (
         <Text variant="small" testID="menu-share-note" style={{ marginTop: 12, color: colors.ink }}>
-          {nb.food.shareNote}
+          {t('food.shareNote')}
         </Text>
       ) : null}
     </View>
@@ -143,12 +147,12 @@ export default function MatScreen() {
 
   const polserBox = picked.polser ? (
     <Surface testID="menu-polser" style={{ padding: 16 }}>
-      <Text style={styles.howTitle}>{nb.food.how.polser}</Text>
+      <Text style={styles.howTitle}>{t('food.how.polser')}</Text>
       <PillRow>
         {SAUSAGE_OPTIONS.map((o) => (
           <View key={o.id} testID={`menu-how-${o.id}`}>
             <Pill
-              label={o.label}
+              label={t(o.labelKey)}
               on={polser?.kind === o.id}
               onPress={() => {
                 setPolserPending(false);
@@ -160,7 +164,7 @@ export default function MatScreen() {
       </PillRow>
       {!polser ? (
         <Text variant="small" style={{ marginTop: 10 }} testID="menu-pick-how">
-          {nb.food.pickHow}
+          {t('food.pickHow')}
         </Text>
       ) : null}
     </Surface>
@@ -169,11 +173,11 @@ export default function MatScreen() {
   const pizzaBox = pizza ? (
     <Surface testID="menu-pizza" style={{ padding: 16, gap: 18 }}>
       <View>
-        <Text style={styles.howTitle}>{nb.food.how.pizza}</Text>
+        <Text style={styles.howTitle}>{t('food.how.pizza')}</Text>
         <PillRow>
           {(['hjemmelaget', 'frossen'] as const).map((style) => (
             <View key={style} testID={`menu-how-${style}`}>
-              <Pill label={nb.food.options[style]} on={pizza.style === style} onPress={() => setPizza({ style })} />
+              <Pill label={t(`food.options.${style}`)} on={pizza.style === style} onPress={() => setPizza({ style })} />
             </View>
           ))}
         </PillRow>
@@ -181,11 +185,11 @@ export default function MatScreen() {
       {pizza.style === 'hjemmelaget' ? (
         <>
           <View testID="pizza-dough">
-            <Text style={styles.howTitle}>{nb.food.pizza.doughTitle}</Text>
+            <Text style={styles.howTitle}>{t('food.pizza.doughTitle')}</Text>
             <PillRow>
               {DOUGH_PILLS.map((d) => (
                 <View key={d} testID={`pizza-dough-${d}`}>
-                  <Pill label={nb.food.pizza.dough[d]} on={dough === d} onPress={() => setPizza({ dough: d })} />
+                  <Pill label={t(`food.pizza.dough.${d}`)} on={dough === d} onPress={() => setPizza({ dough: d })} />
                 </View>
               ))}
             </PillRow>
@@ -193,32 +197,32 @@ export default function MatScreen() {
               testID="pizza-dough-selv"
               accessibilityRole="button"
               accessibilityState={{ selected: dough === 'selv' }}
-              accessibilityLabel={nb.food.pizza.dough.selv}
+              accessibilityLabel={t('food.pizza.dough.selv')}
               onPress={() => setPizza({ dough: dough === 'selv' ? 'ferdigdeig' : 'selv' })}
               hitSlop={6}
               style={styles.smallOption}
             >
               <Text style={[styles.smallOptionText, dough === 'selv' && { color: colors.green }]}>
-                {dough === 'selv' ? `✓ ${nb.food.pizza.dough.selv}` : nb.food.pizza.doughSelfSmall}
+                {dough === 'selv' ? `✓ ${t('food.pizza.dough.selv')}` : t('food.pizza.doughSelfSmall')}
               </Text>
             </Pressable>
           </View>
           <View testID="pizza-toppings">
-            <Text style={styles.howTitle}>{nb.food.pizza.toppingsTitle}</Text>
+            <Text style={styles.howTitle}>{t('food.pizza.toppingsTitle')}</Text>
             <Text variant="small" style={{ marginTop: -6, marginBottom: 10 }}>
-              {nb.food.pizza.toppingsLede}
+              {t('food.pizza.toppingsLede')}
             </Text>
             <PillRow>
-              {PIZZA_TOPPINGS.map((t) => {
-                const on = toppings.includes(t);
-                const label = nb.food.pizza.toppings[t];
+              {PIZZA_TOPPINGS.map((tp) => {
+                const on = toppings.includes(tp);
+                const label = t(`food.pizza.toppings.${tp}`);
                 return (
-                  <View key={t} testID={`topping-${t}`}>
+                  <View key={tp} testID={`topping-${tp}`}>
                     <Pill
                       label={on ? `✓ ${label}` : label}
                       accessibilityLabel={label}
                       on={on}
-                      onPress={() => toggleTopping(t)}
+                      onPress={() => toggleTopping(tp)}
                     />
                   </View>
                 );
@@ -233,21 +237,21 @@ export default function MatScreen() {
   const annetBox =
     annet && annet.kind === 'annet' ? (
       <Surface testID="menu-annet" style={{ padding: 16 }}>
-        <Text style={styles.howTitle}>{nb.food.annetLabel}</Text>
+        <Text style={styles.howTitle}>{t('food.annetLabel')}</Text>
         <TextInput
           testID="menu-annet-input"
           value={annet.text}
           onChangeText={(text) => setDish('annet', { kind: 'annet', text: text.replace(/\s+/g, ' ') })}
-          placeholder={nb.food.annetPlaceholder}
+          placeholder={t('food.annetPlaceholder')}
           placeholderTextColor="#9B958B"
-          accessibilityLabel={nb.food.annetLabel}
+          accessibilityLabel={t('food.annetLabel')}
           maxLength={60}
           autoFocus={!annet.text}
           returnKeyType="done"
           style={styles.input}
         />
         <Text variant="small" style={{ marginTop: 6 }}>
-          {nb.food.annetHelp}
+          {t('food.annetHelp')}
         </Text>
       </Surface>
     ) : null;
@@ -265,68 +269,71 @@ export default function MatScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <Text variant="h3" testID="food-for-whom">
-            {nb.food.guests.forWhom(counts.kids, counts.adults)}
+            {t('food.guests.forWhom', {
+              kids: t('common.kids', { count: counts.kids }),
+              adults: t('common.adults', { count: counts.adults }),
+            })}
           </Text>
           <Text variant="small" style={{ marginTop: 2 }}>
-            {nb.food.guests.sub}
+            {t('food.guests.sub')}
           </Text>
         </View>
         {editingGuests ? null : (
           <Pressable
             testID="food-guests-edit"
             accessibilityRole="button"
-            accessibilityLabel={nb.food.guests.editLabel}
+            accessibilityLabel={t('food.guests.editLabel')}
             accessibilityState={{ expanded: false }}
             onPress={() => setEditingGuests(true)}
             hitSlop={8}
             style={styles.changeBtn}
           >
-            <Text style={styles.changeText}>{nb.food.guests.edit}</Text>
+            <Text style={styles.changeText}>{t('food.guests.edit')}</Text>
           </Pressable>
         )}
       </View>
       {editingGuests ? (
         <View testID="food-guests-editor" style={styles.guestEditor}>
           <View style={{ gap: 6 }}>
-            <Text style={styles.howTitle}>{nb.food.guests.kidsTitle}</Text>
+            <Text style={styles.howTitle}>{t('food.guests.kidsTitle')}</Text>
             <Stepper
               compact
               testID="guest-kids"
               value={party.children}
               min={bounds.kidsMin}
               max={bounds.kidsMax}
-              unit={nb.food.guests.kidsUnit}
-              lessLabel={nb.food.guests.lessKids}
-              moreLabel={nb.food.guests.moreKids}
+              unit={t('food.guests.kidsUnit')}
+              lessLabel={t('food.guests.lessKids')}
+              moreLabel={t('food.guests.moreKids')}
               onChange={(children) => setGuestCounts({ children })}
             />
             <Text variant="small" testID="guest-kids-with">
-              {nb.food.guests.kidsWith(celebrantNames(party.celebrants))}
+              {t('food.guests.kidsWith', { names: celebrantNames(party.celebrants) })}
             </Text>
           </View>
           <View style={{ gap: 6 }}>
-            <Text style={styles.howTitle}>{nb.food.guests.adultsTitle}</Text>
+            <Text style={styles.howTitle}>{t('food.guests.adultsTitle')}</Text>
             <Stepper
               compact
               testID="guest-adults"
               value={hc.adultsEating}
               min={bounds.adultsMin}
               max={bounds.adultsMax}
-              unit={hc.adultsEating === 1 ? nb.food.guests.adultsUnitOne : nb.food.guests.adultsUnit}
-              lessLabel={nb.food.guests.lessAdults}
-              moreLabel={nb.food.guests.moreAdults}
+              unit={hc.adultsEating === 1 ? t('food.guests.adultsUnitOne') : t('food.guests.adultsUnit')}
+              lessLabel={t('food.guests.lessAdults')}
+              moreLabel={t('food.guests.moreAdults')}
               onChange={(adults) => setGuestCounts({ adults })}
             />
-            <Text variant="small">{nb.food.guests.adultsHint}</Text>
+            <Text variant="small">{t('food.guests.adultsHint')}</Text>
           </View>
           <Text variant="small" style={{ color: colors.ink }}>
-            {nb.food.guests.appliesToParty}
+            {t('food.guests.appliesToParty')}
           </Text>
           <Button
             compact
             kind="light"
             testID="food-guests-done"
-            label={nb.food.guests.done}
+            label={t('food.guests.done')}
             onPress={() => setEditingGuests(false)}
           />
         </View>
@@ -337,21 +344,21 @@ export default function MatScreen() {
   const dietBox = (
     <View testID="food-diets">
       <Text variant="h3" style={{ marginBottom: 4 }}>
-        {nb.food.dietTitle}
+        {t('food.dietTitle')}
       </Text>
       <Text variant="small" style={{ marginBottom: 10 }}>
-        {nb.food.dietLede}
+        {t('food.dietLede')}
       </Text>
       <PillRow>
-        {DIET_TAGS.map((t) => {
-          const on = party.diets.includes(t);
+        {DIET_TAGS.map((tag) => {
+          const on = party.diets.includes(tag);
           return (
-            <View key={t} testID={`diet-${t}`}>
+            <View key={tag} testID={`diet-${tag}`}>
               <Pill
-                label={on ? `✓ ${DIET_LABELS[t]}` : DIET_LABELS[t]}
-                accessibilityLabel={DIET_LABELS[t]}
+                label={on ? `✓ ${DIET_LABELS[tag]}` : DIET_LABELS[tag]}
+                accessibilityLabel={DIET_LABELS[tag]}
                 on={on}
-                onPress={() => toggleDiet(t)}
+                onPress={() => toggleDiet(tag)}
               />
             </View>
           );
@@ -361,7 +368,7 @@ export default function MatScreen() {
         <View style={{ marginTop: 14, gap: 10 }}>
           <SectionCard section={dietSection} hideTitle />
           <Text variant="small" testID="diet-note">
-            {nb.food.dietNote}
+            {t('food.dietNote')}
           </Text>
         </View>
       ) : null}
@@ -371,12 +378,12 @@ export default function MatScreen() {
   const amounts = plan ? (
     <View style={{ gap: 14 }} testID="food-amounts">
       <View>
-        <Text variant="h2Small">{nb.food.amountsTitle}</Text>
+        <Text variant="h2Small">{t('food.amountsTitle')}</Text>
         <Text variant="h3" testID="menu-chosen-title" style={{ marginTop: 2 }}>
           {plan.title}
         </Text>
         <Text variant="small" testID="food-toggle-hint" style={{ marginTop: 2 }}>
-          {nb.food.toggleHint}
+          {t('food.toggleHint')}
         </Text>
       </View>
       {plan.sections
@@ -391,12 +398,12 @@ export default function MatScreen() {
     <Screen tab="plan" testID="screen-mat">
       {!isWide ? <TopBar onBack={back} /> : null}
       <View style={{ paddingHorizontal: gutter, paddingTop: isWide ? 28 : 10 }}>
-        <Text variant="eyebrow">{nb.food.eyebrow}</Text>
+        <Text variant="eyebrow">{t('food.eyebrow')}</Text>
         <Text variant={isWide ? 'h1' : 'h1Small'} style={{ marginTop: 6, marginBottom: 8 }}>
-          {nb.food.title}
+          {t('food.title')}
         </Text>
         <Text variant="lede" style={{ marginBottom: 20, maxWidth: 640 }}>
-          {nb.food.lede(forWhom(counts))}
+          {t('food.lede', { forWhom: forWhom(counts) })}
         </Text>
         {grid}
         {choices}
@@ -431,7 +438,7 @@ export default function MatScreen() {
       <View style={{ paddingHorizontal: gutter, marginTop: 28 }}>
         <Button
           kind="light"
-          label={nb.food.backToPlan}
+          label={t('food.backToPlan')}
           onPress={() => router.navigate('/plan')}
           testID="mat-back-to-plan"
         />
@@ -485,8 +492,9 @@ function Line({
   styles: ReturnType<typeof useStyles>;
   onToggle?: (id: string, included: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const off = !line.included;
-  const label = `${line.name}: ${line.amount}${line.packs ? `, ${line.packs}` : ''}. ${off ? nb.food.excluded : line.why}`;
+  const label = `${line.name}: ${line.amount}${line.packs ? `, ${line.packs}` : ''}. ${off ? t('food.excluded') : line.why}`;
   const body = (
     <>
       {line.toggleable && onToggle ? (
@@ -497,7 +505,7 @@ function Line({
       <View style={[{ flex: 1 }, off && styles.off]}>
         <Text style={[styles.lineName, off && styles.struck]}>{line.name}</Text>
         <Text variant="small" style={{ marginTop: 2 }} testID={`food-why-${line.id}`}>
-          {off ? nb.food.excluded : line.why}
+          {off ? t('food.excluded') : line.why}
         </Text>
       </View>
       <View style={[{ alignItems: 'flex-end', maxWidth: '42%' }, off && styles.off]}>
@@ -526,7 +534,7 @@ function Line({
       accessibilityState={{ checked: line.included }}
       aria-checked={line.included}
       accessibilityLabel={label}
-      accessibilityHint={line.included ? undefined : nb.food.includeLabel(line.name)}
+      accessibilityHint={line.included ? undefined : t('food.includeLabel', { name: line.name })}
       onPress={() => onToggle(line.id, !line.included)}
       style={({ pressed }) => [styles.line, !first && styles.lineBorder, pressed && { opacity: 0.7 }]}
     >

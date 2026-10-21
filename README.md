@@ -27,6 +27,6 @@ Expo (React Native) + TypeScript + Expo Router: one codebase for iOS, Android an
 | `src/core`          | Pure TypeScript, no React: data model, all rules (dates, to-dos, weekend check, food amounts), text templates, storage interface. Fully unit-tested with Emma's example. |
 | `src/theme`         | Design tokens from the approved prototype (colours, type, spacing, radii), breakpoints, images.                                                                          |
 | `src/ui`            | The reusable components every screen is built from.                                                                                                                      |
-| `src/i18n`          | All Norwegian strings.                                                                                                                                                   |
+| `src/i18n`          | All text: Norwegian (source of truth) and English, i18next.                                                                                                              |
 | `src/app`           | Screens (Expo Router: one file per route).                                                                                                                               |
 | `.github/workflows` | CI, GitHub Pages deploy, EAS native builds.                                                                                                                              |

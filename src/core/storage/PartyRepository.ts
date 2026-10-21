@@ -10,7 +10,8 @@
  *   bursdagsklar:party:<id>   Party JSON
  *   bursdagsklar:draft        the unfinished setup (so a reload keeps it)
  *
- * Every key the app writes starts with `bursdagsklar:`; `reset()` («Start på nytt») removes them all.
+ * Every key the app writes starts with `bursdagsklar:`; `reset()` («Start på nytt») removes them all,
+ * except `bursdagsklar:language` (the language picker's choice is a device setting, not part of a plan).
  */
 import type { MenuChoice, Party } from '../model';
 import { GOODIE_BAG_ITEMS, SCHEMA_VERSION } from '../model';
@@ -52,6 +53,8 @@ const DRAFT_KEY = `${PREFIX}:draft`;
 /** The theme lived in its own key before it moved onto the party; reset() still clears it. */
 const LEGACY_THEME_KEY = `${PREFIX}:theme`;
 const partyKey = (id: string) => `${PREFIX}:party:${id}`;
+/** The language choice (src/i18n/index.ts): a setting for the device, so «Start på nytt» keeps it. */
+export const LANGUAGE_KEY = `${PREFIX}:language`;
 /** True for a key this app owns. */
 export const isAppKey = (key: string) => key.startsWith(`${PREFIX}:`);
 
@@ -287,7 +290,7 @@ export function createPartyRepository(
       // parties that fell out of the index, and keys from older versions, when the store can list keys
       if (store.getAllKeys) {
         try {
-          for (const k of await store.getAllKeys()) if (isAppKey(k)) keys.add(k);
+          for (const k of await store.getAllKeys()) if (isAppKey(k) && k !== LANGUAGE_KEY) keys.add(k);
         } catch {
           // listing is a bonus; the known keys above are removed regardless
         }

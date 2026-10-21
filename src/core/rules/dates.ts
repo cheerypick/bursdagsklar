@@ -1,4 +1,5 @@
 import type { HHMM, ISODate } from '../model';
+import { language, locale } from '../../i18n/i18n';
 
 /*
  * Pure calendar arithmetic on 'YYYY-MM-DD' strings.
@@ -90,12 +91,43 @@ export function mondayOf(iso: ISODate): ISODate {
   return addDays(iso, -((wd + 6) % 7));
 }
 
-// ---------- formatting (nb-NO) ----------
+// ---------- formatting (the active language: nb by default, en on request) ----------
+// nb keeps its own hand-written names (identical to Intl's long forms, and without the dots Intl puts
+// after short forms); every other language reads the names from Intl in its locale. Dates are built
+// from parts in a fixed order, never from a whole formatted string, so WebKit and Chromium agree.
 
-/** «lørdag 7. november» */
+const intlNames = new Map<string, string>();
+function intlName(kind: 'weekday' | 'month', style: 'long' | 'short', index: number): string {
+  const key = `${locale()}|${kind}|${style}|${index}`;
+  let name = intlNames.get(key);
+  if (name === undefined) {
+    // 2023-01-01 was a Sunday: index 0 = Sunday … 6 = Saturday; months are 0-based here
+    const date = kind === 'weekday' ? new Date(Date.UTC(2023, 0, 1 + index)) : new Date(Date.UTC(2023, index, 15));
+    const opts: Intl.DateTimeFormatOptions =
+      kind === 'weekday' ? { weekday: style, timeZone: 'UTC' } : { month: style, timeZone: 'UTC' };
+    name = new Intl.DateTimeFormat(locale(), opts).format(date).replace(/\.$/, '');
+    intlNames.set(key, name);
+  }
+  return name;
+}
+
+/** «lørdag» / «Saturday» (0 = Sunday … 6 = Saturday). `short`: «lør» / «Sat». */
+export function weekdayName(wd: number, style: 'long' | 'short' = 'long'): string {
+  if (language() === 'nb') return (style === 'long' ? WEEKDAYS : WEEKDAYS_SHORT)[wd];
+  return intlName('weekday', style, wd);
+}
+
+/** «november» / «November» (m = 1 … 12). `short`: «nov» / «Nov». */
+export function monthName(m: number, style: 'long' | 'short' = 'long'): string {
+  if (language() === 'nb') return (style === 'long' ? MONTHS : MONTHS_SHORT)[m - 1];
+  return intlName('month', style, m - 1);
+}
+
+/** «lørdag 7. november» / «Saturday 7 November» */
 export function formatLong(iso: ISODate): string {
   const { m, d } = parts(iso);
-  return `${WEEKDAYS[weekday(iso)]} ${d}. ${MONTHS[m - 1]}`;
+  if (language() === 'nb') return `${WEEKDAYS[weekday(iso)]} ${d}. ${MONTHS[m - 1]}`;
+  return `${weekdayName(weekday(iso))} ${d} ${monthName(m)}`;
 }
 
 /** «Lørdag 7. november» */
@@ -103,22 +135,23 @@ export function formatLongCap(iso: ISODate): string {
   return capitalize(formatLong(iso));
 }
 
-/** «7. november» */
+/** «7. november» / «7 November» */
 export function formatDayMonth(iso: ISODate): string {
   const { m, d } = parts(iso);
-  return `${d}. ${MONTHS[m - 1]}`;
+  return language() === 'nb' ? `${d}. ${MONTHS[m - 1]}` : `${d} ${monthName(m)}`;
 }
 
-/** «31. okt.» */
+/** «31. okt.» / «31 Oct» */
 export function formatDayMonthShort(iso: ISODate): string {
   const { m, d } = parts(iso);
-  return `${d}. ${MONTHS_SHORT[m - 1]}.`;
+  return language() === 'nb' ? `${d}. ${MONTHS_SHORT[m - 1]}.` : `${d} ${monthName(m, 'short')}`;
 }
 
-/** «lør 7. nov» */
+/** «lør 7. nov» / «Sat 7 Nov» */
 export function formatShort(iso: ISODate): string {
   const { m, d } = parts(iso);
-  return `${WEEKDAYS_SHORT[weekday(iso)]} ${d}. ${MONTHS_SHORT[m - 1]}`;
+  if (language() === 'nb') return `${WEEKDAYS_SHORT[weekday(iso)]} ${d}. ${MONTHS_SHORT[m - 1]}`;
+  return `${weekdayName(weekday(iso), 'short')} ${d} ${monthName(m, 'short')}`;
 }
 
 export function capitalize(s: string): string {
@@ -138,10 +171,10 @@ export function fromMinutes(min: number): HHMM {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-/** «12.00» */
+/** «12.00» in nb; «12:00» in en (24-hour, as in the UK and Norway). */
 export function formatClock(t: HHMM): string {
   const [h, m] = t.split(':');
-  return `${Number(h)}.${m}`;
+  return language() === 'nb' ? `${Number(h)}.${m}` : `${h}:${m}`;
 }
 
 /** «12.00–14.00» (chips and programme) */
@@ -149,10 +182,10 @@ export function formatRange(start: HHMM, end: HHMM): string {
   return `${formatClock(start)}–${formatClock(end)}`;
 }
 
-/** «12–14», or «12.30–14.30» if either has minutes (invitations and headers) */
+/** «12–14», or «12.30–14.30» if either has minutes (invitations and headers). en always «12:00–14:00». */
 export function formatRangeCompact(start: HHMM, end: HHMM): string {
   const whole = start.endsWith(':00') && end.endsWith(':00');
-  if (whole) return `${Number(start.slice(0, 2))}–${Number(end.slice(0, 2))}`;
+  if (whole && language() === 'nb') return `${Number(start.slice(0, 2))}–${Number(end.slice(0, 2))}`;
   return formatRange(start, end);
 }
 

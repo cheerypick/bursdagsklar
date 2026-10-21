@@ -7,10 +7,11 @@ import { LicenseNote } from '../features/LicenseNote';
 import { StartOverButton } from '../features/StartOver';
 import { HeroButton, Icon, Screen, Text } from '../ui';
 import { fonts, useLayout, useColors, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { readyTitle, summarize } from '../core';
 
 export default function Ready() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { ready, party, today } = useParty();
@@ -19,7 +20,7 @@ export default function Ready() {
   if (!ready) return <Loading />;
   if (!party) return <Redirect href="/" />;
   const s = summarize(party, today);
-  const items = [nb.ready.invite, nb.ready.todos, s.menuLine, s.cakeIdea, s.programmeLine];
+  const items = [t('ready.invite'), t('ready.todos'), s.menuLine, s.cakeIdea, s.programmeLine];
 
   const title = (
     <>
@@ -27,12 +28,15 @@ export default function Ready() {
         {readyTitle(party)}
       </Text>
       <Text variant="lede" color={colors.readyText}>
-        {nb.ready.lede(s.daysLeft, s.tasksThisWeek)}
+        {t('ready.lede', {
+          days: t('ready.days', { count: s.daysLeft }),
+          things: t('ready.things', { count: s.tasksThisWeek }),
+        })}
       </Text>
     </>
   );
   // the way on is the hero of this screen: big, inviting, above the fold (it sits right under the card)
-  const cta = <HeroButton label={nb.ready.cta} onPress={() => router.replace('/plan')} testID="see-plan" />;
+  const cta = <HeroButton label={t('ready.cta')} onPress={() => router.replace('/plan')} testID="see-plan" />;
   const list = (
     <View style={{ gap: 10 }} accessibilityRole="list">
       {items.map((it) => (

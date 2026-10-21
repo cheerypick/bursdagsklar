@@ -5,7 +5,7 @@ import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { Icon, Text } from '../../ui';
 import { fonts, radii, shadow, useColors, themedStyles } from '../../theme';
-import { nb } from '../../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { celebrantsComplete, draftComplete, type PlaceType } from '../../core';
 
 const PLACES: { id: PlaceType; emoji: string }[] = [
@@ -17,6 +17,7 @@ const PLACES: { id: PlaceType; emoji: string }[] = [
 
 /** Step 4, the last: where the party is. «Lag planen» creates the party. */
 export default function PlaceStep() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { draft, updateDraft, finishSetup } = useParty();
@@ -36,18 +37,18 @@ export default function PlaceStep() {
   return (
     <SetupStep
       step={4}
-      title={nb.place.title}
-      lede={nb.place.lede}
+      title={t('place.title')}
+      lede={t('place.lede')}
       onBack={() => router.back()}
       onNext={make}
-      nextLabel={nb.place.cta}
+      nextLabel={t('place.cta')}
       nextDisabled={!draft.place || busy}
       testID="step-place"
     >
-      <View style={{ gap: 12 }} accessibilityRole="radiogroup" accessibilityLabel={nb.place.title}>
+      <View style={{ gap: 12 }} accessibilityRole="radiogroup" accessibilityLabel={t('place.title')}>
         {PLACES.map((p) => {
           const on = draft.place === p.id;
-          const o = nb.place.options[p.id];
+          const o = { label: t(`place.options.${p.id}.label`), sub: t(`place.options.${p.id}.sub`) };
           return (
             <Pressable
               key={p.id}

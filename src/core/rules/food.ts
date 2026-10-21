@@ -9,13 +9,31 @@ import * as C from './constants';
 import { band, ceilSafe } from './constants';
 import { oldestAge } from './celebrants';
 import { headCount } from './people';
+import { formatNumber, joinList, t } from '../../i18n/i18n';
+import {
+  about,
+  adultsCount,
+  bags,
+  bottles,
+  each,
+  grams,
+  kidsCount,
+  kilos,
+  packsWord,
+  pcs,
+  peopleCount,
+  tins,
+} from './units';
 
+/** The legacy shoppingList() below (not shown in the app, only unit-tested) stays in Norwegian. */
 const nb = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
+/** Numbers in reason lines follow the active language: «1,5» / «1.5». */
+const formatNumberLocal = (x: number) => formatNumber(x);
 
-/** «ca. 2,3 kg» for ≥ 1000 g (one decimal, rounded up), else «450 g». */
+/** «ca. 2,3 kg» for ≥ 1000 g (one decimal, rounded up), else «450 g» (en: «about 2.3 kg»). */
 export function formatGrams(g: number): string {
-  if (g >= 1000) return `ca. ${nb.format(Math.ceil(g / 100 - 1e-9) / 10)} kg`;
-  return `${nb.format(g)} g`;
+  if (g >= 1000) return about(kilos(Math.ceil(g / 100 - 1e-9) / 10));
+  return grams(g);
 }
 
 function packs(need: number, size: number) {
@@ -105,60 +123,69 @@ export function sausages(
   };
 }
 
-const persons = (k: number) => `${k} ${k === 1 ? 'person' : 'personer'}`;
+const persons = (k: number) => peopleCount(k);
 
 /**
  * «13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk»
  */
 export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<typeof sausages>, p: People): string {
   const product = C.SAUSAGE_PRODUCT[kind];
-  const kids = `${p.kidsComing} barn × ${nb.format(s.perChild)}`;
-  const adults = `${p.adultsEating} ${p.adultsEating === 1 ? 'voksen' : 'voksne'} × ${nb.format(C.SAUSAGE_PER_ADULT)}`;
+  const fmt = (x: number) => formatNumberLocal(x);
+  const kids = t('rules.food.kidsTimes', { kids: kidsCount(p.kidsComing), per: fmt(s.perChild) });
+  const adults = t('rules.food.adultsTimes', { adults: adultsCount(p.adultsEating), per: fmt(C.SAUSAGE_PER_ADULT) });
   const sum = p.adultsEating > 0 ? `${kids} + ${adults}` : kids;
   // pølser and pizza both picked: «Halvparten pølser, halvparten pizza. 13 barn × 3 + 4 voksne × 2 = 47, halvparten er 24»
-  const count =
+  const calc =
     s.portion < 1
-      ? `${shareLead(s.portion)}. ${sum} = ${s.needAll}, ${shareWord(s.portion)} er ${s.need}`
+      ? t('rules.food.shareCount', {
+          lead: shareLead(s.portion),
+          sum,
+          all: s.needAll,
+          share: shareWord(s.portion),
+          need: s.need,
+        })
       : `${sum} = ${s.need}`;
-  const line = `${count}. ${s.packs} pk ${product.name} à ${product.count} = ${s.bought}`;
+  const line = t('rules.food.sausagePacks', {
+    calc,
+    packs: s.packs,
+    product: product.name,
+    size: product.count,
+    bought: s.bought,
+  });
   const big = Math.floor(s.packs / C.GRILL_STORPAKNING_PACKS);
   if (kind !== 'grillpolser' || big < 1) return line;
   const rest = s.packs - big * C.GRILL_STORPAKNING_PACKS;
-  const bigWords = big === 1 ? '1 storpakning' : `${big} storpakninger`;
-  return `${line}, eller ${bigWords} (3 × 10)${rest > 0 ? ` og ${rest} pk` : ''}`;
+  const or = t('rules.food.orBig', { line, big: t('rules.food.bigPacks', { count: big }) });
+  return rest > 0 ? or + t('rules.food.andRest', { rest }) : or;
 }
 
 /** Both breads on: «Ca. 30 av hver – noen vil ha lompe, noen brød». One left out: the other covers every sausage. */
 export function lomperWhy(s: ReturnType<typeof sausages>): string {
-  return s.withPolsebrod
-    ? `Ca. ${s.share} av hver – noen vil ha lompe, noen brød. Tar du bort det ene, dekker det andre alle pølsene`
-    : 'Uten pølsebrød: én lompe per pølse';
+  return s.withPolsebrod ? t('rules.food.lomperBoth', { share: s.share }) : t('rules.food.lomperOnly');
 }
 
 export function polsebrodWhy(s: ReturnType<typeof sausages>): string {
-  return s.withLomper
-    ? `Ca. ${s.share} av hver – noen vil ha lompe, noen brød`
-    : 'Uten lomper: ett pølsebrød per pølse';
+  return s.withLomper ? t('rules.food.bunsBoth', { share: s.share }) : t('rules.food.bunsOnly');
 }
 
 /** «1 av hver» (ketchup and sennep) */
 export function condimentAmount(s: ReturnType<typeof sausages>): string {
-  return `${s.condiments} av hver`;
+  return each(s.condiments);
 }
 
 /** «Til 17 personer. Én flaske av hver holder til ca. 25» */
 export function condimentWhy(s: ReturnType<typeof sausages>): string {
-  return `Til ${persons(s.eaters)}. Én flaske av hver holder til ca. ${C.CONDIMENT_PER_EATERS}`;
+  return t('rules.food.condimentWhy', { people: persons(s.eaters), per: C.CONDIMENT_PER_EATERS });
 }
 
 /** «2 poser» */
 export function onionAmount(s: ReturnType<typeof sausages>): string {
-  return `${s.onionBags} ${s.onionBags === 1 ? 'pose' : 'poser'}`;
+  return bags(s.onionBags);
 }
 
 /** «Til 17 personer. Én pose (100 g) holder til ca. 10» */
 export function onionWhy(s: ReturnType<typeof sausages>): string {
-  return `Til ${persons(s.eaters)}. Én pose (100 g) holder til ca. ${C.CRISPY_ONION_PER_EATERS}`;
+  return t('rules.food.onionWhy', { people: persons(s.eaters), per: C.CRISPY_ONION_PER_EATERS });
 }
 
 /**
@@ -172,19 +199,23 @@ export function enoughFor(
   one: string,
   many: (count: number) => string,
 ): string {
-  if (count <= 1) return `${one} holder til ${persons(eaters)}`;
-  return `${many(count)} til ${persons(eaters)}. ${one} holder til ca. ${per}`;
+  if (count <= 1) return t('rules.food.enoughOne', { one, people: persons(eaters) });
+  return t('rules.food.enoughMany', { many: many(count), people: persons(eaters), one, per });
 }
 
 // ---------------- pizza ----------------
 
 /** «Halvparten pølser, halvparten pizza»: the lead of a reason line when two dishes share the portions. */
 export function shareLead(share: number): string {
-  return share >= 1 ? '' : share === 0.5 ? 'Halvparten pølser, halvparten pizza' : 'Hovedrettene deler porsjonene';
+  return share >= 1 ? '' : share === 0.5 ? t('rules.food.shareHalf') : t('rules.food.shareOther');
 }
 /** «halvparten», «en tredjedel» */
 export function shareWord(share: number): string {
-  return share === 0.5 ? 'halvparten' : share > 0.3 && share < 0.34 ? 'en tredjedel' : `${Math.round(share * 100)} %`;
+  return share === 0.5
+    ? t('rules.food.half')
+    : share > 0.3 && share < 0.34
+      ? t('rules.food.third')
+      : `${Math.round(share * 100)} %`;
 }
 
 /**
@@ -303,11 +334,18 @@ export function homemadeFor(m: Extract<Dish, { kind: 'pizza' }>, p: People) {
 }
 
 /** Names and ids of the homemade pizza lines (Mat screen and shopping list use the same ids). */
-export const PIZZA_DOUGH_LINE: Record<PizzaDough, { id: string; name: string }> = {
-  ferdigdeig: { id: 'pizzadeig', name: 'Ferdig pizzadeig' },
-  ferdigstekt: { id: 'pizzabunner', name: 'Ferdigstekte pizzabunner' },
-  miks: { id: 'pizzamiks', name: 'Pizzamiks' },
-  selv: { id: 'hvetemel', name: 'Hvetemel' },
+/** `name` is read in the active language each time (a getter), so a language switch shows at once. */
+const doughLine = (id: string, dough: PizzaDough) => ({
+  id,
+  get name() {
+    return t(`rules.food.dough.${dough}`);
+  },
+});
+export const PIZZA_DOUGH_LINE: Record<PizzaDough, { readonly id: string; readonly name: string }> = {
+  ferdigdeig: doughLine('pizzadeig', 'ferdigdeig'),
+  ferdigstekt: doughLine('pizzabunner', 'ferdigstekt'),
+  miks: doughLine('pizzamiks', 'miks'),
+  selv: doughLine('hvetemel', 'selv'),
 };
 /** Topping line ids: skinke keeps the old `pizzaskinke`. */
 export const PIZZA_TOPPING_LINE_ID: Record<PizzaTopping, string> = {
@@ -321,16 +359,15 @@ export const PIZZA_TOPPING_LINE_ID: Record<PizzaTopping, string> = {
   rommedressing: 'rommedressing',
 };
 
-const UNIT_WORD: Record<string, [string, string]> = {
-  pk: ['pk', 'pk'],
-  boks: ['boks', 'bokser'],
-  stk: ['stk', 'stk'],
-  flaske: ['flaske', 'flasker'],
+const UNIT_WORD: Record<string, (n: number) => string> = {
+  pk: packsWord,
+  boks: tins,
+  stk: pcs,
+  flaske: bottles,
 };
-/** «2 bokser», «1 flaske» */
-export function toppingAmount(t: PizzaTopping, n: number): string {
-  const [one, many] = UNIT_WORD[C.PIZZA_TOPPING_PRODUCT[t].unit];
-  return `${n} ${n === 1 ? one : many}`;
+/** «2 bokser», «1 flaske» (en: «2 tins», «1 bottle») */
+export function toppingAmount(topping: PizzaTopping, n: number): string {
+  return UNIT_WORD[C.PIZZA_TOPPING_PRODUCT[topping].unit](n);
 }
 
 function pizzaShoppingLines(m: Extract<Dish, { kind: 'pizza' }>, p: People) {
@@ -536,26 +573,25 @@ export const MENU_NAMES: Record<MenuChoice['kind'], string> = {
 /** Short word for the main item on a shopping trip («Pølser, frukt og grønt»; «Pølser og pizzadeig» for two). */
 export function mainItemWord(menu: MenuChoice | null): string {
   const words = menuDishes(menu).map(dishItemWord);
-  if (words.length === 0) return 'Maten';
-  const lower = words.map((w, i) => (i === 0 ? w : w.charAt(0).toLowerCase() + w.slice(1)));
-  return lower.length === 1 ? lower[0] : `${lower.slice(0, -1).join(', ')} og ${lower[lower.length - 1]}`;
+  if (words.length === 0) return t('rules.food.itemWord.food');
+  return joinList(words.map((w, i) => (i === 0 ? w : w.charAt(0).toLowerCase() + w.slice(1))));
 }
 
 function dishItemWord(menu: Dish): string {
   switch (menu.kind) {
     case 'grillpolser':
     case 'wienerpolser':
-      return 'Pølser';
+      return t('rules.food.itemWord.polser');
     case 'pizza':
-      return menu.style === 'hjemmelaget' ? 'Pizzadeig og ost' : 'Pizza';
+      return t(menu.style === 'hjemmelaget' ? 'rules.food.itemWord.pizzaHome' : 'rules.food.itemWord.pizza');
     case 'taco':
-      return 'Kjøttdeig og tortillas';
+      return t('rules.food.itemWord.taco');
     case 'pasta':
-      return menu.style === 'salat' ? 'Pasta, skinke og grønnsaker' : 'Pasta og saus';
+      return t(menu.style === 'salat' ? 'rules.food.itemWord.pastaSalad' : 'rules.food.itemWord.pasta');
     case 'annet':
-      return menu.text.trim() || 'Maten';
+      return menu.text.trim() || t('rules.food.itemWord.food');
     case 'egen':
-      return menu.name || 'Maten';
+      return menu.name || t('rules.food.itemWord.food');
   }
 }
 

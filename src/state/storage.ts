@@ -13,4 +13,6 @@ function pickStore(): KeyValueStore {
   }
 }
 
-export const partyRepository = createPartyRepository(pickStore());
+/** The one store on this device: the parties and the language choice. */
+export const appStore = pickStore();
+export const partyRepository = createPartyRepository(appStore);

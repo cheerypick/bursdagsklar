@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPartyRepository, memoryStore, type KeyValueStore } from '../storage/PartyRepository';
+import { createPartyRepository, LANGUAGE_KEY, memoryStore, type KeyValueStore } from '../storage/PartyRepository';
 import { emma } from '../__fixtures__/emma';
 import { EMPTY_DRAFT } from '../party';
 
@@ -26,6 +26,13 @@ describe('PartyRepository.reset («Start på nytt»)', () => {
     expect(await repo.list()).toEqual([]);
     for (const id of ids) expect(await repo.get(id)).toBeNull();
     expect(await repo.loadDraft()).toBeNull();
+  });
+
+  it('keeps the language choice: it is a setting for the device, not part of the plan', async () => {
+    const { store, repo } = await filledStore();
+    await store.setItem(LANGUAGE_KEY, 'en');
+    await repo.reset();
+    expect(await store.getItem(LANGUAGE_KEY)).toBe('en');
   });
 
   it('leaves keys of other apps alone', async () => {

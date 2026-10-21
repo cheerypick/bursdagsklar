@@ -1,4 +1,5 @@
 import type { ThemeId } from './model';
+import { t } from '../i18n/i18n';
 
 /**
  * One theme = one entry in THEMES below. Everything that follows the theme reads it from here:
@@ -49,7 +50,7 @@ export interface Theme {
   cake: string;
   /** «enhjørning-piñata» */
   pinata: string;
-  /** Our own Norwegian lines (never quotes or catchphrases from shows or films). */
+  /** Our own lines, nb and en (never quotes or catchphrases from shows or films). */
   copy: {
     /** One friendly line on the Planen hero. */
     greeting: string;
@@ -81,31 +82,72 @@ export const BRAND_PALETTE: ThemePalette = {
   inviteInk: '#7A5A6D',
 };
 
-/** Shown wherever a licensed theme name appears, and in the footer. */
+/** Shown wherever a licensed theme name appears, and in the footer (nb; screens use licenseDisclaimer()). */
 export const LICENSE_DISCLAIMER = 'Bursdagsklar er ikke tilknyttet Disney, Spin Master eller The Pokémon Company.';
+/** The trademark disclaimer in the active language. */
+export const licenseDisclaimer = () => t('themeNote.disclaimer');
+
+/** The parts of a theme that are not words: the words live in the language files (themes.<id>.*). */
+type ThemeBase = Pick<Theme, 'id' | 'licensed' | 'emoji' | 'palette'>;
+
+/**
+ * A theme with its words read in the active language each time (getters), so a language switch shows
+ * at once everywhere a theme is used. nb is the source of truth (src/i18n/nb.json → themes).
+ */
+function themed(base: ThemeBase): Theme {
+  const w = (field: string) => t(`themes.${base.id}.${field}` as never) as string;
+  return {
+    ...base,
+    get name() {
+      return w('name');
+    },
+    get fest() {
+      return w('fest');
+    },
+    get cake() {
+      return w('cake');
+    },
+    get pinata() {
+      return w('pinata');
+    },
+    copy: {
+      get greeting() {
+        return w('greeting');
+      },
+      get inviteHeadline() {
+        return w('inviteHeadline');
+      },
+      get cakeIdea() {
+        return w('cakeIdea');
+      },
+      get colouring() {
+        return w('colouring');
+      },
+      opening: {
+        get small() {
+          return w('openingSmall');
+        },
+        get big() {
+          return w('openingBig');
+        },
+      },
+      get playful() {
+        return w('playful');
+      },
+    },
+  };
+}
 
 /**
  * Pokémon, Paw Patrol and Frost are trademarks of their owners. We use the names only as words
  * («Pokémon-fest») with our own palette and mood illustrations: no characters, logos, official art
  * or brand fonts, and every line of copy is our own.
  */
-export const THEMES: Theme[] = [
+const THEME_BASE: ThemeBase[] = [
   {
     id: 'enhjorning',
-    name: 'Enhjørninger',
     licensed: false,
     emoji: '🦄',
-    fest: 'enhjørningfest',
-    cake: 'Enhjørningkake',
-    pinata: 'enhjørning-piñata',
-    copy: {
-      greeting: 'Glitter, regnbuer og masse moro venter!',
-      inviteHeadline: 'Bli med på en magisk enhjørningfest!',
-      cakeIdea: 'Rosa og hvit kake med regnbuedryss',
-      colouring: 'enhjørninger',
-      opening: { small: 'Du er invitert til enhjørningfest!', big: 'Bli med på enhjørningfest!' },
-      playful: 'Finn fram glitteret! Det blir enhjørningfest, og du er invitert.',
-    },
     palette: {
       primary: '#8A3672',
       primaryHover: '#73295E',
@@ -121,20 +163,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'dinosaurer',
-    name: 'Dinosaurer',
     licensed: false,
     emoji: '🦖',
-    fest: 'dinosaurfest',
-    cake: 'Dinosaurkake',
-    pinata: 'dinosaur-piñata',
-    copy: {
-      greeting: 'Klar for en brølende god fest?',
-      inviteHeadline: 'Brøl! Det blir dinosaurfest!',
-      cakeIdea: 'Grønn kake med sjokoladesteiner og dinoegg',
-      colouring: 'dinosaurer',
-      opening: { small: 'Du er invitert til dinosaurfest!', big: 'Bli med på dinosaurfest!' },
-      playful: 'Roooar! Det blir dinosaurfest, og du er invitert.',
-    },
     palette: {
       primary: '#2F5D34',
       primaryHover: '#244A29',
@@ -150,20 +180,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'verdensrommet',
-    name: 'Verdensrommet',
     licensed: false,
     emoji: '🚀',
-    fest: 'romfest',
-    cake: 'Romkake',
-    pinata: 'rakett-piñata',
-    copy: {
-      greeting: 'Nedtellingen er i gang: 3, 2, 1, fest!',
-      inviteHeadline: 'Bli med på en fest ut av denne verden!',
-      cakeIdea: 'Mørkeblå kake med stjernedryss og planeter',
-      colouring: 'romskip og planeter',
-      opening: { small: 'Du er invitert til romfest!', big: 'Bli med på romfest!' },
-      playful: 'Gjør deg klar for avgang! Det blir romfest, og du er invitert.',
-    },
     palette: {
       primary: '#2E3A73',
       primaryHover: '#232D5C',
@@ -179,20 +197,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'fotball',
-    name: 'Fotball',
     licensed: false,
     emoji: '⚽',
-    fest: 'fotballfest',
-    cake: 'Fotballkake',
-    pinata: 'fotball-piñata',
-    copy: {
-      greeting: 'Avspark for tidenes bursdag!',
-      inviteHeadline: 'Bli med på fotballfest, alle er på laget!',
-      cakeIdea: 'Grønn gressbanekake med en marsipanball',
-      colouring: 'fotballspillere',
-      opening: { small: 'Du er invitert til fotballfest!', big: 'Bli med på fotballfest!' },
-      playful: 'Snør på deg fotballskoene! Det blir fotballfest, og du er tatt ut på laget.',
-    },
     palette: {
       primary: '#22663A',
       primaryHover: '#1A522E',
@@ -208,20 +214,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'dyr-i-skogen',
-    name: 'Dyr i skogen',
     licensed: false,
     emoji: '🦊',
-    fest: 'skogsfest',
-    cake: 'Skogskake',
-    pinata: 'rev-piñata',
-    copy: {
-      greeting: 'Reven, haren og ugla gleder seg til fest!',
-      inviteHeadline: 'Bli med på skogsfest blant trærne!',
-      cakeIdea: 'Sjokoladekake med marsipansopp og kongler',
-      colouring: 'skogsdyr',
-      opening: { small: 'Du er invitert til skogsfest!', big: 'Bli med på skogsfest!' },
-      playful: 'Reven, ekornet og haren har sendt bud: Det blir skogsfest, og du er invitert!',
-    },
     palette: {
       primary: '#7A4A26',
       primaryHover: '#633B1D',
@@ -237,20 +231,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'pokemon',
-    name: 'Pokémon',
     licensed: true,
     emoji: '⚡',
-    fest: 'Pokémon-fest',
-    cake: 'Pokémon-kake',
-    pinata: 'lyn-piñata',
-    copy: {
-      greeting: 'Gjør deg klar for en lynrask fest!',
-      inviteHeadline: 'Bli med på Pokémon-fest med lynende moro!',
-      cakeIdea: 'Gul kake med lyn av sjokolade',
-      colouring: 'lyn og stjerner',
-      opening: { small: 'Du er invitert til Pokémon-fest!', big: 'Bli med på Pokémon-fest!' },
-      playful: 'Gjør deg klar for lynende moro! Det blir Pokémon-fest, og du er invitert.',
-    },
     palette: {
       primary: '#B3261E',
       primaryHover: '#931E18',
@@ -266,20 +248,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'paw-patrol',
-    name: 'Paw Patrol',
     licensed: true,
     emoji: '🐾',
-    fest: 'Paw Patrol-fest',
-    cake: 'Paw Patrol-kake',
-    pinata: 'pote-piñata',
-    copy: {
-      greeting: 'Alle små hjelpere er klare for fest!',
-      inviteHeadline: 'Bli med på Paw Patrol-fest, vi trenger flere hjelpere!',
-      cakeIdea: 'Blå og rød kake med poteavtrykk av sjokolade',
-      colouring: 'valper og utrykningsbiler',
-      opening: { small: 'Du er invitert til Paw Patrol-fest!', big: 'Bli med på Paw Patrol-fest!' },
-      playful: 'Alle hjelpere trengs! Det blir Paw Patrol-fest, og du er invitert.',
-    },
     palette: {
       primary: '#C62828',
       primaryHover: '#A51F1F',
@@ -295,20 +265,8 @@ export const THEMES: Theme[] = [
   },
   {
     id: 'frost',
-    name: 'Frost',
     licensed: true,
     emoji: '❄️',
-    fest: 'Frost-fest',
-    cake: 'Frost-kake',
-    pinata: 'snøkrystall-piñata',
-    copy: {
-      greeting: 'Det blir en iskald fest!',
-      inviteHeadline: 'Bli med på Frost-fest med snø og glitter!',
-      cakeIdea: 'Lyseblå og hvit kake med snøkrystaller',
-      colouring: 'snøkrystaller og isslott',
-      opening: { small: 'Du er invitert til Frost-fest!', big: 'Bli med på Frost-fest!' },
-      playful: 'Kle deg godt, det blir kaldt og magisk! Det blir Frost-fest, og du er invitert.',
-    },
     palette: {
       primary: '#1F5A8A',
       primaryHover: '#174A73',
@@ -323,6 +281,8 @@ export const THEMES: Theme[] = [
     },
   },
 ];
+
+export const THEMES: Theme[] = THEME_BASE.map(themed);
 
 export function themeById(id: ThemeId): Theme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];

@@ -147,7 +147,7 @@ describe('createParty', () => {
     const p = createParty(draft, { id: 'abc', now: '2026-10-19T08:00:00.000Z', today: '2026-10-19' });
     expect(p).toMatchObject({
       id: 'abc',
-      schemaVersion: 5,
+      schemaVersion: 6,
       createdAt: '2026-10-19T08:00:00.000Z',
       updatedAt: '2026-10-19T08:00:00.000Z',
       plannedFrom: '2026-10-19',
@@ -160,6 +160,9 @@ describe('createParty', () => {
       // nothing the parent hasn't chosen: no piñata, skattejakt or muffins yet
       programme: { includePinata: false, includeSkattejakt: false },
       cake: { mode: 'bake', muffins: false },
+      // Handleliste: nothing ticked, no own items, nothing picked for the goodie bags
+      goodieBags: { contents: [] },
+      shopping: { ticked: [], custom: [] },
       // no menu until the parent picks one on the Mat screen (not even a seasonal guess)
       menu: null,
       diets: [],
@@ -322,7 +325,7 @@ describe('PartyRepository (one record per party)', () => {
       child: { name: celebrants[0].name, age: celebrants[0].age },
     };
     const p = migrate(v1)!;
-    expect(p.schemaVersion).toBe(5);
+    expect(p.schemaVersion).toBe(6);
     expect(p.celebrants).toEqual([{ id: 'c1', name: 'Emma', age: 5 }]);
     expect(p).not.toHaveProperty('child');
     expect(p.theme).toBe('enhjorning');
@@ -338,7 +341,7 @@ describe('PartyRepository (one record per party)', () => {
     const { diets: _d, foodItems: _f, ...rest } = emmaV4();
     const v2 = { ...rest, schemaVersion: 2, menu: { kind: 'wienerpolser' }, menuChosen: false };
     const p = migrate(v2)!;
-    expect(p).toMatchObject({ schemaVersion: 5, menu: null, diets: [], foodItems: {}, children: 13 });
+    expect(p).toMatchObject({ schemaVersion: 6, menu: null, diets: [], foodItems: {}, children: 13 });
     expect(p).not.toHaveProperty('foodCounts');
     expect(p).not.toHaveProperty('menuChosen');
     // a menu the parent did pick survives
@@ -354,7 +357,7 @@ describe('PartyRepository (one record per party)', () => {
     const { foodItems: _f, ...rest } = emmaV4();
     const v3 = { ...rest, schemaVersion: 3, menu: { kind: 'grillpolser' }, foodCounts: { kids: 20, adults: 9 } };
     const p = migrate(v3)!;
-    expect(p).toMatchObject({ schemaVersion: 5, menu: { kind: 'grillpolser' }, foodItems: {}, children: 13 });
+    expect(p).toMatchObject({ schemaVersion: 6, menu: { kind: 'grillpolser' }, foodItems: {}, children: 13 });
     expect(p).not.toHaveProperty('foodCounts');
     // one source of truth: the food follows the party's own numbers again
     expect(foodCounts(p)).toEqual({ kids: 13, adults: 4 });
@@ -365,7 +368,7 @@ describe('PartyRepository (one record per party)', () => {
   it('upgrades a v4 party: the invited count N becomes N + the birthday children, same food', async () => {
     const v4 = { ...emmaV4(), menu: { kind: 'grillpolser' }, foodItems: { polsebrod: { included: false } } };
     const p = migrate(v4)!;
-    expect(p.schemaVersion).toBe(5);
+    expect(p.schemaVersion).toBe(6);
     expect(p.children).toBe(13);
     expect(p).not.toHaveProperty('kidsInvited');
     expect(p).not.toHaveProperty('siblingsAttending');

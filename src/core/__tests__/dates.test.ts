@@ -57,7 +57,7 @@ describe('formatting', () => {
 
 describe('default party time (spec §6.2, revised: weekdays are normal)', () => {
   it('weekday: 16.30–18.30, after barnehage', () => {
-    expect(defaultPartyTime(5, false)).toEqual({ start: '16:30', end: '18:30', why: 'etter barnehagen, før middag' });
+    expect(defaultPartyTime(5, false)).toEqual({ start: '16:30', end: '18:30', why: 'etter barnehagen, før leggetid' });
   });
   it('weekend: 12.00–14.00, etter lunsj, før middag', () => {
     expect(defaultPartyTime(5, true)).toEqual({ start: '12:00', end: '14:00', why: 'etter lunsj, før middag' });
@@ -67,7 +67,11 @@ describe('default party time (spec §6.2, revised: weekdays are normal)', () => 
       expect(defaultPartyTime(age, false)).toMatchObject({ start: '16:30', end: '18:30' });
       expect(defaultPartyTime(age, true)).toMatchObject({ start: '12:00', end: '14:00' });
     }
-    expect(defaultPartyTime(3, false).why).toBe('etter barnehagen, før middag');
+    expect(defaultPartyTime(3, false).why).toBe('etter barnehagen, før leggetid');
     expect(defaultPartyTime(8, false).why).toBe('etter skole og SFO');
+    expect(defaultPartyTime(10, false).why).toBe('etter skolen, før leggetid');
+  });
+  it('a weekday party is dinner itself: no weekday reason says «før middag»', () => {
+    for (let age = 3; age <= 10; age++) expect(defaultPartyTime(age, false).why).not.toContain('middag');
   });
 });

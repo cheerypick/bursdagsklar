@@ -6,14 +6,16 @@ import { CountdownRing } from '../features/CountdownRing';
 import { LicenseNote } from '../features/LicenseNote';
 import { StartOverButton } from '../features/StartOver';
 import { Button, Grid, Icon, PhotoCard, Screen, Surface, Text } from '../ui';
-import { fonts, images, radii, themeImages, useLayout, themedStyles, useColors } from '../theme';
+import { fonts, images, radii, shadow, themeImages, useLayout, themedStyles, useColors } from '../theme';
 import { nb } from '../i18n/nb';
 import {
   buildTasks,
   foodCardSummary,
   formatLongCap,
   formatRangeCompact,
+  handleliste,
   menuCardOf,
+  shoppingCardLine,
   nextTask,
   planTitle,
   summarize,
@@ -38,6 +40,7 @@ export default function PlanScreen() {
   const next = nextTask(party, tasks, today);
   const tid = formatRangeCompact(party.start, party.end);
   const food = foodCardSummary(party);
+  const shopping = handleliste(party);
   const foodCard = menuCardOf(party.menu);
   const foodImage =
     foodCard === 'pizza'
@@ -94,6 +97,28 @@ export default function PlanScreen() {
         <Text variant="small">{s.progressLine}</Text>
       </View>
     </Surface>
+  );
+
+  // Handleliste: generated from the party (food lines, drinks, party things, candy); «12 varer · 3 kjøpt»
+  const shoppingCard = (
+    <Pressable
+      testID="plan-card-shopping"
+      accessibilityRole="link"
+      accessibilityLabel={`${nb.plan.cards.shopping.title}. ${shoppingCardLine(shopping)}`}
+      onPress={() => router.push('/handleliste')}
+      style={({ pressed }) => [styles.shopCard, pressed && { opacity: 0.85 }]}
+    >
+      <View style={styles.shopThumb}>
+        <Text style={{ fontSize: 28 }}>🛒</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.themeTitle}>{nb.plan.cards.shopping.title}</Text>
+        <Text variant="small" testID="plan-card-shopping-count">
+          {shoppingCardLine(shopping)}
+        </Text>
+      </View>
+      <Icon name="forward" size={22} strokeWidth={2.4} color={colors.green} />
+    </Pressable>
   );
 
   const nextCard = (
@@ -207,7 +232,9 @@ export default function PlanScreen() {
               />
             )}
           />
-        ) : (
+        ) : null}
+        {isWide ? shoppingCard : null}
+        {isWide ? null : (
           <>
             {cards
               .filter((c) => !c.half && c.key !== 'todo')
@@ -222,6 +249,7 @@ export default function PlanScreen() {
                   onPress={() => router.push(c.route)}
                 />
               ))}
+            {shoppingCard}
             <Grid
               items={cards.filter((c) => c.half)}
               columns={2}
@@ -306,4 +334,23 @@ const useStyles = themedStyles((colors) => ({
     justifyContent: 'center',
   },
   themeTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
+  shopCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 80,
+    padding: 12,
+    paddingRight: 18,
+    borderRadius: radii.lg,
+    backgroundColor: colors.card,
+    ...shadow,
+  },
+  shopThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: colors.butter,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 }));

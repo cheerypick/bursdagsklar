@@ -144,7 +144,7 @@ describe('extras (spec §6.7)', () => {
       goodyBags: 13,
     });
   });
-  it('has no candy: it belongs to the goodie bags (godteposer), a later PR', () => {
+  it('has no candy: it belongs to the goodie bags (godteposer), on Handleliste', () => {
     const e = extras(P, { muffins: true });
     expect(Object.keys(e).some((k) => /candy/i.test(k))).toBe(false);
   });

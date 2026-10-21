@@ -1,33 +1,29 @@
 import type { HHMM, ISODate } from '../model';
 import { SHORT_NOTICE_DAYS } from './constants';
-import { diffDays, minutesOf } from './dates';
+import { diffDays, minutesOf, weekday } from './dates';
 
 /**
- * Default party time (spec §6.2, revised Oct 2026 after parent feedback): most kindergarten
- * birthdays are on weekdays, after barnehage, so weekdays and weekends are treated equally.
- * Mon–Fri 16.30–18.30, Sat–Sun 12.00–14.00, for every age (3–10). Only the short reason varies by age;
- * for a joint birthday the YOUNGEST child's reason is used.
+ * Default party time (spec §6.2, revised by Ekaterina 21 Oct 2026). Weekdays and weekends are treated
+ * equally: no day is pushed or advised against. The time is only a suggestion and is always editable.
+ * - Mon–Fri, every age: 17.00–19.00, after barnehage/school, and the food is dinner.
+ * - Sat–Sun, ages 3–6: 12.00–14.00, the middle of the day, and the food is lunch.
+ * - Sat–Sun, ages 7–10: 14.00–16.00, after lunch, before dinner.
+ * For a joint birthday everything follows the YOUNGEST child.
  */
-export const WEEKDAY_TIME: [HHMM, HHMM] = ['16:30', '18:30'];
-export const WEEKEND_TIME: [HHMM, HHMM] = ['12:00', '14:00'];
-
-interface WhyRow {
-  maxAge: number;
-  weekday: string;
-  weekend: string;
-}
-
-const WHY: WhyRow[] = [
-  // a weekday party around 16.30–18.30 IS dinner, and children go to bed around 19 (Ekaterina, 21 Oct 2026)
-  { maxAge: 6, weekday: 'etter barnehagen, før leggetid', weekend: 'etter lunsj, før middag' },
-  { maxAge: 9, weekday: 'etter skole og SFO', weekend: 'etter lunsj, før middag' },
-  { maxAge: 10, weekday: 'etter skolen, før leggetid', weekend: 'etter lunsj, før middag' },
-];
+export const WEEKDAY_TIME: [HHMM, HHMM] = ['17:00', '19:00'];
+export const WEEKEND_TIME_SMALL: [HHMM, HHMM] = ['12:00', '14:00'];
+export const WEEKEND_TIME_BIG: [HHMM, HHMM] = ['14:00', '16:00'];
+/** Up to this age the child is in barnehage: weekend lunch party, barnehage wording in the hints. */
+export const BARNEHAGE_MAX_AGE = 6;
 
 export function defaultPartyTime(age: number, weekend: boolean): { start: HHMM; end: HHMM; why: string } {
-  const row = WHY.find((r) => age <= r.maxAge) ?? WHY[WHY.length - 1];
-  const [start, end] = weekend ? WEEKEND_TIME : WEEKDAY_TIME;
-  return { start, end, why: weekend ? row.weekend : row.weekday };
+  const small = age <= BARNEHAGE_MAX_AGE;
+  if (weekend) {
+    const [start, end] = small ? WEEKEND_TIME_SMALL : WEEKEND_TIME_BIG;
+    return { start, end, why: small ? 'midt på dagen – maten blir lunsj' : 'etter lunsj, før middag' };
+  }
+  const [start, end] = WEEKDAY_TIME;
+  return { start, end, why: small ? 'etter barnehagen – maten blir middag' : 'etter skole og SFO – maten blir middag' };
 }
 
 /** 15-minute steps for the «Endre» time picker. */
@@ -81,4 +77,50 @@ export function partyNotice(
     if (left < SOON_MINUTES) return 'soon';
   }
   return days < SHORT_NOTICE_DAYS ? 'short' : null;
+}
+
+/**
+ * Soft tips under the time on the date step (Ekaterina, 21 Oct 2026). Suggestions only, never rules:
+ * we don't know when each barnehage closes, and every day is a fine party day.
+ * - 'pickup' a weekday start before 17.00 for barnehage children: maybe pick the children up yourselves
+ * - 'busy'   Friday, Saturday or Sunday: some may have other plans, so send the invitation early
+ */
+export type PartyTip = 'pickup' | 'busy';
+export type DateNote = Exclude<PartyNotice, null> | PartyTip;
+
+/** The weekday start the barnehage tip is measured against. */
+export const PICKUP_TIP_BEFORE: HHMM = '17:00';
+
+export function partyTips(date: ISODate, start: HHMM | null | undefined, age: number): PartyTip[] {
+  const wd = weekday(date); // 0 = Sunday … 6 = Saturday
+  const tips: PartyTip[] = [];
+  const weekdayParty = wd >= 1 && wd <= 5;
+  if (weekdayParty && start && age <= BARNEHAGE_MAX_AGE && minutesOf(start) < minutesOf(PICKUP_TIP_BEFORE)) {
+    tips.push('pickup');
+  }
+  if (wd === 5 || wd === 6 || wd === 0) tips.push('busy');
+  return tips;
+}
+
+/** At most this many notes under the time, so the step stays calm. */
+export const MAX_DATE_NOTES = 2;
+
+/**
+ * Everything shown under the time, in order, at most MAX_DATE_NOTES:
+ * - the time has been / starts within the hour: only that note (the tips don't matter today)
+ * - short notice: that note first, then the pickup tip; «send early» is left out, there is no «early» left
+ * - otherwise: the tips
+ */
+export function dateNotes(
+  date: ISODate,
+  start: HHMM | null | undefined,
+  age: number,
+  today: ISODate,
+  nowMinutes: number,
+): DateNote[] {
+  const notice = partyNotice(date, start, today, nowMinutes);
+  if (notice === 'past' || notice === 'soon') return [notice];
+  const tips = partyTips(date, start, age);
+  const notes: DateNote[] = notice === 'short' ? ['short', ...tips.filter((t) => t !== 'busy')] : tips;
+  return notes.slice(0, MAX_DATE_NOTES);
 }

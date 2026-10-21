@@ -80,28 +80,28 @@ test('date step: our own calendar, Norwegian, Monday first; the time follows the
   await visible(page, 'calendar-prev').click();
   await expect(visible(page, 'calendar-month')).toHaveText(first);
 
-  // a Wednesday: after barnehage, 16.30–18.30, with an accessible label like «onsdag 11. november 2026»
+  // a Wednesday: after barnehage, 17.00–19.00, with an accessible label like «onsdag 11. november 2026»
   const wed = nextDayAfter(10, 3);
   await pickDay(page, wed);
   await expect(visible(page, `day-${wed}`)).toHaveAttribute('aria-label', /^onsdag \d{1,2}\. [a-zæøå]+ \d{4}$/);
   await expect(visible(page, `day-${wed}`)).toHaveAttribute('aria-pressed', 'true');
   await expect(visible(page, 'date-result')).toContainText('Onsdag');
-  await expect(visible(page, 'party-time')).toContainText('Kl. 16.30–18.30');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 17.00–19.00');
   await expect(page.getByText(/passer det\?|Bytt til/).filter({ visible: true })).toHaveCount(0);
 
-  // a Saturday: 12.00–14.00; back to a Friday: 16.30–18.30 again
+  // a Saturday: 12.00–14.00; back to a Friday: 17.00–19.00 again
   await pickDay(page, nextDayAfter(10, 6));
   await expect(visible(page, 'party-time')).toContainText('Kl. 12.00–14.00');
   await pickDay(page, nextDayAfter(10, 5));
-  await expect(visible(page, 'party-time')).toContainText('Kl. 16.30–18.30');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 17.00–19.00');
 
   // a hand-set time (15-minute steps) stays when the date changes
   await visible(page, 'party-time').getByRole('button', { name: 'Endre klokkeslett' }).click();
   await page.getByRole('button', { name: 'Start 15 minutter senere' }).filter({ visible: true }).click();
-  await expect(visible(page, 'party-time')).toContainText('Kl. 16.45–18.30');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 17.15–19.00');
   await pickDay(page, nextDayAfter(10, 6));
   await expect(visible(page, 'date-result')).toContainText('Lørdag');
-  await expect(visible(page, 'party-time')).toContainText('Kl. 16.45–18.30');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 17.15–19.00');
   await expect(visible(page, 'next')).toBeEnabled();
 });
 
@@ -124,7 +124,7 @@ test('setup in 4 steps → Festen er klar → Planen → Gjøremål, and a tick 
   await visible(page, 'next').click();
   await pickDay(page, nextDayAfter(10, 3));
   await expect(visible(page, 'date-result')).toContainText('Onsdag');
-  await expect(visible(page, 'party-time')).toContainText('Kl. 16.30–18.30');
+  await expect(visible(page, 'party-time')).toContainText('Kl. 17.00–19.00');
   await visible(page, 'next').click();
   // kids: keep the default (wait for the step, so the click isn't eaten by the fading one)
   await expect(

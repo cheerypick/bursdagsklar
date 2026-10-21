@@ -21,7 +21,7 @@ The rule that keeps this maintainable: **screens never calculate anything**. Eve
 | ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `model.ts`                   | §4       | `Party`, `Guest`, `Task`, `MenuChoice`, `ShoppingItem`, …                                                                                                      |
 | `rules/dates.ts`             | §6.3     | Date picker bounds, nb-NO formatting, weekday/weekend, Oslo «today». No day is preferred over another.                                                         |
-| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 16.30–18.30, Sat–Sun 12.00–14.00; follows the date until edited.                                                                         |
+| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 17.00–19.00; Sat–Sun 12.00–14.00 (3–6 år) or 14.00–16.00 (7–10 år), youngest child; soft tips; follows the date until edited.            |
 | `rules/celebrants.ts`        | —        | Joint birthdays (1–3 children): «Emma, Jonas og Ali», «fyller 5 og 7»; ages 3–10. Portions use the OLDEST child's band, the time reason and cake the YOUNGEST. |
 | `rules/calendar.ts`          | —        | Our own month calendar: Monday-first grid, leap years, past days disabled, a year ahead, keyboard moves.                                                       |
 | `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                                                   |

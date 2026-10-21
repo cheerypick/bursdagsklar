@@ -44,12 +44,12 @@ const draft = {
 
 describe('default time follows the date until the parent edits it', () => {
   const base = { ...EMPTY_DRAFT, celebrants: [{ id: 'c1', name: 'Emma', age: 5 }] };
-  it('a Wednesday gets 16.30–18.30, with no weekend hint anywhere', () => {
+  it('a Wednesday gets 17.00–19.00, with no weekend hint anywhere', () => {
     expect(draftWithDate(base, '2026-11-11')).toEqual({
       date: '2026-11-11',
       dateText: '2026-11-11',
-      start: '16:30',
-      end: '18:30',
+      start: '17:00',
+      end: '19:00',
     });
   });
   it('switching to a Saturday moves the default to 12.00–14.00, and back again', () => {
@@ -57,7 +57,24 @@ describe('default time follows the date until the parent edits it', () => {
     const sat = { ...wed, ...draftWithDate(wed, '2026-11-14') };
     expect([sat.start, sat.end]).toEqual(['12:00', '14:00']);
     const fri = { ...sat, ...draftWithDate(sat, '2026-11-13') };
-    expect([fri.start, fri.end]).toEqual(['16:30', '18:30']);
+    expect([fri.start, fri.end]).toEqual(['17:00', '19:00']);
+  });
+  it('a Saturday for an 8-year-old is 14.00–16.00', () => {
+    const eight = { ...EMPTY_DRAFT, celebrants: [{ id: 'c1', name: 'Jonas', age: 8 }] };
+    expect(draftWithDate(eight, '2026-11-14')).toMatchObject({ start: '14:00', end: '16:00' });
+  });
+  it('a joint party (4 and 8) follows the YOUNGEST: Saturday 12.00–14.00', () => {
+    const joint = {
+      ...EMPTY_DRAFT,
+      celebrants: [
+        { id: 'c1', name: 'Jonas', age: 8 },
+        { id: 'c2', name: 'Emma', age: 4 },
+      ],
+    };
+    expect(draftWithDate(joint, '2026-11-14')).toMatchObject({ start: '12:00', end: '14:00' });
+    // when the youngest becomes 9, the default moves to the older children's weekend time
+    const sat = { ...joint, ...draftWithDate(joint, '2026-11-14') };
+    expect(draftWithCelebrant(sat, 'c2', { age: 9 })).toMatchObject({ start: '14:00', end: '16:00' });
   });
   it('a hand-set time is kept when the date or the age changes', () => {
     const edited = { ...base, date: '2026-11-11', start: '17:00', end: '19:15', timeEdited: true };

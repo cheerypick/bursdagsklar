@@ -59,8 +59,13 @@ describe('joint birthday: the rules', () => {
   });
   it('the time reason uses the YOUNGEST child', () => {
     expect(defaultPartyTime(youngestAge(jointEmmaJonas().celebrants), false).why).toBe(
-      'etter barnehagen, før leggetid',
+      'etter barnehagen – maten blir middag',
     );
+    // and the weekend time: Emma (5) decides, not Jonas (7)
+    expect(defaultPartyTime(youngestAge(jointEmmaJonas().celebrants), true)).toMatchObject({
+      start: '12:00',
+      end: '14:00',
+    });
   });
   it('one shared cake, one candle set per birthday child', () => {
     const list = shoppingList(jointEmmaJonas());

@@ -6,7 +6,7 @@ import { SetupStep } from '../../features/setup/SetupStep';
 import { DateField } from '../../features/setup/DateField';
 import { Calendar, Icon, Pill, Surface, Text } from '../../ui';
 import { fonts, radii, TOUCH, useColors, useLayout, themedStyles } from '../../theme';
-import { nb } from '../../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import {
   dateBounds,
   defaultPartyTime,
@@ -25,6 +25,7 @@ import {
 } from '../../core';
 
 export default function DateStep() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const { draft, updateDraft, today } = useParty();
   const router = useRouter();
@@ -64,8 +65,8 @@ export default function DateStep() {
   return (
     <SetupStep
       step={2}
-      title={nb.date.title}
-      lede={nb.date.lede}
+      title={t('date.title')}
+      lede={t('date.lede')}
       onBack={() => router.back()}
       onNext={() => router.push('/ny/barn')}
       nextDisabled={!chosen}
@@ -74,11 +75,11 @@ export default function DateStep() {
       <Pressable
         testID="date-card"
         accessibilityRole="button"
-        accessibilityLabel={`${nb.date.label}: ${chosen ? formatLongCap(chosen) : nb.date.placeholder}. ${open ? nb.date.hide : nb.date.show}`}
+        accessibilityLabel={`${t('date.label')}: ${chosen ? formatLongCap(chosen) : t('date.placeholder')}. ${open ? t('date.hide') : t('date.show')}`}
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen((v) => !v)}
       >
-        <DateField value={chosen} placeholder={nb.date.placeholder} />
+        <DateField value={chosen} placeholder={t('date.placeholder')} />
       </Pressable>
       {open ? (
         <View style={{ marginTop: isShort ? 4 : 12 }}>
@@ -91,16 +92,22 @@ export default function DateStep() {
           {draft.start && draft.end ? (
             <View style={styles.timechip} testID="party-time">
               <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonts.bodyBold }}>{nb.date.time(formatRange(draft.start, draft.end))}</Text>
+                <Text style={{ fontFamily: fonts.bodyBold }}>
+                  {t('date.time', { range: formatRange(draft.start, draft.end) })}
+                </Text>
                 {why ? (
-                  <Text variant="small">{joint ? nb.date.fitsJoint(age, why) : nb.date.fits(age, why)}</Text>
+                  <Text variant="small">
+                    {joint
+                      ? t('date.fitsJoint', { alder: age, tekst: why })
+                      : t('date.fits', { alder: age, tekst: why })}
+                  </Text>
                 ) : null}
               </View>
               <Pill
                 light
-                label={editTime ? nb.common.done : nb.common.change}
+                label={editTime ? t('common.done') : t('common.change')}
                 onPress={() => setEditTime((v) => !v)}
-                accessibilityLabel={editTime ? nb.common.done : `${nb.common.change} klokkeslett`}
+                accessibilityLabel={editTime ? t('common.done') : `${t('common.change')} klokkeslett`}
               />
             </View>
           ) : null}
@@ -108,13 +115,13 @@ export default function DateStep() {
           {editTime && draft.start && draft.end ? (
             <View style={{ gap: 10, marginTop: 12 }}>
               <TimeShifter
-                label={nb.date.start}
+                label={t('date.start')}
                 value={draft.start}
                 onMinus={() => shift('start', -15)}
                 onPlus={() => shift('start', 15)}
               />
               <TimeShifter
-                label={nb.date.end}
+                label={t('date.end')}
                 value={draft.end}
                 onMinus={() => shift('end', -15)}
                 onPlus={() => shift('end', 15)}
@@ -124,18 +131,18 @@ export default function DateStep() {
 
           {editTime && editHint ? (
             <Text variant="small" style={styles.tip} testID="time-hint">
-              {nb.date.editHint}
+              {t('date.editHint')}
             </Text>
           ) : null}
 
           {notes.map((n) =>
             n === 'pickup' || n === 'busy' ? (
               <Text key={n} variant="small" style={styles.tip} testID={`date-tip-${n}`}>
-                {n === 'pickup' ? nb.date.tipPickup : nb.date.tipBusy}
+                {n === 'pickup' ? t('date.tipPickup') : t('date.tipBusy')}
               </Text>
             ) : (
               <Text key={n} style={styles.hint} testID="date-notice">
-                {NOTICE_TEXT[n]}
+                {t(NOTICE_TEXT[n])}
               </Text>
             ),
           )}
@@ -145,11 +152,11 @@ export default function DateStep() {
   );
 }
 
-const NOTICE_TEXT: Record<Exclude<DateNote, 'pickup' | 'busy'>, string> = {
-  past: nb.date.pastTime,
-  soon: nb.date.soonTime,
-  short: nb.date.shortNotice,
-};
+const NOTICE_TEXT = {
+  past: 'date.pastTime',
+  soon: 'date.soonTime',
+  short: 'date.shortNotice',
+} as const satisfies Record<Exclude<DateNote, 'pickup' | 'busy'>, string>;
 
 function TimeShifter({
   label,
@@ -162,6 +169,7 @@ function TimeShifter({
   onMinus: () => void;
   onPlus: () => void;
 }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   return (
@@ -169,7 +177,7 @@ function TimeShifter({
       <Text style={{ fontFamily: fonts.bodySemi, width: 60 }}>{label}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label} 15 minutter tidligere`}
+        accessibilityLabel={t('date.earlier', { label })}
         onPress={onMinus}
         style={styles.round}
       >
@@ -178,7 +186,7 @@ function TimeShifter({
       <Text style={styles.clock}>{value.replace(':', '.')}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label} 15 minutter senere`}
+        accessibilityLabel={t('date.later', { label })}
         onPress={onPlus}
         style={styles.round}
       >

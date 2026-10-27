@@ -5,15 +5,14 @@
  */
 import type { Celebrant } from '../model';
 import { MAX_AGE, MIN_AGE } from '../model';
+import { joinList, t } from '../../i18n/i18n';
 
 /** The age choices in setup: 3, 4 … 10. */
 export const AGES: number[] = Array.from({ length: MAX_AGE - MIN_AGE + 1 }, (_, i) => MIN_AGE + i);
 
-/** «Emma», «Emma og Jonas», «Emma, Jonas og Ali». */
+/** «Emma», «Emma og Jonas», «Emma, Jonas og Ali» (en: «Emma, Jonas and Ali»). */
 export function joinNames(names: string[]): string {
-  const n = names.map((x) => x.trim()).filter(Boolean);
-  if (n.length <= 1) return n[0] ?? '';
-  return `${n.slice(0, -1).join(', ')} og ${n[n.length - 1]}`;
+  return joinList(names.map((x) => x.trim()).filter(Boolean));
 }
 
 /** Distinct ages, youngest first, as text: «5», «5 og 7», «4, 5 og 7». The same age is said once. */
@@ -22,9 +21,9 @@ export function agesText(ages: number[]): string {
   return joinNames(uniq.map(String));
 }
 
-/** «fyller 5», «fyller 5 og 7». */
+/** «fyller 5», «fyller 5 og 7» (en: «turning 5 and 7»). */
 export function agePhrase(ages: number[]): string {
-  return `fyller ${agesText(ages)}`;
+  return t('common.turning', { ages: agesText(ages) });
 }
 
 export function celebrantNames(cs: Pick<Celebrant, 'name'>[]): string {

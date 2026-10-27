@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentRef } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import {
   addMonths,
@@ -8,14 +8,15 @@ import {
   monthOf,
   monthTitle,
   moveFocus,
-  WEEKDAY_HEADERS,
-  WEEKDAY_NAMES_MONDAY_FIRST,
+  weekdayHeaders,
+  weekdayNamesMondayFirst,
   type ISODate,
   type YearMonth,
 } from '../core';
 import { fonts, radii, themedStyles, useColors, useLayout } from '../theme';
 import { Icon } from './Icon';
 import { Text } from './Text';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   value: ISODate | null;
@@ -41,13 +42,15 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
   // short phone screens: slightly smaller rows (still ≥ 44 pt to tap), so all six weeks fit above «Neste»
   const { isShort } = useLayout();
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const { t } = useTranslation();
   const [month, setMonth] = useState<YearMonth>(() => monthOf(value ?? min));
   // the one day that is in the tab order (roving tabindex)
   const [focusDay, setFocusDay] = useState<ISODate>(value ?? (today >= min ? today : min));
   const keyNav = useRef(false);
   const gridRef = useRef<ComponentRef<typeof View>>(null);
 
-  const weeks = useMemo(() => monthGrid(month, { min, max, today }), [month, min, max, today]);
+  // built on every render (at most 42 cells), so the day labels follow the language too
+  const weeks = monthGrid(month, { min, max, today });
   const focusInMonth = compareMonths(monthOf(focusDay), month) === 0;
   const firstEnabled = weeks.flat().find((c) => c && !c.disabled)?.iso;
   const tabbable = focusInMonth ? focusDay : firstEnabled;
@@ -101,7 +104,7 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
         <Pressable
           testID="calendar-prev"
           accessibilityRole="button"
-          accessibilityLabel={`Forrige måned, ${monthTitle(addMonths(month, -1))}`}
+          accessibilityLabel={t('calendar.prev', { month: monthTitle(addMonths(month, -1)) })}
           accessibilityState={{ disabled: !prevOk }}
           disabled={!prevOk}
           onPress={() => go(-1)}
@@ -120,7 +123,7 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
         <Pressable
           testID="calendar-next"
           accessibilityRole="button"
-          accessibilityLabel={`Neste måned, ${monthTitle(addMonths(month, 1))}`}
+          accessibilityLabel={t('calendar.next', { month: monthTitle(addMonths(month, 1)) })}
           accessibilityState={{ disabled: !nextOk }}
           disabled={!nextOk}
           onPress={() => go(1)}
@@ -136,9 +139,9 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
       </View>
 
       <View style={styles.row} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        {WEEKDAY_HEADERS.map((d, i) => (
+        {weekdayHeaders().map((d, i) => (
           <View key={d} style={[styles.cell, styles.weekdayCell]}>
-            <Text style={styles.weekday} accessibilityLabel={WEEKDAY_NAMES_MONDAY_FIRST[i]}>
+            <Text style={styles.weekday} accessibilityLabel={weekdayNamesMondayFirst()[i]}>
               {d}
             </Text>
           </View>
@@ -157,7 +160,7 @@ export function Calendar({ value, min, max, today, onChange, testID }: Props) {
                     nativeID={cellId(c.iso)}
                     testID={`day-${c.iso}`}
                     accessibilityRole="button"
-                    accessibilityLabel={c.isToday ? `${c.label}, i dag` : c.label}
+                    accessibilityLabel={c.isToday ? t('calendar.today', { label: c.label }) : c.label}
                     accessibilityState={{ selected, disabled: c.disabled }}
                     aria-current={c.isToday ? 'date' : undefined}
                     aria-pressed={selected}

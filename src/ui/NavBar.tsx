@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CONTENT_MAX, fonts, shadow, useColors, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -10,45 +10,48 @@ export type TabId = 'plan' | 'todo' | 'day';
 
 const TABS: {
   id: TabId;
-  label: string;
+  labelKey: 'tabs.plan' | 'tabs.todo' | 'tabs.day';
   route: '/plan' | '/gjoremal' | '/festdagen';
   icon: 'home' | 'list' | 'star';
 }[] = [
-  { id: 'plan', label: nb.tabs.plan, route: '/plan', icon: 'home' },
-  { id: 'todo', label: nb.tabs.todo, route: '/gjoremal', icon: 'list' },
-  { id: 'day', label: nb.tabs.day, route: '/festdagen', icon: 'star' },
+  { id: 'plan', labelKey: 'tabs.plan', route: '/plan', icon: 'home' },
+  { id: 'todo', labelKey: 'tabs.todo', route: '/gjoremal', icon: 'list' },
+  { id: 'day', labelKey: 'tabs.day', route: '/festdagen', icon: 'star' },
 ];
 
 /** Bottom tab bar on phones; a top navigation bar on wide screens. */
 export function NavBar({ active, placement }: { active: TabId; placement: 'top' | 'bottom' }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   if (placement === 'top') {
     return (
-      <View style={[styles.top, { paddingTop: insets.top }]} role="navigation" aria-label="Hovedmeny">
+      <View style={[styles.top, { paddingTop: insets.top }]} role="navigation" aria-label={t('tabs.menu')}>
         <View style={styles.topInner}>
-          <Text style={styles.brand}>{nb.brand}</Text>
+          <Text style={styles.brand}>{t('brand')}</Text>
           <View style={{ flexDirection: 'row', gap: 6 }}>
-            {TABS.map((t) => {
-              const on = t.id === active;
+            {TABS.map((tab) => {
+              const on = tab.id === active;
               return (
                 <Pressable
-                  key={t.id}
+                  key={tab.id}
                   accessibilityRole="link"
-                  accessibilityLabel={t.label}
+                  accessibilityLabel={t(tab.labelKey)}
                   accessibilityState={{ selected: on }}
-                  onPress={() => router.navigate(t.route)}
+                  onPress={() => router.navigate(tab.route)}
                   style={[styles.topLink, on && styles.topLinkOn]}
                 >
                   <Icon
-                    name={t.icon}
+                    name={tab.icon}
                     size={20}
                     color={on ? colors.onPrimary : colors.green}
                     strokeWidth={on ? 2.4 : 2}
                   />
-                  <Text style={[styles.topLabel, { color: on ? colors.onPrimary : colors.green }]}>{t.label}</Text>
+                  <Text style={[styles.topLabel, { color: on ? colors.onPrimary : colors.green }]}>
+                    {t(tab.labelKey)}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -58,20 +61,20 @@ export function NavBar({ active, placement }: { active: TabId; placement: 'top' 
     );
   }
   return (
-    <View style={[styles.bottom, { paddingBottom: 10 + insets.bottom }]} role="navigation" aria-label="Hovedmeny">
-      {TABS.map((t) => {
-        const on = t.id === active;
+    <View style={[styles.bottom, { paddingBottom: 10 + insets.bottom }]} role="navigation" aria-label={t('tabs.menu')}>
+      {TABS.map((tab) => {
+        const on = tab.id === active;
         return (
           <Pressable
-            key={t.id}
+            key={tab.id}
             accessibilityRole="tab"
-            accessibilityLabel={t.label}
+            accessibilityLabel={t(tab.labelKey)}
             accessibilityState={{ selected: on }}
-            onPress={() => router.navigate(t.route)}
+            onPress={() => router.navigate(tab.route)}
             style={styles.tab}
           >
-            <Icon name={t.icon} size={24} color={on ? colors.green : colors.muted} strokeWidth={on ? 2.4 : 2} />
-            <Text style={[styles.tabLabel, { color: on ? colors.green : colors.muted }]}>{t.label}</Text>
+            <Icon name={tab.icon} size={24} color={on ? colors.green : colors.muted} strokeWidth={on ? 2.4 : 2} />
+            <Text style={[styles.tabLabel, { color: on ? colors.green : colors.muted }]}>{t(tab.labelKey)}</Text>
           </Pressable>
         );
       })}

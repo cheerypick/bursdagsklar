@@ -2,12 +2,14 @@ import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useParty } from '../state/PartyProvider';
+import { LanguagePicker } from '../features/LanguagePicker';
 import { Loading } from '../features/Loading';
 import { Button, Screen, Text } from '../ui';
 import { fonts, images, useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 
 export default function Welcome() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const { ready, party } = useParty();
   const router = useRouter();
@@ -26,14 +28,17 @@ export default function Welcome() {
 
   const copy = (
     <View style={{ paddingHorizontal: isWide ? 0 : gutter, paddingTop: 28, paddingBottom: 32, gap: 0 }}>
-      <Text variant="hero">{nb.welcome.title}</Text>
+      <Text variant="hero">{t('welcome.title')}</Text>
       <Text variant="lede" style={{ marginTop: 12, marginBottom: 26 }}>
-        {nb.welcome.lede}
+        {t('welcome.lede')}
       </Text>
-      <Button label={nb.welcome.cta} onPress={start} testID="start" />
+      <Button label={t('welcome.cta')} onPress={start} testID="start" />
       <Text variant="small" style={{ textAlign: isWide ? 'left' : 'center', marginTop: 14, fontSize: 14 }}>
-        {nb.welcome.note}
+        {t('welcome.note')}
       </Text>
+      <View style={{ marginTop: 18 }}>
+        <LanguagePicker align={isWide ? 'flex-start' : 'center'} />
+      </View>
     </View>
   );
 
@@ -43,9 +48,9 @@ export default function Welcome() {
         source={images.hero}
         style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
         resizeMode="cover"
-        accessibilityLabel={nb.welcome.heroAlt}
+        accessibilityLabel={t('welcome.heroAlt')}
       />
-      <Text style={[styles.brand, { top: (isWide ? 0 : insets.top) + 20 }]}>{nb.brand}</Text>
+      <Text style={[styles.brand, { top: (isWide ? 0 : insets.top) + 20 }]}>{t('brand')}</Text>
     </View>
   );
 

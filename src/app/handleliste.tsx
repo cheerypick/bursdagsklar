@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
@@ -6,7 +6,7 @@ import { Loading } from '../features/Loading';
 import { shareList } from '../features/share';
 import { Button, CheckBox, ConfirmDialog, Icon, Screen, Surface, Text, TopBar, useToast } from '../ui';
 import { fonts, radii, useColors, useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { CUSTOM_ITEM_MAX, handleliste, shareText, type ShopGroup, type ShopItem } from '../core';
 
 /**
@@ -17,6 +17,7 @@ import { CUSTOM_ITEM_MAX, handleliste, shareText, type ShopGroup, type ShopItem 
  * own items are saved on the party by stable id. «Del listen» shares the not-yet-bought items as plain text.
  */
 export default function HandlelisteScreen() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { ready, party, setTick, clearTicks, addCustomItem, removeCustomItem, setGoodieBagItem } = useParty();
@@ -25,7 +26,8 @@ export default function HandlelisteScreen() {
   const { isWide, gutter } = useLayout();
   const [draft, setDraft] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
-  const list = useMemo(() => (party ? handleliste(party) : null), [party]);
+  // built on every render (cheap): the words follow the language, the items follow the party
+  const list = party ? handleliste(party) : null;
 
   if (!ready) return <Loading />;
   if (!party || !list) return <Redirect href="/" />;
@@ -35,12 +37,12 @@ export default function HandlelisteScreen() {
     if (!draft.trim()) return;
     addCustomItem(draft);
     setDraft('');
-    toast(nb.shopping.added);
+    toast(t('shopping.added'));
   };
   const share = async () => {
     const outcome = await shareList(list.title, shareText(list));
-    if (outcome === 'copied') toast(nb.shopping.copied);
-    else if (outcome === 'failed') toast(nb.shopping.shareFailed);
+    if (outcome === 'copied') toast(t('shopping.copied'));
+    else if (outcome === 'failed') toast(t('shopping.shareFailed'));
   };
 
   const groupCard = (g: ShopGroup) => (
@@ -59,9 +61,9 @@ export default function HandlelisteScreen() {
       ))}
       {g.id === 'godteposer' ? (
         <View style={styles.suggest} testID="shopping-goodie-suggestions">
-          <Text style={styles.suggestTitle}>{nb.shopping.suggestTitle}</Text>
+          <Text style={styles.suggestTitle}>{t('shopping.suggestTitle')}</Text>
           <Text variant="small" style={{ marginBottom: 10 }}>
-            {nb.shopping.suggestLede}
+            {t('shopping.suggestLede')}
           </Text>
           <View style={styles.chips}>
             {list.goodieBagSuggestions.map((sug) => (
@@ -70,7 +72,9 @@ export default function HandlelisteScreen() {
                 testID={`goodie-${sug.id}`}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  sug.picked ? nb.shopping.suggestRemove(sug.label) : nb.shopping.suggestAdd(sug.label)
+                  sug.picked
+                    ? t('shopping.suggestRemove', { item: sug.label.toLowerCase() })
+                    : t('shopping.suggestAdd', { item: sug.label.toLowerCase() })
                 }
                 accessibilityState={{ selected: sug.picked }}
                 aria-pressed={sug.picked}
@@ -88,7 +92,7 @@ export default function HandlelisteScreen() {
             ))}
           </View>
           <Text variant="small" style={{ marginTop: 10 }} testID="shopping-healthier">
-            {nb.shopping.healthier}
+            {t('shopping.healthier')}
           </Text>
         </View>
       ) : null}
@@ -109,7 +113,7 @@ export default function HandlelisteScreen() {
   const addBox = (
     <Surface testID="shopping-add-box">
       <Text style={styles.addTitle} nativeID="shopping-add-label">
-        {nb.shopping.add}
+        {t('shopping.add')}
       </Text>
       <View style={styles.addRow}>
         <TextInput
@@ -117,9 +121,9 @@ export default function HandlelisteScreen() {
           value={draft}
           onChangeText={setDraft}
           onSubmitEditing={add}
-          placeholder={nb.shopping.addPlaceholder}
+          placeholder={t('shopping.addPlaceholder')}
           placeholderTextColor={colors.muted}
-          accessibilityLabel={nb.shopping.add}
+          accessibilityLabel={t('shopping.add')}
           aria-labelledby="shopping-add-label"
           maxLength={CUSTOM_ITEM_MAX}
           returnKeyType="done"
@@ -129,13 +133,13 @@ export default function HandlelisteScreen() {
         <Pressable
           testID="shopping-add"
           accessibilityRole="button"
-          accessibilityLabel={nb.shopping.add}
+          accessibilityLabel={t('shopping.add')}
           accessibilityState={{ disabled: !draft.trim() }}
           onPress={add}
           style={({ pressed }) => [styles.addBtn, !draft.trim() && { opacity: 0.5 }, pressed && { opacity: 0.8 }]}
         >
           <Icon name="plus" size={22} color={colors.onPrimary} strokeWidth={2.6} />
-          <Text style={styles.addBtnText}>{nb.shopping.addButton}</Text>
+          <Text style={styles.addBtnText}>{t('shopping.addButton')}</Text>
         </Pressable>
       </View>
     </Surface>
@@ -149,27 +153,27 @@ export default function HandlelisteScreen() {
       <View style={{ paddingHorizontal: gutter, paddingTop: isWide ? 28 : 10 }}>
         <Text variant="eyebrow">{list.title.replace(/^Handleliste – /, '')}</Text>
         <Text variant={isWide ? 'h1' : 'h1Small'} style={{ marginTop: 6, marginBottom: 8 }}>
-          {nb.shopping.title}
+          {t('shopping.title')}
         </Text>
         <Text variant="lede" style={{ marginBottom: 6, maxWidth: 640 }}>
-          {nb.shopping.lede}
+          {t('shopping.lede')}
         </Text>
         <Text style={styles.progress} testID="shopping-progress">
-          {allBought ? nb.shopping.allBought : nb.shopping.ticked(list.tickedCount, list.count)}
+          {allBought ? t('shopping.allBought') : t('shopping.ticked', { n: list.tickedCount, of: list.count })}
         </Text>
         <View style={{ marginTop: 16 }}>
           <Button
             testID="shopping-share"
-            label={nb.shopping.share}
-            accessibilityLabel={nb.shopping.shareLabel}
+            label={t('shopping.share')}
+            accessibilityLabel={t('shopping.shareLabel')}
             onPress={share}
           />
         </View>
         {!list.menuChosen ? (
           <Surface testID="shopping-no-menu" style={{ marginTop: 16, backgroundColor: colors.butter }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: colors.ink }}>{nb.shopping.noMenu}</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: colors.ink }}>{t('shopping.noMenu')}</Text>
             <View style={{ marginTop: 12 }}>
-              <Button compact kind="light" label={nb.shopping.toMat} onPress={() => router.push('/mat')} />
+              <Button compact kind="light" label={t('shopping.toMat')} onPress={() => router.push('/mat')} />
             </View>
           </Surface>
         ) : null}
@@ -200,17 +204,17 @@ export default function HandlelisteScreen() {
           <Pressable
             testID="shopping-clear"
             accessibilityRole="button"
-            accessibilityLabel={nb.shopping.clearTicks}
+            accessibilityLabel={t('shopping.clearTicks')}
             onPress={() => setConfirmClear(true)}
             style={({ pressed }) => [styles.clear, pressed && { opacity: 0.7 }]}
           >
             <Icon name="reset" size={18} color={colors.muted} strokeWidth={2.2} />
-            <Text style={styles.clearText}>{nb.shopping.clearTicks}</Text>
+            <Text style={styles.clearText}>{t('shopping.clearTicks')}</Text>
           </Pressable>
         ) : null}
         <Button
           kind="light"
-          label={nb.shopping.backToPlan}
+          label={t('shopping.backToPlan')}
           onPress={() => router.navigate('/plan')}
           testID="shopping-back"
         />
@@ -219,10 +223,10 @@ export default function HandlelisteScreen() {
       <ConfirmDialog
         visible={confirmClear}
         testID="shopping-clear-dialog"
-        title={nb.shopping.clearTitle}
-        message={nb.shopping.clearMessage}
-        confirmLabel={nb.shopping.clearConfirm}
-        cancelLabel={nb.shopping.clearCancel}
+        title={t('shopping.clearTitle')}
+        message={t('shopping.clearMessage')}
+        confirmLabel={t('shopping.clearConfirm')}
+        cancelLabel={t('shopping.clearCancel')}
         onConfirm={() => {
           clearTicks();
           setConfirmClear(false);
@@ -245,6 +249,7 @@ function Row({
   onToggle: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const on = item.ticked;
@@ -279,7 +284,7 @@ function Row({
         <Pressable
           testID={`shop-delete-${item.id}`}
           accessibilityRole="button"
-          accessibilityLabel={nb.shopping.delete(item.name)}
+          accessibilityLabel={t('shopping.delete', { item: item.name })}
           onPress={onDelete}
           hitSlop={4}
           style={({ pressed }) => [styles.delete, pressed && { opacity: 0.6 }]}

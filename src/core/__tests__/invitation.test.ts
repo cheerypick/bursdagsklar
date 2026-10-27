@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { emma } from '../__fixtures__/emma';
 import {
   buildInvitation,
@@ -10,13 +10,15 @@ import {
   rsvpBounds,
   sanitizeInvitation,
   withInvitation,
-  INVITE_LINES,
 } from '../rules/invitation';
 import { headCount } from '../rules/people';
 import { foodCounts } from '../rules/menu';
 import { migrate } from '../storage/PartyRepository';
 import { invitationCard } from '../texts/render';
 import type { Party } from '../model';
+import { i18n } from '../../i18n/i18n';
+
+const PARENTS_HELP = 'Vi blir glade om noen foreldre har lyst til å bli og hjelpe til.';
 
 /** Emma without a theme (themes are optional): the neutral invitation. */
 const plain = (o: Partial<Party> = {}) => emma({ theme: null, ...o });
@@ -71,8 +73,8 @@ describe('Invitasjon: the generated text', () => {
   });
 
   it('parents help: on adds the friendly line, off removes it', () => {
-    expect(buildInvitation(plain({ invitation: { parentsHelp: true } })).text).toContain(INVITE_LINES.parentsHelp);
-    expect(buildInvitation(plain({ invitation: { parentsHelp: false } })).text).not.toContain(INVITE_LINES.parentsHelp);
+    expect(buildInvitation(plain({ invitation: { parentsHelp: true } })).text).toContain(PARENTS_HELP);
+    expect(buildInvitation(plain({ invitation: { parentsHelp: false } })).text).not.toContain(PARENTS_HELP);
   });
 
   it('parents help is pre-ticked when the youngest is 3–4, otherwise not', () => {
@@ -89,7 +91,7 @@ describe('Invitasjon: the generated text', () => {
       }),
     ).toBe(true);
     expect(buildInvitation(four()).text).toContain('Vi blir glade om noen foreldre har lyst til å bli og hjelpe til.');
-    expect(buildInvitation(plain()).text).not.toContain(INVITE_LINES.parentsHelp);
+    expect(buildInvitation(plain()).text).not.toContain(PARENTS_HELP);
   });
 
   it('siblings: off by default; on adds «Søsken er velkomne – si gjerne fra hvor mange.»', () => {
@@ -205,5 +207,61 @@ describe('Invitasjon: stored data', () => {
     });
     expect(p?.invitation).toEqual({ address: 'Bjerkeveien 12', siblings: true });
     expect(sanitizeInvitation(null)).toBeUndefined();
+  });
+});
+
+describe('Invitation in English (same rules, the English text)', () => {
+  afterEach(() => void i18n.changeLanguage('nb'));
+  const en = () => void i18n.changeLanguage('en');
+
+  it('single child: natural English, every fact from the party, English date and time', () => {
+    en();
+    const inv = buildInvitation(plain({ invitation: { address: '12 Birch Road', phone: '90000000' } }));
+    expect(inv.text).toBe(
+      [
+        "You're invited to a birthday party! 🎈",
+        "Emma is turning 5, and we'd love to celebrate with you!",
+        '',
+        'When: Saturday 7 November, 12:00–14:00',
+        'Where: 12 Birch Road',
+        '',
+        "Let us know if you can't come, ideally by Friday 6 November.",
+        'Feel free to send a message to 900 00 000.',
+        'Please let us know about any allergies.',
+        '',
+        "We're looking forward to it!",
+        'Love, Emma',
+      ].join('\n'),
+    );
+  });
+
+  it('joint party: «Emma and Jonas are turning 5 and 7»; parents help, siblings and reply mode', () => {
+    en();
+    const t = buildInvitation(joint({ invitation: { parentsHelp: true, siblings: true, replyMode: 'ifComing' } })).text;
+    expect(t).toContain("Emma and Jonas are turning 5 and 7, and we'd love to celebrate with you!");
+    expect(t).toContain("We'd be glad if a few parents would like to stay and help out.");
+    expect(t).toContain('Siblings are welcome – just let us know how many.');
+    expect(t).toContain("Let us know if you're coming, ideally by Friday 6 November.");
+    expect(t).toContain('Where: at our place');
+    expect(t).toContain('Love, Emma and Jonas');
+    expect(t).not.toMatch(/[æøå]|\{|\}/i);
+  });
+
+  it('a theme gives its English opening; the card reply line follows the reply mode', () => {
+    en();
+    expect(buildInvitation(emma()).text.split('\n')[0]).not.toMatch(/[æøå]/i);
+    expect(buildInvitation(plain({ celebrants: [{ id: 'c1', name: 'Ali', age: 8 }] })).text.split('\n')[0]).toBe(
+      'Come to a birthday party! 🎈',
+    );
+    expect(cardReplyLine(plain())).toBe("Can't come? Let us know by 6\u00a0November");
+    expect(cardReplyLine(plain({ invitation: { replyMode: 'ifComing' } }))).toBe('Please reply by 6\u00a0November');
+  });
+
+  it('switching back gives the Norwegian text again (nothing is stored in a language)', () => {
+    en();
+    const english = buildInvitation(plain()).text;
+    void i18n.changeLanguage('nb');
+    expect(buildInvitation(plain()).text).not.toBe(english);
+    expect(buildInvitation(plain()).text).toContain('Emma fyller 5 år');
   });
 });

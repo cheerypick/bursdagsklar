@@ -134,3 +134,34 @@ test('Invitasjon for a 6-year-old: parents-help not ticked', async ({ page }) =>
   await expect(visible(page, 'invitation-parents-help')).toHaveAttribute('aria-checked', 'false');
   await expect(visible(page, 'invitation-text')).not.toHaveValue(new RegExp(HELP_LINE));
 });
+
+test('Invitation in English: switch on Planen, the screen and the generated text follow', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await createParty(page, 4);
+  // Språk / Language at the foot of Planen
+  await visible(page, 'language-en').click();
+  const card = visible(page, 'plan-card-invite');
+  await expect(card).toContainText('Invitation');
+  await expect(card).toContainText('Card and text, ready to share');
+  await card.click();
+  await expect(visible(page, 'screen-invitation')).toBeVisible();
+  await expect(page.getByText('Phone for replies').filter({ visible: true }).first()).toBeVisible();
+  await expect(visible(page, 'invitation-phone-tip')).toContainText('Tip: You might want to add a phone number');
+
+  const text = visible(page, 'invitation-text');
+  await expect(visible(page, 'invitation-parents-help')).toHaveAttribute('aria-checked', 'true');
+  await expect(text).toHaveValue(/Emma is turning 4, and we'd love to celebrate with you!/);
+  await expect(text).toHaveValue(/When: \w+day 15 \w+, \d\d:\d\d–\d\d:\d\d/);
+  await expect(text).toHaveValue(/We'd be glad if a few parents would like to stay and help out\./);
+  await expect(text).toHaveValue(/Let us know if you can't come, ideally by \w+day 14 /);
+  await expect(text).not.toHaveValue(/[æøå]/i);
+  await visible(page, 'invitation-siblings').click();
+  await expect(text).toHaveValue(/Siblings are welcome – just let us know how many\./);
+  await visible(page, 'invitation-reply-ifComing').click();
+  await expect(text).toHaveValue(/Let us know if you're coming, ideally by/);
+  await visible(page, 'invitation-phone').fill('90000000');
+  await expect(text).toHaveValue(/Feel free to send a message to 900 00 000\./);
+  await expect(visible(page, 'invitation-card')).toContainText('Please reply by');
+  expect(errors).toEqual([]);
+});

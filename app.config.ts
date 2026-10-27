@@ -50,6 +50,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-font',
+    'expo-localization',
     ['expo-splash-screen', { backgroundColor: '#FBF7F1', image: './assets/splash-icon.png', imageWidth: 160 }],
   ],
   experiments: {

@@ -4,7 +4,7 @@ import { useParty } from '../state/PartyProvider';
 import { Loading } from './Loading';
 import { BackButton, Button, Screen, Text, type TabId } from '../ui';
 import { useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 
 /** Placeholder for areas that arrive in later milestones (Invitasjon, Mat, Kake, Program, Festdagen). */
 export function ComingSoon({
@@ -20,6 +20,7 @@ export function ComingSoon({
   tab?: TabId;
   showBack?: boolean;
 }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const { ready, party } = useParty();
   const router = useRouter();
@@ -38,7 +39,7 @@ export function ComingSoon({
         ) : null}
       </View>
       <View style={{ paddingHorizontal: gutter, paddingTop: 22, maxWidth: 720 }}>
-        <Text variant="eyebrow">{nb.soon.eyebrow}</Text>
+        <Text variant="eyebrow">{t('soon.eyebrow')}</Text>
         <Text variant="h1Small" style={{ marginTop: 6, marginBottom: 8 }}>
           {title}
         </Text>
@@ -46,7 +47,7 @@ export function ComingSoon({
           {text}
         </Text>
         <View style={{ marginTop: 24 }}>
-          <Button kind="light" label={nb.soon.backToPlan} onPress={() => router.navigate('/plan')} />
+          <Button kind="light" label={t('soon.backToPlan')} onPress={() => router.navigate('/plan')} />
         </View>
       </View>
     </Screen>

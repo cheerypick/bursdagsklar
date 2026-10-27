@@ -4,10 +4,11 @@ import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { Grid, HomeToggle, Screen, Surface, TaskRow, Text, useToast } from '../ui';
 import { useLayout } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import { buildTasks, groupTasks, homeItemsFor, MONTHS_SHORT, parts, progress } from '../core';
 
 export default function TodoScreen() {
+  const { t } = useTranslation();
   const { ready, party, today, toggleTask, toggleHome } = useParty();
   const router = useRouter();
   const toast = useToast();
@@ -21,7 +22,7 @@ export default function TodoScreen() {
   const homeItems = homeItemsFor(party);
 
   const groupViews = groups.map((g, gi) => {
-    const tick = g.tasks.filter((t) => !t.task.milestone);
+    const tick = g.tasks.filter((x) => !x.task.milestone);
     return (
       <View key={g.id} testID={`group-${g.id}`}>
         <View
@@ -37,9 +38,9 @@ export default function TodoScreen() {
             {g.title}
           </Text>
           {gi === 0 ? (
-            <Text variant="small">{nb.todo.counter(pr.done, pr.total)}</Text>
+            <Text variant="small">{t('todo.counter', { x: pr.done, y: pr.total })}</Text>
           ) : (
-            <Text variant="small">{nb.todo.counter(tick.filter((t) => t.done).length, tick.length)}</Text>
+            <Text variant="small">{t('todo.counter', { x: tick.filter((x) => x.done).length, y: tick.length })}</Text>
           )}
         </View>
         <Surface padded={false} style={{ paddingHorizontal: 18, paddingVertical: 4 }}>
@@ -60,7 +61,9 @@ export default function TodoScreen() {
                 checked={done}
                 milestone={task.milestone}
                 onToggle={() => toggleTask(task.id, !done)}
-                a11yToggle={done ? nb.todo.markUndone(task.title) : nb.todo.markDone(task.title)}
+                a11yToggle={
+                  done ? t('todo.markUndone', { item: task.title }) : t('todo.markDone', { item: task.title })
+                }
               />
             );
           })}
@@ -72,9 +75,9 @@ export default function TodoScreen() {
   return (
     <Screen tab="todo" testID="screen-todo">
       <View style={{ paddingHorizontal: gutter, paddingTop: 22 }}>
-        <Text variant="h1Small">{nb.todo.title}</Text>
+        <Text variant="h1Small">{t('todo.title')}</Text>
         <Text variant="lede" style={{ marginTop: 8, fontSize: 17 }}>
-          {nb.todo.lede}
+          {t('todo.lede')}
         </Text>
       </View>
       <View style={{ paddingHorizontal: gutter }}>
@@ -88,10 +91,10 @@ export default function TodoScreen() {
       <View style={{ paddingHorizontal: gutter, marginTop: 28 }}>
         <Surface>
           <Text variant="h3" style={{ marginBottom: 6 }}>
-            {nb.todo.homeTitle}
+            {t('todo.homeTitle')}
           </Text>
           <Text variant="small" style={{ marginBottom: 12 }}>
-            {nb.todo.homeLede}
+            {t('todo.homeLede')}
           </Text>
           <Grid
             items={homeItems}
@@ -100,11 +103,11 @@ export default function TodoScreen() {
             keyOf={(id) => id}
             render={(id) => (
               <HomeToggle
-                label={nb.home[id]}
+                label={t(`home.${id}`)}
                 on={party.haveAtHome.includes(id)}
                 onPress={() => {
                   const nowHas = toggleHome(id);
-                  toast(nowHas ? nb.todo.removed : nb.todo.added);
+                  toast(nowHas ? t('todo.removed') : t('todo.added'));
                 }}
               />
             )}

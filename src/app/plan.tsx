@@ -3,11 +3,12 @@ import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { CountdownRing } from '../features/CountdownRing';
+import { LanguagePicker } from '../features/LanguagePicker';
 import { LicenseNote } from '../features/LicenseNote';
 import { StartOverButton } from '../features/StartOver';
 import { Button, Grid, Icon, PhotoCard, Screen, Surface, Text } from '../ui';
 import { fonts, images, radii, shadow, themeImages, useLayout, themedStyles, useColors } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import {
   buildTasks,
   foodCardSummary,
@@ -23,6 +24,7 @@ import {
 } from '../core';
 
 export default function PlanScreen() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { ready, party, today } = useParty();
@@ -35,7 +37,7 @@ export default function PlanScreen() {
   // the theme is optional: without one, the neutral look, our own picture and neutral words
   const theme = party.theme ? themeById(party.theme) : null;
   const heroImage = party.theme ? themeImages[party.theme] : images.hero;
-  const place = nb.place.eyebrow[party.home.type ?? 'none'];
+  const place = t(`place.eyebrow.${party.home.type ?? 'none'}`);
   const { tasks } = buildTasks(party);
   const next = nextTask(party, tasks, today);
   const tid = formatRangeCompact(party.start, party.end);
@@ -57,25 +59,25 @@ export default function PlanScreen() {
     {
       key: 'invite',
       image: heroImage,
-      title: nb.plan.cards.invite.title,
-      sub: nb.plan.cards.invite.sub,
+      title: t('plan.cards.invite.title'),
+      sub: t('plan.cards.invite.sub'),
       // done-state: «Invitasjonen er sendt» ticked (on Invitasjon or the to-do «Send invitasjonen»)
-      badge: party.taskState.sendInvite?.done ? nb.invitation.cardSent : nb.plan.cards.invite.badge,
+      badge: party.taskState.sendInvite?.done ? t('invitation.cardSent') : t('plan.cards.invite.badge'),
       route: '/invitasjon',
     },
     {
       key: 'food',
       image: foodImage,
-      title: food ? nb.plan.cards.food.chosenTitle(food.title) : nb.plan.cards.food.title,
-      sub: food ? food.line : nb.plan.cards.food.sub,
-      badge: food ? undefined : nb.plan.cards.food.badgeChoose,
+      title: food ? t('plan.cards.food.chosenTitle', { menu: food.title }) : t('plan.cards.food.title'),
+      sub: food ? food.line : t('plan.cards.food.sub'),
+      badge: food ? undefined : t('plan.cards.food.badgeChoose'),
       route: '/mat',
     },
-    { key: 'cake', image: images.cake, title: nb.plan.cards.cake.title, sub: s.cakeIdea, route: '/kake', half: true },
+    { key: 'cake', image: images.cake, title: t('plan.cards.cake.title'), sub: s.cakeIdea, route: '/kake', half: true },
     {
       key: 'programme',
       image: images.pinata,
-      title: nb.plan.cards.programme.title,
+      title: t('plan.cards.programme.title'),
       sub: `${party.start.replace(':', '.')}–${party.end.replace(':', '.')}`,
       route: '/program',
       half: true,
@@ -83,9 +85,9 @@ export default function PlanScreen() {
     {
       key: 'todo',
       image: images.gjoremal,
-      title: nb.plan.cards.todo.title,
-      sub: nb.plan.cards.todo.sub,
-      badge: s.tasksThisWeek > 0 ? nb.plan.cards.todo.badge(s.tasksThisWeek) : undefined,
+      title: t('plan.cards.todo.title'),
+      sub: t('plan.cards.todo.sub'),
+      badge: s.tasksThisWeek > 0 ? t('plan.cards.todo.badge', { n: s.tasksThisWeek }) : undefined,
       route: '/gjoremal',
     },
   ];
@@ -105,7 +107,7 @@ export default function PlanScreen() {
     <Pressable
       testID="plan-card-shopping"
       accessibilityRole="link"
-      accessibilityLabel={`${nb.plan.cards.shopping.title}. ${shoppingCardLine(shopping)}`}
+      accessibilityLabel={`${t('plan.cards.shopping.title')}. ${shoppingCardLine(shopping)}`}
       onPress={() => router.push('/handleliste')}
       style={({ pressed }) => [styles.shopCard, pressed && { opacity: 0.85 }]}
     >
@@ -113,7 +115,7 @@ export default function PlanScreen() {
         <Text style={{ fontSize: 28 }}>🛒</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.themeTitle}>{nb.plan.cards.shopping.title}</Text>
+        <Text style={styles.themeTitle}>{t('plan.cards.shopping.title')}</Text>
         <Text variant="small" testID="plan-card-shopping-count">
           {shoppingCardLine(shopping)}
         </Text>
@@ -138,13 +140,13 @@ export default function PlanScreen() {
               testID="next-task-cta"
               compact
               block={!isWide}
-              label={next.task.link?.label ?? nb.tabs.todo}
+              label={next.task.link?.label ?? t('tabs.todo')}
               onPress={() => router.push(next.task?.link?.route ?? '/gjoremal')}
             />
           </View>
         </>
       ) : (
-        <Text variant="h3">{nb.plan.allDone}</Text>
+        <Text variant="h3">{t('plan.allDone')}</Text>
       )}
     </View>
   );
@@ -161,10 +163,14 @@ export default function PlanScreen() {
             {planTitle(party)}
           </Text>
           <Text style={styles.greeting} testID="plan-greeting">
-            {theme ? theme.copy.greeting : nb.plan.greeting}
+            {theme ? theme.copy.greeting : t('plan.greeting')}
           </Text>
           <Text variant="small" color={colors.onPrimarySoft} style={{ marginTop: 8, fontSize: 16 }} testID="plan-meta">
-            {nb.plan.meta(formatLongCap(party.date), tid, party.children)}
+            {t('plan.meta', {
+              dato: formatLongCap(party.date),
+              tid,
+              kids: t('common.kids', { count: party.children }),
+            })}
           </Text>
         </View>
         <View style={[styles.heroArt, isWide && { width: 140, height: 140, borderRadius: 32 }]}>
@@ -191,7 +197,7 @@ export default function PlanScreen() {
         <Pressable
           testID="theme-card"
           accessibilityRole="button"
-          accessibilityLabel={`${theme ? nb.theme.cardChosen.title(theme.name) : nb.theme.card.title}. ${theme ? nb.theme.cardChosen.sub : nb.theme.card.sub}`}
+          accessibilityLabel={`${theme ? t('theme.cardChosen.title', { tema: theme.name }) : t('theme.card.title')}. ${theme ? t('theme.cardChosen.sub') : t('theme.card.sub')}`}
           onPress={() => router.push('/tema')}
           style={({ pressed }) => [styles.themeCard, pressed && { opacity: 0.85 }]}
         >
@@ -203,15 +209,17 @@ export default function PlanScreen() {
             )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.themeTitle}>{theme ? nb.theme.cardChosen.title(theme.name) : nb.theme.card.title}</Text>
-            <Text variant="small">{theme ? nb.theme.cardChosen.sub : nb.theme.card.sub}</Text>
+            <Text style={styles.themeTitle}>
+              {theme ? t('theme.cardChosen.title', { tema: theme.name }) : t('theme.card.title')}
+            </Text>
+            <Text variant="small">{theme ? t('theme.cardChosen.sub') : t('theme.card.sub')}</Text>
           </View>
           <Icon name="forward" size={22} strokeWidth={2.4} color={colors.green} />
         </Pressable>
       </View>
 
       <Text variant="h2Small" style={{ marginTop: 28, marginBottom: 12, paddingHorizontal: gutter }}>
-        {nb.plan.section}
+        {t('plan.section')}
       </Text>
       <View style={{ paddingHorizontal: gutter, gap: 14 }}>
         {isWide ? (
@@ -286,6 +294,9 @@ export default function PlanScreen() {
       </View>
       <View style={{ paddingHorizontal: gutter }}>
         <LicenseNote />
+        <View style={{ paddingTop: 12 }}>
+          <LanguagePicker />
+        </View>
       </View>
     </Screen>
   );

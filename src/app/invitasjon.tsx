@@ -7,7 +7,7 @@ import { InvitationCard } from '../features/InvitationCard';
 import { copyText, shareList } from '../features/share';
 import { Button, CheckBox, Icon, Screen, Surface, Text, TopBar, useToast } from '../ui';
 import { fonts, radii, TOUCH, useColors, useLayout, themedStyles } from '../theme';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import {
   addDays,
   buildInvitation,
@@ -32,13 +32,19 @@ import {
  * After the MVP (not built): the parents' own picture on the card (needs image hosting).
  */
 export default function InvitasjonScreen() {
+  const { t, i18n } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const { ready, party, today, setInvitation, toggleTask } = useParty();
   const router = useRouter();
   const toast = useToast();
   const { isWide, gutter } = useLayout();
-  const inv = useMemo(() => (party ? buildInvitation(party, today) : null), [party, today]);
+  // the generated text follows the active language (i18n.language re-runs it after a switch)
+  const inv = useMemo(
+    () => (party ? buildInvitation(party, today) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [party, today, i18n.language],
+  );
 
   if (!ready) return <Loading />;
   if (!party || !inv) return <Redirect href="/" />;
@@ -47,18 +53,18 @@ export default function InvitasjonScreen() {
   const helpers = helpingParents(party);
   const bounds = rsvpBounds(party, today);
   const sent = Boolean(party.taskState.sendInvite?.done);
-  const title = nb.invitation.shareTitle(celebrantNames(party.celebrants));
+  const title = t('invitation.shareTitle', { names: celebrantNames(party.celebrants) });
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/plan'));
 
   const copy = async () => {
     const outcome = await copyText(title, inv.text);
-    if (outcome === 'copied') toast(nb.invitation.copied);
-    else if (outcome === 'failed') toast(nb.invitation.copyFailed);
+    if (outcome === 'copied') toast(t('invitation.copied'));
+    else if (outcome === 'failed') toast(t('invitation.copyFailed'));
   };
   const share = async () => {
     const outcome = await shareList(title, inv.text);
-    if (outcome === 'copied') toast(nb.invitation.copied);
-    else if (outcome === 'failed') toast(nb.invitation.shareFailed);
+    if (outcome === 'copied') toast(t('invitation.copied'));
+    else if (outcome === 'failed') toast(t('invitation.shareFailed'));
   };
   const moveRsvp = (days: number) => {
     const next = addDays(s.rsvpBy, days);
@@ -122,25 +128,25 @@ export default function InvitasjonScreen() {
 
   const preview = (
     <View testID="invitation-preview" style={{ gap: 10 }}>
-      <Text variant="eyebrow">{nb.invitation.preview}</Text>
+      <Text variant="eyebrow">{t('invitation.preview')}</Text>
       <InvitationCard party={party} />
     </View>
   );
 
   const details = (
     <Surface testID="invitation-details" style={{ gap: 14 }}>
-      <Text style={styles.sectionTitle}>{nb.invitation.detailsTitle}</Text>
+      <Text style={styles.sectionTitle}>{t('invitation.detailsTitle')}</Text>
       <View style={{ gap: 6 }}>
         <Text style={styles.label} nativeID="invitation-address-label">
-          {nb.invitation.addressLabel}
+          {t('invitation.addressLabel')}
         </Text>
         <TextInput
           testID="invitation-address"
           value={party.invitation?.address ?? ''}
           onChangeText={(address) => setInvitation({ address })}
-          placeholder={nb.invitation.addressPlaceholder}
+          placeholder={t('invitation.addressPlaceholder')}
           placeholderTextColor={colors.muted}
-          accessibilityLabel={nb.invitation.addressLabel}
+          accessibilityLabel={t('invitation.addressLabel')}
           aria-labelledby="invitation-address-label"
           maxLength={INVITATION_ADDRESS_MAX}
           autoComplete="street-address"
@@ -149,15 +155,15 @@ export default function InvitasjonScreen() {
       </View>
       <View style={{ gap: 6 }}>
         <Text style={styles.label} nativeID="invitation-phone-label">
-          {nb.invitation.phoneLabel}
+          {t('invitation.phoneLabel')}
         </Text>
         <TextInput
           testID="invitation-phone"
           value={party.invitation?.phone ?? ''}
           onChangeText={(phone) => setInvitation({ phone })}
-          placeholder={nb.invitation.phonePlaceholder}
+          placeholder={t('invitation.phonePlaceholder')}
           placeholderTextColor={colors.muted}
-          accessibilityLabel={nb.invitation.phoneLabel}
+          accessibilityLabel={t('invitation.phoneLabel')}
           aria-labelledby="invitation-phone-label"
           maxLength={INVITATION_PHONE_MAX}
           keyboardType="phone-pad"
@@ -166,39 +172,39 @@ export default function InvitasjonScreen() {
         />
         {inv.phoneMissing ? (
           <Text variant="small" testID="invitation-phone-tip">
-            {nb.invitation.phoneTip}
+            {t('invitation.phoneTip')}
           </Text>
         ) : null}
       </View>
       {check(
         'invitation-parents-help',
-        nb.invitation.parentsHelp,
+        t('invitation.parentsHelp'),
         s.parentsHelp,
         () => setInvitation({ parentsHelp: !s.parentsHelp }),
-        s.parentsHelp && helpers > 0 ? nb.invitation.parentsHelpFood(helpers) : undefined,
+        s.parentsHelp && helpers > 0 ? t('invitation.parentsHelpFood', { count: helpers }) : undefined,
       )}
       {check(
         'invitation-siblings',
-        nb.invitation.siblings,
+        t('invitation.siblings'),
         s.siblings,
         () => setInvitation({ siblings: !s.siblings }),
-        nb.invitation.siblingsSub,
+        t('invitation.siblingsSub'),
       )}
       <View style={{ gap: 8 }}>
-        <Text style={styles.label}>{nb.invitation.replyTitle}</Text>
+        <Text style={styles.label}>{t('invitation.replyTitle')}</Text>
         <View accessibilityRole="radiogroup" style={styles.pills}>
-          {replyOption('ifNotComing', nb.invitation.replyIfNot)}
-          {replyOption('ifComing', nb.invitation.replyIfComing)}
+          {replyOption('ifNotComing', t('invitation.replyIfNot'))}
+          {replyOption('ifComing', t('invitation.replyIfComing'))}
         </View>
       </View>
       <View style={{ gap: 8 }}>
-        <Text style={styles.label}>{nb.invitation.rsvpLabel}</Text>
+        <Text style={styles.label}>{t('invitation.rsvpLabel')}</Text>
         <View style={styles.rsvpRow}>
-          {stepBtn('invitation-rsvp-earlier', nb.invitation.rsvpEarlier, 'back', s.rsvpBy <= bounds.min, -1)}
+          {stepBtn('invitation-rsvp-earlier', t('invitation.rsvpEarlier'), 'back', s.rsvpBy <= bounds.min, -1)}
           <Text testID="invitation-rsvp" style={styles.rsvpText}>
             {capitalize(formatLong(s.rsvpBy))}
           </Text>
-          {stepBtn('invitation-rsvp-later', nb.invitation.rsvpLater, 'forward', s.rsvpBy >= bounds.max, 1)}
+          {stepBtn('invitation-rsvp-later', t('invitation.rsvpLater'), 'forward', s.rsvpBy >= bounds.max, 1)}
         </View>
       </View>
     </Surface>
@@ -207,15 +213,15 @@ export default function InvitasjonScreen() {
   const textBox = (
     <Surface testID="invitation-text-box" style={{ gap: 12 }}>
       <Text style={styles.sectionTitle} nativeID="invitation-text-label">
-        {nb.invitation.textTitle}
+        {t('invitation.textTitle')}
       </Text>
-      <Text variant="small">{nb.invitation.textHelp}</Text>
+      <Text variant="small">{t('invitation.textHelp')}</Text>
       <TextInput
         testID="invitation-text"
         value={inv.text}
         onChangeText={(customText) => setInvitation({ customText })}
         multiline
-        accessibilityLabel={nb.invitation.textTitle}
+        accessibilityLabel={t('invitation.textTitle')}
         aria-labelledby="invitation-text-label"
         maxLength={INVITATION_TEXT_MAX}
         textAlignVertical="top"
@@ -225,31 +231,37 @@ export default function InvitasjonScreen() {
       {inv.edited ? (
         <View style={{ gap: 10 }}>
           <Text variant="small" testID="invitation-edited">
-            {nb.invitation.textEdited}
+            {t('invitation.textEdited')}
           </Text>
           <Button
             compact
             kind="light"
             testID="invitation-regenerate"
-            label={nb.invitation.regenerate}
+            label={t('invitation.regenerate')}
             onPress={() => {
               setInvitation({ customText: undefined });
-              toast(nb.invitation.regenerated);
+              toast(t('invitation.regenerated'));
             }}
           />
         </View>
       ) : null}
       <View style={{ gap: 10, marginTop: 4 }}>
-        <Button testID="invitation-share" label={nb.invitation.share} onPress={share} disabled={!inv.text.trim()} />
+        <Button testID="invitation-share" label={t('invitation.share')} onPress={share} disabled={!inv.text.trim()} />
         <Button
           testID="invitation-copy"
           kind="light"
-          label={nb.invitation.copy}
+          label={t('invitation.copy')}
           onPress={copy}
           disabled={!inv.text.trim()}
         />
       </View>
-      {check('invitation-sent', nb.invitation.sent, sent, () => toggleTask('sendInvite', !sent), nb.invitation.sentSub)}
+      {check(
+        'invitation-sent',
+        t('invitation.sent'),
+        sent,
+        () => toggleTask('sendInvite', !sent),
+        t('invitation.sentSub'),
+      )}
     </Surface>
   );
 
@@ -257,12 +269,12 @@ export default function InvitasjonScreen() {
     <Screen tab="plan" testID="screen-invitation">
       {!isWide ? <TopBar onBack={back} /> : null}
       <View style={{ paddingHorizontal: gutter, paddingTop: isWide ? 28 : 10 }}>
-        <Text variant="eyebrow">{nb.invitation.eyebrow}</Text>
+        <Text variant="eyebrow">{t('invitation.eyebrow')}</Text>
         <Text variant={isWide ? 'h1' : 'h1Small'} style={{ marginTop: 6, marginBottom: 8 }}>
-          {nb.invitation.title}
+          {t('invitation.title')}
         </Text>
         <Text variant="lede" style={{ marginBottom: 6, maxWidth: 640 }}>
-          {nb.invitation.lede}
+          {t('invitation.lede')}
         </Text>
       </View>
       {isWide ? (
@@ -283,7 +295,7 @@ export default function InvitasjonScreen() {
         </View>
       )}
       <View style={{ paddingHorizontal: gutter, marginTop: 24, alignItems: isWide ? 'flex-start' : 'stretch' }}>
-        <Button kind="ghost" label={nb.invitation.backToPlan} onPress={() => router.navigate('/plan')} />
+        <Button kind="ghost" label={t('invitation.backToPlan')} onPress={() => router.navigate('/plan')} />
       </View>
     </Screen>
   );

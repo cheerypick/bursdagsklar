@@ -33,22 +33,34 @@ import { menuDishes } from './dishes';
 import { headCount } from './people';
 import { celebrantNames, oldestAge } from './celebrants';
 import { genitive } from '../texts/render';
-import { MONTHS_SHORT, parts } from './dates';
+import { formatDayMonthShort } from './dates';
+import { liveRecord, t } from '../../i18n/i18n';
+import { forPeople, packsWord, pcs, sets, sheets } from './units';
 
 export type ShopGroupId = 'kjott' | 'brod' | 'frukt' | 'drikke' | 'torrvarer' | 'frys' | 'fest' | 'godteposer' | 'egne';
 
 /** Store sections, in the order the list shows them. Empty sections are not shown. */
-export const SHOP_GROUPS: readonly { id: ShopGroupId; title: string }[] = [
-  { id: 'kjott', title: 'Kjøtt og pålegg' },
-  { id: 'brod', title: 'Brød' },
-  { id: 'frukt', title: 'Frukt og grønt' },
-  { id: 'drikke', title: 'Drikke' },
-  { id: 'torrvarer', title: 'Tørrvarer' },
-  { id: 'frys', title: 'Frysedisk' },
-  { id: 'fest', title: 'Fest og pynt' },
-  { id: 'godteposer', title: 'Godteposer' },
-  { id: 'egne', title: 'Egne varer' },
+const SHOP_GROUP_IDS: readonly ShopGroupId[] = [
+  'kjott',
+  'brod',
+  'frukt',
+  'drikke',
+  'torrvarer',
+  'frys',
+  'fest',
+  'godteposer',
+  'egne',
 ];
+/** The section titles in the active language (read each time). */
+const SHOP_GROUP_TITLES = liveRecord(SHOP_GROUP_IDS, (id) => `rules.shop.groups.${id}`);
+export const SHOP_GROUPS: readonly { readonly id: ShopGroupId; readonly title: string }[] = SHOP_GROUP_IDS.map(
+  (id) => ({
+    id,
+    get title() {
+      return SHOP_GROUP_TITLES[id];
+    },
+  }),
+);
 
 export interface ShopItem {
   /** Stable: the Mat line id (`grillpolser`), a party item (`kakelys`, `godteri`) or `egen-1`. */
@@ -149,12 +161,19 @@ function dietShopGroup(tag: string, g: DietGroup): ShopGroupId | null {
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
-/** «5 pk grillpølser», «2 flasker saft», «Ketchup og sennep: 1 av hver», «2 poser sprøstekt løk». */
-function phrase(qty: string, name: string): string {
+/**
+ * «5 pk grillpølser», «2 flasker saft», «Ketchup og sennep: 1 av hver», «2 poser sprøstekt løk».
+ * `style`: 'each' for «1 av hver» amounts, 'for' for «til 17» (plates, cups and napkins).
+ */
+function phrase(qty: string, name: string, style?: 'each' | 'for'): string {
   if (!qty) return name;
-  if (/av hver$/.test(qty) || /^til /.test(qty)) return /^til /.test(qty) ? `${name} ${qty}` : `${name}: ${qty}`;
-  return `${qty} ${lowerFirst(name)}`;
+  if (style === 'each') return t('rules.shop.phraseEach', { name, qty });
+  if (style === 'for') return t('rules.shop.phraseFor', { name, qty });
+  return t('rules.shop.phrase', { qty, name: lowerFirst(name) });
 }
+
+/** Lines whose amount is «N av hver» (ketchup and sennep, the taco and pasta sides). */
+const EACH_LINES = new Set(['ketchup', 'tacotilbehor', 'isberg', 'pastagront']);
 
 /** One included Mat line as a list item, or null when it is not something to buy here. */
 function fromFoodLine(l: FoodLine): Omit<ShopItem, 'ticked'> | null {
@@ -162,15 +181,35 @@ function fromFoodLine(l: FoodLine): Omit<ShopItem, 'ticked'> | null {
   const group = LINE_GROUP[l.id] ?? 'torrvarer';
   if (l.id === 'saft') {
     // «2 flasker saft» → «Saft» · «2 flasker»
-    const qty = l.amount.replace(/ saft$/, '');
-    return { id: l.id, group, name: 'Saft', qty, detail: 'Eller jus. Se Mat for mengden', text: phrase(qty, 'saft') };
+    const bottles = Number(/\d+/.exec(l.amount)?.[0] ?? 0);
+    const qty = t('units.bottles', { count: bottles });
+    return {
+      id: l.id,
+      group,
+      name: t('rules.shop.saft'),
+      qty,
+      detail: t('rules.shop.saftDetail'),
+      text: phrase(qty, t('rules.shop.saftLower')),
+    };
   }
-  const m = l.packs ? /^(\d+ pk) à (.+)$/.exec(l.packs) : null;
-  if (m) {
-    const qty = m[1];
-    return { id: l.id, group, name: l.name, qty, detail: `à ${m[2]}, ${l.amount} i alt`, text: phrase(qty, l.name) };
+  if (l.packCount !== undefined && l.packSize !== undefined) {
+    const qty = packsWord(l.packCount);
+    return {
+      id: l.id,
+      group,
+      name: l.name,
+      qty,
+      detail: t('rules.shop.packDetail', { size: l.packSize, total: l.amount }),
+      text: phrase(qty, l.name),
+    };
   }
-  return { id: l.id, group, name: l.name, qty: l.amount, text: phrase(l.amount, l.name) };
+  return {
+    id: l.id,
+    group,
+    name: l.name,
+    qty: l.amount,
+    text: phrase(l.amount, l.name, EACH_LINES.has(l.id) ? 'each' : undefined),
+  };
 }
 
 /** The food part of the list. Without a chosen main dish: drinks and fruit only. */
@@ -221,47 +260,55 @@ function partyThings(p: Party): Omit<ShopItem, 'ticked'>[] {
   const bags = Math.max(0, hc.kidsComing);
   const home = new Set(p.haveAtHome);
   const out: Omit<ShopItem, 'ticked'>[] = [];
-  const sets = p.celebrants.length;
+  const sets_ = p.celebrants.length;
   if (!home.has('kakelys'))
     out.push({
       id: 'kakelys',
       group: 'fest',
-      name: 'Kakelys',
-      qty: `${sets} sett`,
+      name: t('rules.shop.candles'),
+      qty: sets(sets_),
       detail:
-        sets > 1
-          ? `Ett sett per bursdagsbarn: ${p.celebrants.map((c) => `${c.name} ${c.age + 1} lys`).join(', ')}`
-          : `${p.celebrants[0].age + 1} lys til ${p.celebrants[0].name}`,
-      text: `${sets} sett kakelys`,
+        sets_ > 1
+          ? t('rules.shop.candlesJoint', {
+              list: p.celebrants.map((c) => `${c.name} ${t('rules.shop.candlesFor', { n: c.age + 1 })}`).join(', '),
+            })
+          : t('rules.shop.candlesOne', { n: p.celebrants[0].age + 1, name: p.celebrants[0].name }),
+      text: t('rules.shop.candlesText', { count: sets_ }),
     });
   if (!home.has('pappkrus-og-fat')) {
     const people = hc.kidsComing + hc.adultsEating;
     out.push({
       id: 'pappkrus-og-fat',
       group: 'fest',
-      name: 'Tallerkener, kopper og servietter',
-      qty: `til ${people}`,
-      detail: 'Til alle som spiser, barn og voksne',
-      text: phrase(`til ${people}`, 'Tallerkener, kopper og servietter'),
+      name: t('rules.shop.tableware'),
+      qty: forPeople(people),
+      detail: t('rules.shop.tablewareDetail'),
+      text: phrase(forPeople(people), t('rules.shop.tableware'), 'for'),
     });
   }
   if (!home.has('ballonger'))
-    out.push({ id: 'ballonger', group: 'fest', name: 'Ballonger', qty: '1 pk', text: '1 pk ballonger' });
+    out.push({
+      id: 'ballonger',
+      group: 'fest',
+      name: t('rules.shop.balloons'),
+      qty: packsWord(1),
+      text: t('rules.shop.balloonsText'),
+    });
   if (!home.has('bursdagskrone'))
     out.push({
       id: 'bursdagskrone',
       group: 'fest',
-      name: sets > 1 ? 'Bursdagskroner' : 'Bursdagskrone',
-      qty: `${sets} stk`,
-      text: sets > 1 ? `${sets} bursdagskroner` : '1 bursdagskrone',
+      name: t(sets_ > 1 ? 'rules.shop.crowns' : 'rules.shop.crown'),
+      qty: pcs(sets_),
+      text: t('rules.shop.crownText', { count: sets_ }),
     });
   out.push({
     id: 'godteposer',
     group: 'godteposer',
-    name: 'Godteposer',
-    qty: `${bags} stk`,
-    detail: 'Én til hvert barn',
-    text: `${bags} godteposer`,
+    name: t('rules.shop.bags'),
+    qty: pcs(bags),
+    detail: t('rules.shop.bagsDetail'),
+    text: t('rules.shop.bagsText', { count: bags }),
   });
   for (const id of GOODIE_BAG_ITEMS) {
     if (p.goodieBags.contents.includes(id)) out.push(goodieBagLine(id, bags, p));
@@ -269,21 +316,17 @@ function partyThings(p: Party): Omit<ShopItem, 'ticked'>[] {
   return out;
 }
 
-/** The chip label for each goodie-bag suggestion («Forslag til innhold»). */
-export const GOODIE_BAG_LABELS: Record<GoodieBagItemId, string> = {
-  godteri: 'Godteri',
-  popcorn: 'Popcorn',
-  rosiner: 'Rosiner',
-  klistremerker: 'Klistremerker',
-  sapebobler: 'Såpebobler',
-  viskelaer: 'Viskelær/blyant',
-  fruktstang: 'Fruktstang',
-};
+/** The chip label for each goodie-bag suggestion («Forslag til innhold»), in the active language. */
+export const GOODIE_BAG_LABELS: Readonly<Record<GoodieBagItemId, string>> = liveRecord(
+  GOODIE_BAG_ITEMS,
+  (id) => `rules.shop.labels.${id}`,
+);
 
 /** One goodie-bag suggestion as a list line: about one per child (candy ca. 100 g per bag). */
 function goodieBagLine(id: GoodieBagItemId, bags: number, p: Party): Omit<ShopItem, 'ticked'> {
   const base = { id: `pose-${id}`, group: 'godteposer' as const };
-  const one = 'Én til hver pose';
+  const one = t('rules.shop.oneEach');
+  const count = bags;
   switch (id) {
     case 'godteri': {
       const qty = formatGrams(bags * C.CANDY_G_CHILD);
@@ -292,55 +335,68 @@ function goodieBagLine(id: GoodieBagItemId, bags: number, p: Party): Omit<ShopIt
       );
       return {
         ...base,
-        name: 'Godteri',
+        name: t('rules.shop.candy'),
         qty,
-        detail: `ca. ${C.CANDY_G_CHILD} g per pose${nuts ? '. Velg nøttefritt: noen har nøtteallergi' : ''}`,
-        text: `${qty} godteri til godteposene`,
+        detail: t('rules.shop.candyDetail', { g: C.CANDY_G_CHILD }) + (nuts ? t('rules.shop.candyNuts') : ''),
+        text: t('rules.shop.candyText', { qty }),
       };
     }
     case 'popcorn':
       return {
         ...base,
-        name: 'Popcorn, små poser',
-        qty: `${bags} stk`,
+        name: t('rules.shop.popcorn'),
+        qty: pcs(bags),
         detail: one,
-        text: `${bags} små poser popcorn`,
+        text: t('rules.shop.popcornText', { count }),
       };
     case 'rosiner':
       return {
         ...base,
-        name: 'Rosiner, små esker',
-        qty: `${bags} stk`,
+        name: t('rules.shop.raisins'),
+        qty: pcs(bags),
         detail: one,
-        text: `${bags} små esker rosiner`,
+        text: t('rules.shop.raisinsText', { count }),
       };
     case 'klistremerker':
       return {
         ...base,
-        name: 'Klistremerker',
-        qty: `${bags} ark`,
-        detail: 'Ett ark til hver pose',
-        text: `${bags} ark klistremerker`,
+        name: t('rules.shop.stickers'),
+        qty: sheets(bags),
+        detail: t('rules.shop.stickersDetail'),
+        text: t('rules.shop.stickersText', { count }),
       };
     case 'sapebobler':
-      return { ...base, name: 'Såpebobler', qty: `${bags} stk`, detail: one, text: `${bags} såpebobler` };
+      return {
+        ...base,
+        name: t('rules.shop.bubbles'),
+        qty: pcs(bags),
+        detail: one,
+        text: t('rules.shop.bubblesText', { count }),
+      };
     case 'viskelaer':
       return {
         ...base,
-        name: 'Viskelær eller blyant',
-        qty: `${bags} stk`,
+        name: t('rules.shop.eraser'),
+        qty: pcs(bags),
         detail: one,
-        text: `${bags} viskelær eller blyanter`,
+        text: t('rules.shop.eraserText', { count }),
       };
     case 'fruktstang':
-      return { ...base, name: 'Fruktstenger', qty: `${bags} stk`, detail: one, text: `${bags} fruktstenger` };
+      return {
+        ...base,
+        name: t('rules.shop.fruitBars'),
+        qty: pcs(bags),
+        detail: one,
+        text: t('rules.shop.fruitBarsText', { count }),
+      };
   }
 }
 
 /** «Emmas bursdag 15. nov», «Emma og Jonas' bursdag 15. nov» */
 export function shoppingTitle(p: Pick<Party, 'celebrants' | 'date'>): string {
-  const { m, d } = parts(p.date);
-  return `Handleliste – ${genitive(celebrantNames(p.celebrants))} bursdag ${d}. ${MONTHS_SHORT[m - 1]}`;
+  // «15. nov» (no dot after the month here) / «15 Nov»
+  const date = formatDayMonthShort(p.date).replace(/\.$/, '');
+  return t('rules.shop.title', { gen: genitive(celebrantNames(p.celebrants)), date });
 }
 
 /** The whole list for a party: grouped by store section, ticked items at the bottom of each group. */
@@ -386,7 +442,7 @@ export function shareText(list: Handleliste): string {
     .map((g) => ({ title: g.title, items: g.items.filter((i) => !i.ticked) }))
     .filter((g) => g.items.length > 0)
     .map((g) => [g.title, ...g.items.map((i) => `☐ ${i.text}`)].join('\n'));
-  return [list.title, ...(blocks.length ? blocks : ['Alt er handlet.'])].join('\n\n');
+  return [list.title, ...(blocks.length ? blocks : [t('rules.shop.allBought')])].join('\n\n');
 }
 
 // ---------------- changes (pure; the provider saves them) ----------------
@@ -441,7 +497,7 @@ export function withGoodieBagItem(p: Party, id: GoodieBagItemId, picked: boolean
 
 /** The Handleliste card on Planen: «12 varer», «12 varer · 3 kjøpt», «Alt er handlet». */
 export function shoppingCardLine(list: Pick<Handleliste, 'count' | 'tickedCount'>): string {
-  const varer = `${list.count} ${list.count === 1 ? 'vare' : 'varer'}`;
-  if (list.count > 0 && list.tickedCount >= list.count) return `Alt er handlet · ${varer}`;
-  return list.tickedCount > 0 ? `${varer} · ${list.tickedCount} kjøpt` : varer;
+  const items = t('rules.shop.items', { count: list.count });
+  if (list.count > 0 && list.tickedCount >= list.count) return t('rules.shop.cardAllBought', { items });
+  return list.tickedCount > 0 ? t('rules.shop.cardTicked', { items, count: list.tickedCount }) : items;
 }

@@ -18,6 +18,8 @@ import {
   withTheme,
   withInvitation,
   withCake,
+  withActivity,
+  type ActivityId,
   type CakeChoice,
   type DietTag,
   type InvitationSettings,
@@ -70,6 +72,8 @@ interface PartyState {
   setInvitation: (patch: Partial<InvitationSettings>) => void;
   /** Kake: the kind of cake, the glaze, the muffins and whether it is chosen (rules/cake.ts `withCake`). */
   setCake: (patch: Partial<Pick<CakeChoice, 'kind' | 'glaze' | 'muffinFlavour' | 'muffins' | 'chosen'>>) => void;
+  /** Program: pick or unpick one activity idea (rules/programme.ts `withActivity`). */
+  setActivity: (id: ActivityId, on: boolean) => void;
 }
 
 const Ctx = createContext<PartyState | null>(null);
@@ -202,6 +206,8 @@ export function PartyProvider({
     [update],
   );
 
+  const setActivity = useCallback((id: ActivityId, on: boolean) => update((p) => withActivity(p, id, on)), [update]);
+
   const startOver = useCallback(async () => {
     // a change still waiting to be saved would write the old party back after the reset
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -234,6 +240,7 @@ export function PartyProvider({
       startOver,
       setInvitation,
       setCake,
+      setActivity,
     }),
     [
       ready,
@@ -257,6 +264,7 @@ export function PartyProvider({
       startOver,
       setInvitation,
       setCake,
+      setActivity,
     ],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

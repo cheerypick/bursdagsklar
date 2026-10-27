@@ -88,7 +88,9 @@ export default function PlanScreen() {
       key: 'programme',
       image: images.pinata,
       title: t('plan.cards.programme.title'),
-      sub: `${party.start.replace(':', '.')}–${party.end.replace(':', '.')}`,
+      // Program: the picked ideas («Skattejakt og piñata»), «2 valgt» as the done state; else a soft invitation
+      sub: s.programmeChoice || t('program.cardEmpty'),
+      badge: s.programmeCount > 0 ? t('plan.cards.programme.done', { count: s.programmeCount }) : undefined,
       route: '/program',
       half: true,
     },

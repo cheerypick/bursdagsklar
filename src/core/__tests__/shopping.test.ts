@@ -34,6 +34,8 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
       'Drikke',
       'Tørrvarer',
       'Til kaken',
+      // Emma has skattejakt and the piñata picked on Program: the piñata and its candy
+      'Til lekene',
       'Fest og pynt',
       'Godteposer',
     ]);
@@ -106,10 +108,10 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
   });
 
   it('counts the items for the Planen card', () => {
-    // 12 + the cake's 4 (Toro mix, glaze, muffins, butter: Emma has muffins on)
-    expect(list.count).toBe(16);
-    expect(shoppingCardLine(list)).toBe('16 varer');
-    expect(shoppingCardLine(handleliste(withTick(emma(), 'saft', true)))).toBe('16 varer · 1 kjøpt');
+    // 12 + the cake's 4 (Toro mix, glaze, muffins, butter: Emma has muffins on) + the piñata and its candy
+    expect(list.count).toBe(18);
+    expect(shoppingCardLine(list)).toBe('18 varer');
+    expect(shoppingCardLine(handleliste(withTick(emma(), 'saft', true)))).toBe('18 varer · 1 kjøpt');
   });
 
   it('without a main dish: drinks, fruit and party things only', () => {
@@ -193,7 +195,7 @@ describe('Handleliste follows the Mat screen and the party', () => {
     p = withoutCustomItem(p, 'egen-1');
     expect(p.shopping).toEqual({ ticked: [], custom: [{ id: 'egen-2', text: 'Sugerør' }] });
     expect(nextCustomId(p.shopping.custom)).toBe('egen-3');
-    expect(handleliste(p).count).toBe(17);
+    expect(handleliste(p).count).toBe(19);
   });
 });
 
@@ -281,6 +283,10 @@ describe('shareText', () => {
         '☐ 1 pk Toro Lyse Muffins',
         '☐ 350 g smør',
         '',
+        'Til lekene',
+        '☐ 1 stk enhjørning-piñata',
+        '☐ ca. 700 g godteri til piñataen',
+        '',
         'Fest og pynt',
         '☐ 1 sett kakelys',
         '☐ Tallerkener, kopper og servietter til 17',
@@ -302,7 +308,7 @@ describe('shareText', () => {
     let p = emma();
     for (const id of handleliste(p).groups.flatMap((g) => g.items.map((i) => i.id))) p = withTick(p, id, true);
     expect(shareText(handleliste(p))).toBe('Handleliste – Emmas bursdag 7. nov\n\nAlt er handlet.');
-    expect(shoppingCardLine(handleliste(p))).toBe('Alt er handlet · 16 varer');
+    expect(shoppingCardLine(handleliste(p))).toBe('Alt er handlet · 18 varer');
   });
 });
 

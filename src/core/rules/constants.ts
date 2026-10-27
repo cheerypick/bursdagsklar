@@ -266,8 +266,8 @@ export const SHORT_NOTICE_DAYS = 7;
  * activity the parent hasn't chosen. The Program step (milestone 3) turns them on;
  * PROGRAMME_SUGGESTED_AGES is when it should suggest them (§4).
  */
-export function programmeDefaults(_age: number) {
-  return { includePinata: false, includeSkattejakt: false };
+export function programmeDefaults(_age: number): { activities: string[] } {
+  return { activities: [] };
 }
 export const PROGRAMME_SUGGESTED_AGES = { min: 3, max: 9 } as const;
 

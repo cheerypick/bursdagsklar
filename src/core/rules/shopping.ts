@@ -13,6 +13,8 @@
  *   ingredients of the from-scratch recipe; nothing for a ready-made cake;
  * - drinks and fruit (also when no main dish is chosen yet: they do not depend on it);
  * - the dietary extras ticked on Mat («1 pk kyllingpølser»);
+ * - the activities picked on Program (rules/programme.ts, «Til lekene»): the piñata and candy to fill it,
+ *   the fiskedam's sheet, rod and small prizes, eggs or potatoes, muffin decorations; nothing twice;
  * - party things: goodie bags, candles (one set per birthday child), plates/cups/napkins, balloons
  *   and the birthday crown, unless «Har dere dette hjemme?» says they are at home;
  * - what she picked for the goodie bags from «Forslag til innhold» (none by default), about one per
@@ -34,6 +36,7 @@ import {
 } from './menu';
 import { menuDishes } from './dishes';
 import { cakeShopLines } from './cake';
+import { programmeShopLines } from './programme';
 import { headCount } from './people';
 import { celebrantNames, oldestAge } from './celebrants';
 import { genitive } from '../texts/render';
@@ -42,7 +45,7 @@ import { liveRecord, t } from '../../i18n/i18n';
 import { forPeople, packsWord, pcs, sets, sheets } from './units';
 
 export type ShopGroupId =
-  'kjott' | 'brod' | 'frukt' | 'drikke' | 'torrvarer' | 'frys' | 'kake' | 'fest' | 'godteposer' | 'egne';
+  'kjott' | 'brod' | 'frukt' | 'drikke' | 'torrvarer' | 'frys' | 'kake' | 'leker' | 'fest' | 'godteposer' | 'egne';
 
 /** Store sections, in the order the list shows them. Empty sections are not shown. */
 const SHOP_GROUP_IDS: readonly ShopGroupId[] = [
@@ -53,6 +56,7 @@ const SHOP_GROUP_IDS: readonly ShopGroupId[] = [
   'torrvarer',
   'frys',
   'kake',
+  'leker',
   'fest',
   'godteposer',
   'egne',
@@ -273,6 +277,11 @@ function cakeItems(p: Party, food: Omit<ShopItem, 'ticked'>[]): Omit<ShopItem, '
   }));
 }
 
+/** Program («Til lekene»): only what the picked activities need (rules/programme.ts). */
+function programmeItems(p: Party): Omit<ShopItem, 'ticked'>[] {
+  return programmeShopLines(p).map((l) => ({ ...l, group: 'leker' as const }));
+}
+
 /** Goodie bags, candy, candles, tableware, balloons and the crown. */
 function partyThings(p: Party): Omit<ShopItem, 'ticked'>[] {
   const hc = headCount(p);
@@ -430,7 +439,13 @@ export function handleliste(p: Party): Handleliste {
     text: c.text,
     custom: true,
   }));
-  const all: ShopItem[] = [...food.items, ...cakeItems(p, food.items), ...partyThings(p), ...custom].map((i) => ({
+  const all: ShopItem[] = [
+    ...food.items,
+    ...cakeItems(p, food.items),
+    ...programmeItems(p),
+    ...partyThings(p),
+    ...custom,
+  ].map((i) => ({
     ...i,
     ticked: ticked.has(i.id),
   }));

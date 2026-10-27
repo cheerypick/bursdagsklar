@@ -305,7 +305,7 @@ test('Mat: a party saved before the Mat screen (schema 2) opens with no menu cho
       menu: { kind: 'wienerpolser' },
       menuChosen: false,
       cake: { mode: 'bake', cakeId: 'vaniljekake-langpanne', muffins: false },
-      programme: { includePinata: false, includeSkattejakt: false },
+      programme: { activities: [] },
       guests: [],
       haveAtHome: [],
       taskState: {},

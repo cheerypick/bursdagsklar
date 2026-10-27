@@ -18,28 +18,32 @@ describe('to-dos, test vector A (spec §6.1)', () => {
       guestList: 'man 19. okt',
       sendInvite: 'man 19. okt',
       printCards: 'tir 20. okt',
-      orderPinata: 'ons 21. okt',
       rsvpReminder: 'fre 30. okt',
       borrowDispenser: 'fre 30. okt',
       rsvpDeadline: 'lør 31. okt',
+      // Program (Oct 2026): order the piñata about a week before
+      orderPinata: 'lør 31. okt',
       allergyCheck: 'søn 1. nov',
       buyDry: 'tir 3. nov',
       bakeCakeBase: 'ons 4. nov',
       partyReminder: 'tor 5. nov',
       checkGrill: 'tor 5. nov',
-      printClues: 'tor 5. nov',
       buyFresh: 'fre 6. nov',
       bakeMuffins: 'fre 6. nov',
+      // skattejakt for a 5-year-old: Ekaterina's drawn map, then hide the goodie bags on the day
+      fillPinata: 'fre 6. nov',
+      drawMap: 'fre 6. nov',
+      hideTreasure: 'lør 7. nov',
       partyDay: 'lør 7. nov',
       thanks: 'søn 8. nov',
     });
   });
-  it('16 tickable tasks, 1 done after setup', () => {
+  it('18 tickable tasks, 1 done after setup', () => {
     const p = emma();
     const t = tickable(plan.tasks);
-    expect(t).toHaveLength(16);
+    expect(t).toHaveLength(18);
     expect(t.filter((x) => isDone(p, x))).toHaveLength(1);
-    expect(progress(p, plan.tasks, '2026-10-19')).toMatchObject({ done: 1, total: 16, overdue: 0, thisWeekOpen: 3 });
+    expect(progress(p, plan.tasks, '2026-10-19')).toMatchObject({ done: 1, total: 18, overdue: 0, thisWeekOpen: 2 });
   });
   it('is sorted by date', () => {
     const ds = plan.tasks.map((t) => t.date);
@@ -60,7 +64,7 @@ describe('test vector B: planned Wed 28 Oct (avail 10)', () => {
     expect(d.rsvpDeadline).toBe('man 2. nov');
     expect(d.sendInvite).toBe('ons 28. okt');
     expect(d.printCards).toBe('ons 28. okt');
-    expect(d.orderPinata).toBe('tor 29. okt');
+    expect(d.orderPinata).toBe('lør 31. okt');
     expect(d.rsvpReminder).toBe('søn 1. nov');
     expect(d.borrowDispenser).toBe('søn 1. nov');
     expect(d.allergyCheck).toBe('tir 3. nov');
@@ -126,11 +130,10 @@ describe('conditions', () => {
     );
   });
   it('no piñata/skattejakt removes their tasks', () => {
-    const ids = buildTasks(emma({ programme: { includePinata: false, includeSkattejakt: false } })).tasks.map(
-      (t) => t.id,
-    );
+    const ids = buildTasks(emma({ programme: { activities: [] } })).tasks.map((t) => t.id);
     expect(ids).not.toContain('orderPinata');
-    expect(ids).not.toContain('printClues');
+    expect(ids).not.toContain('drawMap');
+    expect(ids).not.toContain('hideTreasure');
   });
 });
 
@@ -145,16 +148,16 @@ describe('ticking and groups', () => {
     const p = emma();
     const g = groupTasks(p, buildTasks(p).tasks, '2026-10-19');
     expect(g.map((x) => x.title)).toEqual(['Denne uka', 'Neste uke', 'Festuka', 'Etter festen']);
-    expect(g[0].tasks.map((t) => t.task.id)).toEqual(['guestList', 'sendInvite', 'printCards', 'orderPinata']);
+    expect(g[0].tasks.map((t) => t.task.id)).toEqual(['guestList', 'sendInvite', 'printCards']);
     expect(g[3].tasks.map((t) => t.task.id)).toEqual(['thanks']);
   });
   it('undone tasks from earlier days move to «I dag» with «Skulle vært gjort …»', () => {
     const p = emma();
     const g = groupTasks(p, buildTasks(p).tasks, '2026-10-22');
     expect(g[0].title).toBe('I dag');
-    expect(g[0].tasks.map((t) => t.task.id)).toEqual(['sendInvite', 'printCards', 'orderPinata']);
+    expect(g[0].tasks.map((t) => t.task.id)).toEqual(['sendInvite', 'printCards']);
     expect(g[0].tasks[0].overdueText).toBe('Skulle vært gjort mandag 19.');
-    expect(progress(p, buildTasks(p).tasks, '2026-10-22').overdue).toBe(3);
+    expect(progress(p, buildTasks(p).tasks, '2026-10-22').overdue).toBe(2);
   });
 });
 
@@ -167,7 +170,7 @@ describe('to-dos never depend on a theme', () => {
     expect(themed.tasks.find((t) => t.id === 'orderPinata')?.title).toBe('Bestill enhjørning-piñata');
   });
   it('a themed piñata only when a theme is chosen AND the piñata is on', () => {
-    const off = buildTasks(emma({ theme: 'frost', programme: { includePinata: false, includeSkattejakt: false } }));
+    const off = buildTasks(emma({ theme: 'frost', programme: { activities: [] } }));
     expect(off.tasks.map((t) => t.id)).not.toContain('orderPinata');
     expect(JSON.stringify(off.tasks)).not.toMatch(/piñata/i);
     const on = buildTasks(emma({ theme: 'frost' }));

@@ -175,7 +175,7 @@ describe('createParty', () => {
       children: 13,
       hostAdults: 2,
       // nothing the parent hasn't chosen: no piñata, skattejakt or muffins yet
-      programme: { includePinata: false, includeSkattejakt: false },
+      programme: { activities: [] },
       cake: { mode: 'bake', muffins: false },
       // Handleliste: nothing ticked, no own items, nothing picked for the goodie bags
       goodieBags: { contents: [] },
@@ -226,9 +226,11 @@ describe('summary for «Festen er klar» and Planen (spec §10.2)', () => {
       menuLine: 'Grillpølser for 13 barn og 4 voksne',
       cakeLine: 'Enhjørningkake og muffins',
       cakeIdea: 'Rosa og hvit kake med regnbuedryss og muffins',
-      programmeLine: 'Program 12–14 med skattejakt',
-      tasksThisWeek: 3,
-      progressLine: '1 av 16 gjøremål er gjort. Godt i rute.',
+      programmeLine: 'Program 12–14: Skattejakt, Enhjørning-piñata',
+      programmeChoice: 'Skattejakt, Enhjørning-piñata',
+      programmeCount: 2,
+      tasksThisWeek: 2,
+      progressLine: '1 av 18 gjøremål er gjort. Godt i rute.',
     });
   });
   it('countdown words for tomorrow and today', () => {

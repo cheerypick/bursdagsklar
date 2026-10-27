@@ -30,6 +30,7 @@ import { menuTitle } from './rules/menu';
 import { headCount } from './rules/people';
 import { CAKE_IDS, cakeChoiceLine, cakePlan, resolveCake } from './rules/cake';
 import { buildTasks, progress } from './rules/todos';
+import { isPicked, pickedActivities, programmeChoiceLine } from './rules/programme';
 import { themeById } from './themes';
 import { agePhrase, celebrantNames, clampAge, oldestAge, youngestAge } from './rules/celebrants';
 import { genitive } from './texts/render';
@@ -317,7 +318,8 @@ export function homeItemsFor(p: Party): HomeItemId[] {
     if (id === 'pizzahjul') return kinds.includes('pizza');
     if (id === 'stor-kjele') return kinds.includes('wienerpolser') || kinds.includes('pasta');
     if (id === 'grill') return kinds.includes('grillpolser');
-    if (id === 'laken-fiskedam' || id === 'fiskestang') return p.programme.includeSkattejakt;
+    // the sheet and the rod are for the fiskedam (before Program they were wrongly tied to skattejakt)
+    if (id === 'laken-fiskedam' || id === 'fiskestang') return isPicked(p, 'fiskedam');
     if (id === 'muffinsformer') return cakePlan(p).muffinPacks > 0;
     return true;
   });
@@ -375,6 +377,9 @@ export interface PartySummary {
   /** The parent has picked or confirmed the cake on the Kake screen (the Planen card's done state). */
   cakeChosen: boolean;
   programmeLine: string;
+  /** Program: the picked ideas in a few words («Skattejakt og piñata»); '' when none is picked. */
+  programmeChoice: string;
+  programmeCount: number;
   tasksThisWeek: number;
   done: number;
   total: number;
@@ -421,7 +426,11 @@ export function summarize(p: Party, today: ISODate): PartySummary {
         : muffins(theme ? theme.copy.cakeIdea : t('rules.party.neutralCakeIdea')),
     cakeChoice: cakeChoiceLine(p),
     cakeChosen: resolveCake(p.cake).chosen,
-    programmeLine: t(p.programme.includeSkattejakt ? 'rules.party.programmeHunt' : 'rules.party.programme', { tid }),
+    programmeLine: programmeChoiceLine(p)
+      ? t('rules.party.programmeWith', { tid, list: programmeChoiceLine(p) })
+      : t('rules.party.programme', { tid }),
+    programmeChoice: programmeChoiceLine(p),
+    programmeCount: pickedActivities(p).length,
     tasksThisWeek: pr.thisWeekOpen,
     done: pr.done,
     total: pr.total,

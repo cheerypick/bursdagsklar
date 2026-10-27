@@ -14,5 +14,7 @@ export * from './rules/todos';
 export * from './rules/shopping';
 export * from './rules/invitation';
 export * from './rules/cake';
+export * from './rules/activities';
+export * from './rules/programme';
 export * from './texts/render';
 export * from './storage/PartyRepository';

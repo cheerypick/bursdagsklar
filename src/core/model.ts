@@ -172,6 +172,24 @@ export interface CakeChoice {
   chosen?: boolean;
 }
 
+/**
+ * Program (Oct 2026): the activity ideas the parent picked on the Program screen (rules/activities.ts).
+ * Ideas, not a plan she has to follow: none is required, and nothing is picked by default.
+ *
+ * Before the Program screen the party had two switches, `includePinata` and `includeSkattejakt` (both off
+ * by default and never shown). They are read once, without a schema bump: a party saved with one of them on
+ * opens with 'pinata' / 'skattejakt' picked (rules/programme.ts `sanitizeProgramme`), and they are not
+ * written again.
+ */
+export interface ProgrammeChoice {
+  /** The picked activities, in the order she picked them. Ids from `ACTIVITY_IDS`; unknown ids are dropped. */
+  activities?: string[];
+  /** @deprecated read only, for parties saved before the Program screen */
+  includePinata?: boolean;
+  /** @deprecated read only, for parties saved before the Program screen */
+  includeSkattejakt?: boolean;
+}
+
 export interface Guest {
   id: string;
   label: string;
@@ -258,7 +276,7 @@ export interface Party {
   /** Handleliste: what she has ticked off (by stable item id) and her own free-text items. */
   shopping: ShoppingState;
   cake: CakeChoice;
-  programme: { includePinata: boolean; includeSkattejakt: boolean };
+  programme: ProgrammeChoice;
   guests: Guest[];
   haveAtHome: HomeItemId[];
   taskState: Record<string, TaskState>;

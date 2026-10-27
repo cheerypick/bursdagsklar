@@ -32,6 +32,8 @@ import { buildTasks, progress } from './rules/todos';
 import { themeById } from './themes';
 import { agePhrase, celebrantNames, clampAge, oldestAge, youngestAge } from './rules/celebrants';
 import { genitive } from './texts/render';
+import { t } from '../i18n/i18n';
+import { adultsCount, kidsCount } from './rules/units';
 
 /** A birthday child while setup is still running: the age may not be picked yet. */
 export interface DraftCelebrant {
@@ -321,6 +323,7 @@ export function homeItemsFor(p: Party): HomeItemId[] {
 }
 
 /** The cake words when no theme is chosen: nothing themed. */
+/** The neutral cake words in nb (the screens read rules.party.neutralCake* in the active language). */
 export const NEUTRAL_CAKE = 'Bursdagskake';
 export const NEUTRAL_CAKE_IDEA = 'Bursdagskake i langpanne med strøssel og lys';
 
@@ -337,14 +340,24 @@ export function partyAges(p: Pick<Party, 'celebrants'>): { youngest: number; old
 /** «Emmas fest er klar.» · «Festen til Emma og Jonas er klar.» */
 export function readyTitle(p: Pick<Party, 'celebrants'>): string {
   return p.celebrants.length === 1
-    ? `${genitive(p.celebrants[0].name)} fest er klar.`
-    : `Festen til ${partyNames(p)} er klar.`;
+    ? t('rules.party.ready', { gen: genitive(p.celebrants[0].name) })
+    : t('rules.party.readyJoint', { names: partyNames(p) });
 }
 
 /** «Emmas 5-årsdag» · «Emma og Jonas fyller 5 og 7» · «Emma og Jonas fyller 5». */
 export function planTitle(p: Pick<Party, 'celebrants'>): string {
-  if (p.celebrants.length === 1) return `${genitive(p.celebrants[0].name)} ${p.celebrants[0].age}-årsdag`;
+  if (p.celebrants.length === 1) {
+    const age = p.celebrants[0].age;
+    return t('rules.party.planTitle', { gen: genitive(p.celebrants[0].name), age, ord: englishOrdinal(age) });
+  }
   return `${partyNames(p)} ${agePhrase(p.celebrants.map((c) => c.age))}`;
+}
+
+/** «st», «nd», «rd», «th» for the English «5th birthday» (the nb text does not use it). */
+function englishOrdinal(n: number): string {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return 'th';
+  return n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th';
 }
 
 export interface PartySummary {
@@ -372,26 +385,36 @@ export function summarize(p: Party, today: ISODate): PartySummary {
   const pr = progress(p, tasks, today);
   const daysLeft = Math.max(0, diffDays(today, p.date));
   const theme = p.theme ? themeById(p.theme) : null;
-  const countdownLabel = daysLeft === 0 ? 'I dag!' : daysLeft === 1 ? 'I morgen!' : `${daysLeft} dager igjen`;
+  const countdownLabel =
+    daysLeft === 0
+      ? t('rules.party.today')
+      : daysLeft === 1
+        ? t('rules.party.tomorrow')
+        : t('rules.party.daysLeft', { count: daysLeft });
   const progressLine =
-    `${pr.done} av ${pr.total} gjøremål er gjort. ` +
-    (pr.overdue > 0 ? `${pr.overdue} ${pr.overdue === 1 ? 'ting ligger' : 'ting ligger'} etter.` : 'Godt i rute.');
+    `${t('rules.party.progress', { done: pr.done, total: pr.total })} ` +
+    (pr.overdue > 0 ? t('rules.party.behind', { count: pr.overdue }) : t('rules.party.onTrack'));
+  const muffins = (cake: string) => (p.cake.muffins ? t('rules.party.withMuffins', { cake }) : cake);
   const tid = formatRangeCompact(p.start, p.end);
   return {
     daysLeft,
     countdownLabel,
     kidsComing: hc.kidsComing,
     adultsEating: hc.adultsEating,
-    menuLine: `${p.menu ? menuTitle(p.menu) : 'Mat'} for ${hc.kidsComing} barn og ${hc.adultsEating} voksne`,
+    menuLine: t('rules.party.menuLine', {
+      menu: p.menu ? menuTitle(p.menu) : t('rules.party.food'),
+      kidsN: hc.kidsComing,
+      adultsN: hc.adultsEating,
+      kids: kidsCount(hc.kidsComing),
+      adults: adultsCount(hc.adultsEating),
+    }),
     cakeLine:
-      p.cake.mode === 'buy'
-        ? 'Kake fra bakeren'
-        : `${theme ? theme.cake : NEUTRAL_CAKE}${p.cake.muffins ? ' og muffins' : ''}`,
+      p.cake.mode === 'buy' ? t('rules.party.cakeBakery') : muffins(theme ? theme.cake : t('rules.party.neutralCake')),
     cakeIdea:
       p.cake.mode === 'buy'
-        ? 'Kake fra bakeren'
-        : `${theme ? theme.copy.cakeIdea : NEUTRAL_CAKE_IDEA}${p.cake.muffins ? ' og muffins' : ''}`,
-    programmeLine: `Program ${tid}${p.programme.includeSkattejakt ? ' med skattejakt' : ''}`,
+        ? t('rules.party.cakeBakery')
+        : muffins(theme ? theme.copy.cakeIdea : t('rules.party.neutralCakeIdea')),
+    programmeLine: t(p.programme.includeSkattejakt ? 'rules.party.programmeHunt' : 'rules.party.programme', { tid }),
     tasksThisWeek: pr.thisWeekOpen,
     done: pr.done,
     total: pr.total,

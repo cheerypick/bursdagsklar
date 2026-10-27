@@ -44,7 +44,7 @@ test('a weekday: 17.00–19.00, dinner, and no tip', async ({ page }) => {
   await visible(page, 'calendar-next').click();
   await visible(page, 'day-2026-11-11').click(); // Wednesday
   await expect(visible(page, 'party-time')).toContainText('Kl. 17.00–19.00');
-  await expect(visible(page, 'party-time')).toContainText('maten blir middag');
+  await expect(visible(page, 'party-time')).toContainText('passer fint rundt middag');
   await expect(visible(page, 'date-tip-busy')).toHaveCount(0);
   await expect(visible(page, 'date-tip-pickup')).toHaveCount(0);
   await expect(visible(page, 'date-notice')).toHaveCount(0);
@@ -55,7 +55,7 @@ test('a Saturday for a 5-year-old: 12.00–14.00 and the soft «Fredag og helg»
   await visible(page, 'calendar-next').click();
   await visible(page, 'day-2026-11-14').click(); // Saturday
   await expect(visible(page, 'party-time')).toContainText('Kl. 12.00–14.00');
-  await expect(visible(page, 'party-time')).toContainText('maten blir lunsj');
+  await expect(visible(page, 'party-time')).toContainText('passer fint rundt lunsj');
   await expect(visible(page, 'date-tip-busy')).toHaveText(
     'Tips: Fredag og helg kan noen ha andre planer. Send gjerne invitasjonen tidlig.',
   );

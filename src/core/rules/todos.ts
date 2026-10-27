@@ -3,12 +3,14 @@
  * only `taskState` (done/hidden per task id) is stored.
  */
 import type { ISODate, Party, Task } from '../model';
-import { addDays, diffDays, formatLong, mondayOf, parts, weekday, WEEKDAYS } from './dates';
+import { addDays, diffDays, formatLong, mondayOf, parts, weekday, weekdayName } from './dates';
+import { liveRecord, t } from '../../i18n/i18n';
 import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { headCount } from './people';
 import { themeById } from '../themes';
 import { isIncluded, mainItemWord } from './food';
 import { dishOn, menuDishes } from './dishes';
+import { kidsCount } from './units';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -44,7 +46,7 @@ export function buildTasks(p: Party): TaskPlan {
   // (the piñata), and that to-do only exists when the parent has turned the activity on.
   const theme = p.theme ? themeById(p.theme) : null;
   // a joint birthday shares ONE cake for all guests, with a candle set for each child
-  const candleNote = p.celebrants.length > 1 ? 'Ett lys-sett per bursdagsbarn' : null;
+  const candleNote = p.celebrants.length > 1 ? t('rules.todos.candleNote') : null;
   const pinata = p.programme.includePinata;
   const clues = p.programme.includeSkattejakt;
   const bake = p.cake.mode === 'bake';
@@ -54,93 +56,108 @@ export function buildTasks(p: Party): TaskPlan {
   const has = (id: Party['haveAtHome'][number]) => p.haveAtHome.includes(id);
 
   const rows: (Task | false)[] = [
-    { id: 'guestList', date: T, title: 'Lag gjestelisten', detail: `${p.children} barn`, auto: true },
+    { id: 'guestList', date: T, title: t('rules.todos.guestList.title'), detail: kidsCount(p.children), auto: true },
     {
       id: 'sendInvite',
       date: front(19),
-      title: 'Send invitasjonen',
-      detail: 'Meldingen til foreldregruppa er klar',
-      link: { label: 'Åpne meldingen', route: '/invitasjon' },
+      title: t('rules.todos.sendInvite.title'),
+      detail: t('rules.todos.sendInvite.detail'),
+      link: { label: t('rules.todos.sendInvite.link'), route: '/invitasjon' },
     },
     {
       id: 'printCards',
       date: front(18),
       // no count here: the one children number includes the birthday children, who get no card
-      title: 'Skriv ut invitasjonskortene',
-      detail: 'A6, to per A4. Ett til hver gjest',
-      link: { label: 'Se kortet', route: '/invitasjon' },
+      title: t('rules.todos.printCards.title'),
+      detail: t('rules.todos.printCards.detail'),
+      link: { label: t('rules.todos.printCards.link'), route: '/invitasjon' },
     },
     pinata &&
       avail >= 8 && {
         id: 'orderPinata',
         date: front(17),
-        title: theme ? `Bestill ${theme.pinata}` : 'Bestill piñata',
-        detail: 'Levering tar ofte 3–5 dager',
+        title: theme
+          ? t('rules.todos.orderPinata.title', { pinata: theme.pinata })
+          : t('rules.todos.orderPinata.titleNeutral'),
+        detail: t('rules.todos.orderPinata.detail'),
       },
     pinata &&
-      avail < 8 && { id: 'buyPinata', date: at(4), title: 'Kjøp piñata i butikken', detail: 'Leke- eller festbutikk' },
+      avail < 8 && {
+        id: 'buyPinata',
+        date: at(4),
+        title: t('rules.todos.buyPinata.title'),
+        detail: t('rules.todos.buyPinata.detail'),
+      },
     !bake && {
       id: 'orderCake',
       date: at(7),
-      title: candleNote ? 'Bestill én felles kake' : 'Bestill kaken',
-      detail: candleNote ? `Stor nok til alle gjestene. ${candleNote}` : 'Hos bakeren eller i butikken',
+      title: t(candleNote ? 'rules.todos.orderCake.titleJoint' : 'rules.todos.orderCake.title'),
+      detail: candleNote
+        ? t('rules.todos.orderCake.detailJoint', { candles: candleNote })
+        : t('rules.todos.orderCake.detail'),
     },
     {
       id: 'rsvpReminder',
       date: at(R + 1),
-      title: 'Svarfrist i morgen: send påminnelse',
-      detail: 'Den er ferdig skrevet, til de som ikke har svart',
-      link: { label: 'Påminnelsen', route: '/invitasjon' },
+      title: t('rules.todos.rsvpReminder.title'),
+      detail: t('rules.todos.rsvpReminder.detail'),
+      link: { label: t('rules.todos.rsvpReminder.link'), route: '/invitasjon' },
     },
     !has('saftdispenser') && {
       id: 'borrowDispenser',
       date: at(R + 1),
-      title: 'Lån en saftdispenser (5–8 l)',
-      detail: 'Spør i foreldregruppa først',
+      title: t('rules.todos.borrowDispenser.title'),
+      detail: t('rules.todos.borrowDispenser.detail'),
     },
-    { id: 'rsvpDeadline', date: at(R), title: 'Svarfrist', detail: 'Mengdene oppdateres automatisk', milestone: true },
+    {
+      id: 'rsvpDeadline',
+      date: at(R),
+      title: t('rules.todos.rsvpDeadline.title'),
+      detail: t('rules.todos.rsvpDeadline.detail'),
+      milestone: true,
+    },
     {
       id: 'allergyCheck',
       date: at(Math.max(1, R - 1)),
-      title: 'Sjekk allergier mot menyen',
-      detail: 'Ingen allergier meldt ennå',
-      link: { label: 'Mat', route: '/mat' },
+      title: t('rules.todos.allergyCheck.title'),
+      detail: t('rules.todos.allergyCheck.detail'),
+      link: { label: t('rules.todos.allergyCheck.link'), route: '/mat' },
     },
     pizza?.kind === 'pizza' &&
       pizza.style === 'bestilt' && {
         id: 'orderPizza',
         date: at(2),
-        title: 'Forhåndsbestill pizzaene',
-        detail: pizza.takeawaySize === '40' ? 'Store, ca. 40 cm' : 'Vanlige, ca. 30 cm',
+        title: t('rules.todos.orderPizza.title'),
+        detail: t(pizza.takeawaySize === '40' ? 'rules.todos.orderPizza.big' : 'rules.todos.orderPizza.normal'),
       },
     {
       id: 'buyDry',
       date: at(4),
-      title: 'Handle tørrvarer',
+      title: t('rules.todos.buyDry.title'),
       detail: dryDetail(p),
-      link: { label: 'Handleliste', route: '/handleliste' },
+      link: { label: t('rules.todos.buyDry.link'), route: '/handleliste' },
     },
     bake && {
       id: 'bakeCakeBase',
       date: at(3),
-      title: 'Bak kakebunnen og frys den',
-      detail: 'Da er fredagen roligere',
-      link: { label: 'Oppskrift', route: '/kake' },
+      title: t('rules.todos.bakeCakeBase.title'),
+      detail: t('rules.todos.bakeCakeBase.detail'),
+      link: { label: t('rules.todos.bakeCakeBase.link'), route: '/kake' },
     },
-    grill && { id: 'checkGrill', date: at(2), title: 'Sjekk gassen eller kullet til grillen' },
+    grill && { id: 'checkGrill', date: at(2), title: t('rules.todos.checkGrill.title') },
     {
       id: 'partyReminder',
       date: at(2),
-      title: 'Send påminnelse til foreldrene',
-      detail: 'Den er skrevet, med adresse og tid',
-      link: { label: 'Påminnelsen', route: '/invitasjon' },
+      title: t('rules.todos.partyReminder.title'),
+      detail: t('rules.todos.partyReminder.detail'),
+      link: { label: t('rules.todos.partyReminder.link'), route: '/invitasjon' },
     },
     clues && {
       id: 'printClues',
       date: at(2),
-      title: 'Skriv ut skattejakt-lappene',
-      detail: 'Og gjør fiskedammen klar',
-      link: { label: 'Lappene', route: '/program' },
+      title: t('rules.todos.printClues.title'),
+      detail: t('rules.todos.printClues.detail'),
+      link: { label: t('rules.todos.printClues.link'), route: '/program' },
     },
     // only when she makes the dough herself; ready-made dough is the default
     pizza?.kind === 'pizza' &&
@@ -148,31 +165,38 @@ export function buildTasks(p: Party): TaskPlan {
       pizza.dough === 'selv' && {
         id: 'makeDough',
         date: at(1),
-        title: 'Lag pizzadeigen og la den heve kaldt',
-        link: { label: 'Mengder', route: '/mat' },
+        title: t('rules.todos.makeDough.title'),
+        link: { label: t('rules.todos.makeDough.link'), route: '/mat' },
       },
     {
       id: 'buyFresh',
       date: at(1),
-      title: 'Handle ferskvarer',
-      detail: menu ? `${mainItemWord(menu)}, frukt og grønt` : 'Frukt og grønt. Velg meny under Mat',
-      link: { label: 'Handleliste', route: '/handleliste' },
+      title: t('rules.todos.buyFresh.title'),
+      detail: menu ? t('rules.todos.buyFresh.detail', { items: mainItemWord(menu) }) : t('rules.todos.buyFresh.noMenu'),
+      link: { label: t('rules.todos.buyFresh.link'), route: '/handleliste' },
     },
     bake && {
       id: 'bakeMuffins',
       date: at(1),
-      title: p.cake.muffins ? 'Pynt kaken og bak muffins' : 'Pynt kaken',
-      detail: candleNote ? `${candleNote}. Og fyll ${hc.kidsComing} godteposer` : `Og fyll ${hc.kidsComing} godteposer`,
-      link: { label: 'Oppskrift', route: '/kake' },
+      title: t(p.cake.muffins ? 'rules.todos.bakeMuffins.titleMuffins' : 'rules.todos.bakeMuffins.title'),
+      detail: candleNote
+        ? t('rules.todos.bakeMuffins.detailJoint', { candles: candleNote, count: hc.kidsComing })
+        : t('rules.todos.bakeMuffins.detail', { count: hc.kidsComing }),
+      link: { label: t('rules.todos.bakeMuffins.link'), route: '/kake' },
     },
     {
       id: 'partyDay',
       date: D,
-      title: 'Festdagen',
-      detail: 'Dagskortet har alt i riktig rekkefølge',
-      link: { label: 'Dagskortet', route: '/festdagen' },
+      title: t('rules.todos.partyDay.title'),
+      detail: t('rules.todos.partyDay.detail'),
+      link: { label: t('rules.todos.partyDay.link'), route: '/festdagen' },
     },
-    { id: 'thanks', date: addDays(D, 1), title: 'Send takkemelding', detail: 'Den er skrevet. Og noter til neste år' },
+    {
+      id: 'thanks',
+      date: addDays(D, 1),
+      title: t('rules.todos.thanks.title'),
+      detail: t('rules.todos.thanks.detail'),
+    },
   ];
 
   const tasks = rows
@@ -189,25 +213,24 @@ function dryDetail(p: Party): string {
   // pølser and pizza together: pølser's bread comes first, pizzasaus after it
   const kinds = menuDishes(p.menu).map((d) => d.kind);
   // the first dry item for the dish, skipping a line the parent deselected on the Mat screen
-  const candidates: [string, string][] = kinds.flatMap((m): [string, string][] =>
+  type DryId = 'lomper' | 'polsebrod' | 'tortillas' | 'pizzasaus' | 'pasta';
+  const candidates: DryId[] = kinds.flatMap((m): DryId[] =>
     m === 'grillpolser' || m === 'wienerpolser'
-      ? [
-          ['lomper', 'Lomper'],
-          ['polsebrod', 'Pølsebrød'],
-        ]
+      ? ['lomper', 'polsebrod']
       : m === 'taco'
-        ? [['tortillas', 'Tortillas']]
+        ? ['tortillas']
         : m === 'pizza'
-          ? [['pizzasaus', 'Pizzasaus']]
+          ? ['pizzasaus']
           : m === 'pasta'
-            ? [['pasta', 'Pasta']]
+            ? ['pasta']
             : [],
   );
-  const first = candidates.find(([id]) => isIncluded(p, id))?.[1];
+  const firstId = candidates.find((id) => isIncluded(p, id));
+  const first = firstId ? t(`rules.todos.buyDry.${firstId}`) : undefined;
   const saft = isIncluded(p, 'saft');
   // no candy: it moves to the goodie bags (godteposer) (picked on Handleliste)
-  if (first && saft) return `${first} og saft`;
-  return first ?? (saft ? 'Saft' : 'Det som står på handlelista');
+  if (first && saft) return t('rules.todos.buyDry.firstAndSaft', { first });
+  return first ?? (saft ? t('rules.todos.buyDry.saft') : t('rules.todos.buyDry.fallback'));
 }
 
 /** A task is done if ticked, or if it is automatic and not explicitly unticked. */
@@ -223,13 +246,11 @@ export function tickable(tasks: Task[]): Task[] {
 
 export type GroupId = 'idag' | 'denneuka' | 'nesteuke' | 'festuka' | 'etter';
 
-export const GROUP_TITLES: Record<GroupId, string> = {
-  idag: 'I dag',
-  denneuka: 'Denne uka',
-  nesteuke: 'Neste uke',
-  festuka: 'Festuka',
-  etter: 'Etter festen',
-};
+/** «I dag», «Denne uka» … in the active language. */
+export const GROUP_TITLES: Readonly<Record<GroupId, string>> = liveRecord(
+  ['idag', 'denneuka', 'nesteuke', 'festuka', 'etter'] as const,
+  (id) => `rules.todos.groups.${id}`,
+);
 
 export interface TaskGroup {
   id: GroupId;
@@ -260,7 +281,7 @@ export function groupTasks(p: Party, tasks: Task[], today: ISODate): TaskGroup[]
       task,
       done,
       overdue,
-      overdueText: overdue ? `Skulle vært gjort ${WEEKDAYS[weekday(task.date)]} ${d}.` : undefined,
+      overdueText: overdue ? t('rules.todos.overdue', { weekday: weekdayName(weekday(task.date)), day: d }) : undefined,
     });
   }
   return order.map((id) => groups.get(id)!).filter((g) => g.tasks.length > 0);
@@ -296,10 +317,10 @@ export interface NextTask {
 export function nextTask(p: Party, tasks: Task[], today: ISODate): NextTask {
   const task = tickable(tasks).find((t) => !isDone(p, t)) ?? null;
   if (!task) return { task: null, when: '' };
-  if (task.date <= today) return { task, when: `I dag · ${formatLong(today)}` };
+  if (task.date <= today) return { task, when: t('rules.todos.todayWhen', { date: formatLong(today) }) };
   const quiet =
-    `Ingenting å gjøre før ${formatLong(task.date)}.` +
-    (task.id === 'sendInvite' ? ' Invitasjonen er klar når du vil.' : '');
+    t('rules.todos.quiet', { date: formatLong(task.date) }) +
+    (task.id === 'sendInvite' ? t('rules.todos.quietInvite') : '');
   const when = formatLong(task.date);
   return { task, when: when.charAt(0).toUpperCase() + when.slice(1), quiet };
 }

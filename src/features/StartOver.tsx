@@ -5,7 +5,7 @@ import { useParty } from '../state/PartyProvider';
 import { ConfirmDialog, Icon, Text } from '../ui';
 import { fonts, useColors, themedStyles } from '../theme';
 import { celebrantNames } from '../core';
-import { nb } from '../i18n/nb';
+import { useTranslation } from 'react-i18next';
 
 /**
  * «Start på nytt»: a quiet text button that opens our confirm dialog. On «Slett og start på nytt»
@@ -23,6 +23,7 @@ export function StartOverButton({
   align?: 'center' | 'flex-start' | 'flex-end';
   testID?: string;
 }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const router = useRouter();
@@ -32,7 +33,7 @@ export function StartOverButton({
   const names = party
     ? celebrantNames(party.celebrants)
     : celebrantNames(draft.celebrants.filter((c) => c.name.trim()));
-  const message = party || names ? nb.startOver.message(names) : nb.startOver.messageDraft;
+  const message = party || names ? t('startOver.message', { names }) : t('startOver.messageDraft');
   const color = onPrimary ? colors.onPrimarySoft : colors.muted;
 
   const cancel = useCallback(() => setOpen(false), []);
@@ -47,7 +48,7 @@ export function StartOverButton({
       <Pressable
         testID={testID}
         accessibilityRole="button"
-        accessibilityLabel={nb.startOver.action}
+        accessibilityLabel={t('startOver.action')}
         onPress={() => setOpen(true)}
         hitSlop={8}
         style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
@@ -57,15 +58,15 @@ export function StartOverButton({
         ]}
       >
         <Icon name="reset" size={18} color={color} strokeWidth={2.4} />
-        <Text style={[styles.label, { color }]}>{nb.startOver.action}</Text>
+        <Text style={[styles.label, { color }]}>{t('startOver.action')}</Text>
       </Pressable>
       <ConfirmDialog
         visible={open}
         destructive
-        title={nb.startOver.title}
+        title={t('startOver.title')}
         message={message}
-        confirmLabel={nb.startOver.confirm}
-        cancelLabel={nb.startOver.cancel}
+        confirmLabel={t('startOver.confirm')}
+        cancelLabel={t('startOver.cancel')}
         onConfirm={confirm}
         onCancel={cancel}
       />

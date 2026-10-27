@@ -1,12 +1,13 @@
 import type { HHMM, ISODate } from '../model';
 import { SHORT_NOTICE_DAYS } from './constants';
 import { diffDays, minutesOf, weekday } from './dates';
+import { t } from '../../i18n/i18n';
 
 /**
  * Default party time (spec §6.2, revised by Ekaterina 21 Oct 2026). Weekdays and weekends are treated
  * equally: no day is pushed or advised against. The time is only a suggestion and is always editable.
- * - Mon–Fri, every age: 17.00–19.00, after barnehage/school, and the food is dinner.
- * - Sat–Sun, ages 3–6: 12.00–14.00, the middle of the day, and the food is lunch.
+ * - Mon–Fri, every age: 17.00–19.00, after barnehage/school, «passer fint rundt middag».
+ * - Sat–Sun, ages 3–6: 12.00–14.00, the middle of the day, «passer fint rundt lunsj».
  * - Sat–Sun, ages 7–10: 14.00–16.00, after lunch, before dinner.
  * For a joint birthday everything follows the YOUNGEST child.
  */
@@ -20,10 +21,10 @@ export function defaultPartyTime(age: number, weekend: boolean): { start: HHMM; 
   const small = age <= BARNEHAGE_MAX_AGE;
   if (weekend) {
     const [start, end] = small ? WEEKEND_TIME_SMALL : WEEKEND_TIME_BIG;
-    return { start, end, why: small ? 'midt på dagen – maten blir lunsj' : 'etter lunsj, før middag' };
+    return { start, end, why: t(small ? 'rules.time.weekendSmall' : 'rules.time.weekendBig') };
   }
   const [start, end] = WEEKDAY_TIME;
-  return { start, end, why: small ? 'etter barnehagen – maten blir middag' : 'etter skole og SFO – maten blir middag' };
+  return { start, end, why: t(small ? 'rules.time.weekdaySmall' : 'rules.time.weekdayBig') };
 }
 
 /** 15-minute steps for the «Endre» time picker. */

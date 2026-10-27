@@ -5,7 +5,7 @@ import { useParty } from '../../state/PartyProvider';
 import { SetupStep } from '../../features/setup/SetupStep';
 import { Grid, Icon, Text } from '../../ui';
 import { fonts, radii, shadow, useColors, themedStyles } from '../../theme';
-import { nb } from '../../i18n/nb';
+import { useTranslation } from 'react-i18next';
 import {
   AGES,
   celebrantsComplete,
@@ -21,6 +21,7 @@ import {
  * friends who celebrate together (up to three). Each child: first name and age (3–10).
  */
 export default function WhoStep() {
+  const { t } = useTranslation();
   const styles = useStyles();
   const { draft, updateDraft } = useParty();
   const router = useRouter();
@@ -29,8 +30,8 @@ export default function WhoStep() {
   return (
     <SetupStep
       step={1}
-      title={nb.who.title}
-      lede={nb.who.lede}
+      title={t('who.title')}
+      lede={t('who.lede')}
       onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       onNext={() => valid && router.push('/ny/dato')}
       nextDisabled={!valid}
@@ -56,7 +57,7 @@ export default function WhoStep() {
           onPress={() => updateDraft(draftAddCelebrant(draft))}
           style={({ pressed }) => [styles.add, pressed && { opacity: 0.7 }]}
         >
-          <Text style={styles.addText}>{nb.who.add}</Text>
+          <Text style={styles.addText}>{t('who.add')}</Text>
         </Pressable>
       ) : null}
     </SetupStep>
@@ -78,21 +79,24 @@ function ChildCard({
   onChange: (patch: Partial<Omit<DraftCelebrant, 'id'>>) => void;
   onRemove?: () => void;
 }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const colors = useColors();
   const [focused, setFocused] = useState(false);
-  const who = child.name.trim() || (joint ? nb.who.child(index) : 'barnet');
+  const who = child.name.trim() || (joint ? t('who.child', { n: index }) : 'barnet');
   const suffix = index === 1 ? '' : `-${index}`;
   const body = (
     <>
       {joint ? (
         <View style={styles.cardHead}>
-          <Text variant="eyebrow">{nb.who.child(index)}</Text>
+          <Text variant="eyebrow">{t('who.child', { n: index })}</Text>
           {onRemove ? (
             <Pressable
               testID={`remove-child${suffix}`}
               accessibilityRole="button"
-              accessibilityLabel={nb.who.remove(child.name.trim() || nb.who.child(index).toLowerCase())}
+              accessibilityLabel={t('who.remove', {
+                navn: child.name.trim() || t('who.child', { n: index }).toLowerCase(),
+              })}
               onPress={onRemove}
               hitSlop={8}
               style={styles.remove}
@@ -106,9 +110,9 @@ function ChildCard({
         testID={`name-input${suffix}`}
         value={child.name}
         onChangeText={(name) => onChange({ name: name.replace(/\s+/g, ' ').slice(0, 20) })}
-        placeholder={nb.who.placeholder}
+        placeholder={t('who.placeholder')}
         placeholderTextColor="#B8B2A8"
-        accessibilityLabel={nb.who.nameLabel(index)}
+        accessibilityLabel={index === 1 ? t('who.nameLabelFirst') : t('who.nameLabel', { n: index })}
         autoCapitalize="words"
         autoComplete="off"
         autoCorrect={false}
@@ -119,8 +123,8 @@ function ChildCard({
         onBlur={() => setFocused(false)}
         style={[styles.field, joint && styles.fieldJoint, focused && { borderBottomColor: colors.pink }]}
       />
-      <Text style={styles.ageQ}>{nb.who.ageQuestion(who)}</Text>
-      <View accessibilityRole="radiogroup" accessibilityLabel={nb.who.ageGroup(who)}>
+      <Text style={styles.ageQ}>{t('who.ageQuestion', { navn: who })}</Text>
+      <View accessibilityRole="radiogroup" accessibilityLabel={t('who.ageGroup', { navn: who })}>
         <Grid
           items={AGES}
           columns={4}
@@ -132,7 +136,7 @@ function ChildCard({
               <Pressable
                 testID={`age${suffix}-${age}`}
                 accessibilityRole="radio"
-                accessibilityLabel={nb.who.ageLabel(age)}
+                accessibilityLabel={t('who.ageLabel', { count: age })}
                 accessibilityState={{ checked: on, selected: on }}
                 onPress={() => onChange({ age })}
                 style={[styles.age, on && { backgroundColor: colors.green }]}

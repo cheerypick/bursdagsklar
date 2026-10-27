@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { Button, Screen, Text, TopBar } from '../../ui';
 import { useLayout } from '../../theme';
-import { nb } from '../../i18n/nb';
+import { useTranslation } from 'react-i18next';
 
 /** who · when · how many · where (the theme is optional, later, on Planen). */
 export const SETUP_STEPS = 4;
@@ -19,17 +19,9 @@ interface Props {
 }
 
 /** One question per screen: progress, eyebrow, big title, lede, the input, and a big «Neste». */
-export function SetupStep({
-  step,
-  title,
-  lede,
-  children,
-  onBack,
-  onNext,
-  nextLabel = nb.common.next,
-  nextDisabled,
-  testID,
-}: Props) {
+export function SetupStep({ step, title, lede, children, onBack, onNext, nextLabel, nextDisabled, testID }: Props) {
+  const { t } = useTranslation();
+  nextLabel ??= t('common.next');
   // short phone screens: tighter spacing and a slightly smaller title, so the input fits above «Neste»
   const { isShort } = useLayout();
   return (
@@ -40,7 +32,7 @@ export function SetupStep({
     >
       <TopBar onBack={onBack} step={step} of={SETUP_STEPS} />
       <View style={{ paddingHorizontal: 22, paddingTop: isShort ? 6 : 18 }}>
-        <Text variant="eyebrow">{nb.common.step(step, SETUP_STEPS)}</Text>
+        <Text variant="eyebrow">{t('common.step', { n: step, of: SETUP_STEPS })}</Text>
         <Text
           variant={isShort ? 'h1Small' : 'h1'}
           style={{ marginTop: isShort ? 4 : 10, marginBottom: isShort ? 4 : 8 }}

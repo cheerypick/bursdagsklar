@@ -8,7 +8,7 @@ Bursdagsklar is one Expo (React Native) app that runs on iOS, Android and the we
 src/app        screens (Expo Router routes)          ← uses ui, theme, i18n, state, core
 src/ui         reusable components                   ← uses theme
 src/theme      tokens, breakpoints, images
-src/i18n       Norwegian strings (one file)
+src/i18n       all text: nb.ts (bokmål, source of truth) + en.ts, i18next
 src/state      React context: the active party + setup draft, saved through PartyRepository
 src/core       pure TypeScript: model, rules, texts, storage interface   ← no React, no React Native
 ```
@@ -165,6 +165,33 @@ What is on the list, grouped by store section (Kjøtt og pålegg, Brød, Frukt o
 The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) is no longer shown on any screen; it is kept for its tests and can be removed later.
 
 **Adding a server later** (yearly reminder email, two parents on one party, RSVP links): add a `RemotePartyRepository` (or a sync layer) that PUTs/GETs the same JSON by `id` and resolves conflicts on `updatedAt`. Screens and rules don't change. Keep children's data in Norway/EU and delete parties some time after the date.
+
+## Språk (i18n): bokmål and English
+
+- **One i18next instance** (`src/i18n/i18n.ts`, plain i18next, no React) holds `nb` (default, source of
+  truth) and `en`. Screens use `useTranslation()` from react-i18next (provided in `app/_layout.tsx`);
+  the rules in `src/core` call `t()` on the same instance, so core still returns ready text and its unit
+  tests assert real Norwegian. Switching language changes words only, never numbers or logic.
+- **Files**: `src/i18n/nb.ts` and `src/i18n/en.ts`, one object each, sections by screen/feature
+  (`welcome`, `who`/`date`/`kids`/`place`, `plan`, `food`, `shopping`, `theme`, `rules.time`,
+  `rules.menu`, `rules.shop`, `rules.todos`, `themes.<id>` …). `{{name}}` is filled in; plurals are
+  `key_one` / `key_other` with `count`. Keys are typed (`src/i18n/types.d.ts`), `en` must have nb's exact
+  shape (TypeScript), and `src/i18n/__tests__/keys.test.ts` checks the key sets and placeholders.
+- **Adding a string**: add it to `nb.ts` in the right section, the same key in `en.ts`, use `t('…')`.
+- **Numbers and dates** follow the language: `formatNumber()` (nb «1,5», en «1.5»); weekday and month
+  names come from `Intl` in the active locale (nb keeps its own names, identical to Intl's, without the
+  dots Intl adds to short forms). en uses en-GB order and the 24-hour clock: «Saturday 7 November, 17:00».
+- **Units** (`src/core/rules/units.ts`): «5 pk à 10» / «5 packs of 10», «2 flasker» / «2 bottles».
+- **Themes**: the words live in `themes.<id>.*`; `THEMES` reads them through getters, so a switch shows
+  at once. The trademark line is `themeNote.disclaimer`.
+- **Language choice**: device language if English, else nb; the picker («Språk / Language», front page
+  and the foot of Planen) stores it as `bursdagsklar:language` in the same store as the parties.
+  «Start på nytt» keeps it (a device setting, not part of a plan). On web the stored choice is read
+  synchronously, so a reload in English never shows Norwegian first; `<html lang>` follows.
+- **Left in Norwegian on purpose**: product names on the Norwegian shelf (Gilde Grillpølser, TINE
+  Norvegia …), the long invitation templates in `src/core/texts/templates.json` (the Invitasjon screen is
+  still «Kommer snart»; the card on «Festen er klar» is translated), and the legacy `shoppingList()` in
+  `rules/food.ts` (not shown in the app).
 
 ## Design system
 

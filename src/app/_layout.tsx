@@ -16,7 +16,10 @@ import {
   Figtree_600SemiBold,
   Figtree_700Bold,
 } from '@expo-google-fonts/figtree';
+import { I18nextProvider } from 'react-i18next';
+import { i18n, initLanguage } from '../i18n';
 import { PartyProvider, useParty } from '../state/PartyProvider';
+import { appStore } from '../state/storage';
 import { ToastProvider } from '../ui';
 import { ThemeProvider, useColors } from '../theme';
 
@@ -28,6 +31,9 @@ import { ThemeProvider, useColors } from '../theme';
 const WAIT_FOR_FONTS = Platform.OS !== 'web';
 
 if (WAIT_FOR_FONTS) SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// The language before the first render: the stored choice, else English devices get English, else nb.
+initLanguage(appStore);
 
 // font-display: swap on web, so text is never invisible while a font downloads.
 const swap = (uri: number): FontSource => ({ uri, display: FontDisplay.SWAP });
@@ -53,16 +59,18 @@ export default function RootLayout() {
   if (WAIT_FOR_FONTS && !fontsSettled) return null;
 
   return (
-    <SafeAreaProvider>
-      <PartyProvider>
-        <PartyTheme>
-          <ToastProvider>
-            <StatusBar style="dark" />
-            <ThemedStack />
-          </ToastProvider>
-        </PartyTheme>
-      </PartyProvider>
-    </SafeAreaProvider>
+    <I18nextProvider i18n={i18n}>
+      <SafeAreaProvider>
+        <PartyProvider>
+          <PartyTheme>
+            <ToastProvider>
+              <StatusBar style="dark" />
+              <ThemedStack />
+            </ToastProvider>
+          </PartyTheme>
+        </PartyProvider>
+      </SafeAreaProvider>
+    </I18nextProvider>
   );
 }
 

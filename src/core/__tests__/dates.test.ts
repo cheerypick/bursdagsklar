@@ -56,20 +56,20 @@ describe('formatting', () => {
 });
 
 describe('default party time (spec §6.2, revised 21 Oct 2026: weekdays are normal)', () => {
-  it('weekday: 17.00–19.00 for every age, the food is dinner', () => {
+  it('weekday: 17.00–19.00 for every age, fits around dinner', () => {
     expect(defaultPartyTime(5, false)).toEqual({
       start: '17:00',
       end: '19:00',
-      why: 'etter barnehagen – maten blir middag',
+      why: 'etter barnehagen – passer fint rundt middag',
     });
     for (let age = 3; age <= 10; age++)
       expect(defaultPartyTime(age, false)).toMatchObject({ start: '17:00', end: '19:00' });
   });
-  it('weekend, 3–6 years: 12.00–14.00, the food is lunch', () => {
+  it('weekend, 3–6 years: 12.00–14.00, fits around lunch', () => {
     expect(defaultPartyTime(5, true)).toEqual({
       start: '12:00',
       end: '14:00',
-      why: 'midt på dagen – maten blir lunsj',
+      why: 'midt på dagen – passer fint rundt lunsj',
     });
     for (const age of [3, 4, 6]) expect(defaultPartyTime(age, true)).toMatchObject({ start: '12:00', end: '14:00' });
   });
@@ -79,5 +79,10 @@ describe('default party time (spec §6.2, revised 21 Oct 2026: weekdays are norm
   });
   it('school children are not told «barnehagen»', () => {
     for (let age = 7; age <= 10; age++) expect(defaultPartyTime(age, false).why).not.toContain('barnehage');
+    expect(defaultPartyTime(8, false).why).toBe('etter skole og SFO – passer fint rundt middag');
+  });
+  it('no reason says what the food «blir» (Ekaterina, 21 Oct 2026)', () => {
+    for (let age = 3; age <= 10; age++)
+      for (const weekend of [false, true]) expect(defaultPartyTime(age, weekend).why).not.toMatch(/maten blir/);
   });
 });

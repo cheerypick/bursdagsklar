@@ -7,7 +7,10 @@
  * Sources:
  * - the food: every included line of the Mat screen (rules/menu.ts), the same amounts and pack sizes;
  *   a line she deselected on Mat is left out. Not on the list: her own dish («Noe annet»), the oven time,
- *   the trays of homemade pizza (the ingredients are listed), tap water and the cake (Kake comes later);
+ *   the trays of homemade pizza (the ingredients are listed), tap water and the Mat screen's cake line (the
+ *   cake's own lines come from the Kake screen, below);
+ * - the cake (rules/cake.ts, «Til kaken»): the Toro packs, glaze and butter, the muffin packs, or the
+ *   ingredients of the from-scratch recipe; nothing for a ready-made cake;
  * - drinks and fruit (also when no main dish is chosen yet: they do not depend on it);
  * - the dietary extras ticked on Mat («1 pk kyllingpølser»);
  * - party things: goodie bags, candles (one set per birthday child), plates/cups/napkins, balloons
@@ -30,6 +33,7 @@ import {
   type FoodPlan,
 } from './menu';
 import { menuDishes } from './dishes';
+import { cakeShopLines } from './cake';
 import { headCount } from './people';
 import { celebrantNames, oldestAge } from './celebrants';
 import { genitive } from '../texts/render';
@@ -37,7 +41,8 @@ import { formatDayMonthShort } from './dates';
 import { liveRecord, t } from '../../i18n/i18n';
 import { forPeople, packsWord, pcs, sets, sheets } from './units';
 
-export type ShopGroupId = 'kjott' | 'brod' | 'frukt' | 'drikke' | 'torrvarer' | 'frys' | 'fest' | 'godteposer' | 'egne';
+export type ShopGroupId =
+  'kjott' | 'brod' | 'frukt' | 'drikke' | 'torrvarer' | 'frys' | 'kake' | 'fest' | 'godteposer' | 'egne';
 
 /** Store sections, in the order the list shows them. Empty sections are not shown. */
 const SHOP_GROUP_IDS: readonly ShopGroupId[] = [
@@ -47,6 +52,7 @@ const SHOP_GROUP_IDS: readonly ShopGroupId[] = [
   'drikke',
   'torrvarer',
   'frys',
+  'kake',
   'fest',
   'godteposer',
   'egne',
@@ -254,6 +260,19 @@ function foodItems(p: Party): { items: Omit<ShopItem, 'ticked'>[]; menuChosen: b
   return { items: out, menuChosen };
 }
 
+/**
+ * The cake's lines («Til kaken»), from the choice on the Kake screen. Their ids start with «kake-», so
+ * nothing is added twice; flour that the homemade pizza also needs says so in its detail.
+ */
+function cakeItems(p: Party, food: Omit<ShopItem, 'ticked'>[]): Omit<ShopItem, 'ticked'>[] {
+  const pizzaFlour = food.some((i) => i.id === 'hvetemel');
+  return cakeShopLines(p).map((l) => ({
+    ...l,
+    group: 'kake' as const,
+    detail: l.id === 'kake-hvetemel' && pizzaFlour ? t('rules.cake.shop.flourAlso') : l.detail,
+  }));
+}
+
 /** Goodie bags, candy, candles, tableware, balloons and the crown. */
 function partyThings(p: Party): Omit<ShopItem, 'ticked'>[] {
   const hc = headCount(p);
@@ -411,7 +430,7 @@ export function handleliste(p: Party): Handleliste {
     text: c.text,
     custom: true,
   }));
-  const all: ShopItem[] = [...food.items, ...partyThings(p), ...custom].map((i) => ({
+  const all: ShopItem[] = [...food.items, ...cakeItems(p, food.items), ...partyThings(p), ...custom].map((i) => ({
     ...i,
     ticked: ticked.has(i.id),
   }));

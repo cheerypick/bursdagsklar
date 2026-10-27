@@ -7,6 +7,7 @@ import { addDays, diffDays, formatLong, mondayOf, parts, weekday, weekdayName } 
 import { liveRecord, t } from '../../i18n/i18n';
 import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { headCount } from './people';
+import { cakePlan } from './cake';
 import { themeById } from '../themes';
 import { isIncluded, mainItemWord } from './food';
 import { dishOn, menuDishes } from './dishes';
@@ -49,7 +50,10 @@ export function buildTasks(p: Party): TaskPlan {
   const candleNote = p.celebrants.length > 1 ? t('rules.todos.candleNote') : null;
   const pinata = p.programme.includePinata;
   const clues = p.programme.includeSkattejakt;
-  const bake = p.cake.mode === 'bake';
+  // Kake (Oct 2026): the choice on the Kake screen (rules/cake.ts); an older party opens with the Toro default
+  const cake = cakePlan(p);
+  const bake = cake.kind !== 'buy';
+  const onlyMuffins = cake.kind === 'muffins';
   const menu = p.menu;
   const pizza = dishOn(menu, 'pizza');
   const grill = menuDishes(menu).some((d) => d.kind === 'grillpolser');
@@ -88,13 +92,15 @@ export function buildTasks(p: Party): TaskPlan {
         title: t('rules.todos.buyPinata.title'),
         detail: t('rules.todos.buyPinata.detail'),
       },
+    // a ready-made cake: order it a few days before (REMA 1000 takes orders the day before, a bakery a little more)
     !bake && {
       id: 'orderCake',
-      date: at(7),
+      date: at(4),
       title: t(candleNote ? 'rules.todos.orderCake.titleJoint' : 'rules.todos.orderCake.title'),
       detail: candleNote
-        ? t('rules.todos.orderCake.detailJoint', { candles: candleNote })
-        : t('rules.todos.orderCake.detail'),
+        ? t('rules.todos.orderCake.detailJoint', { candles: candleNote, pieces: cake.pieces })
+        : t('rules.todos.orderCake.detail', { pieces: cake.pieces }),
+      link: { label: t('plan.cards.cake.title'), route: '/kake' },
     },
     {
       id: 'rsvpReminder',
@@ -137,13 +143,14 @@ export function buildTasks(p: Party): TaskPlan {
       detail: dryDetail(p),
       link: { label: t('rules.todos.buyDry.link'), route: '/handleliste' },
     },
-    bake && {
-      id: 'bakeCakeBase',
-      date: at(3),
-      title: t('rules.todos.bakeCakeBase.title'),
-      detail: t('rules.todos.bakeCakeBase.detail'),
-      link: { label: t('rules.todos.bakeCakeBase.link'), route: '/kake' },
-    },
+    bake &&
+      !onlyMuffins && {
+        id: 'bakeCakeBase',
+        date: at(3),
+        title: t('rules.todos.bakeCakeBase.title'),
+        detail: t('rules.todos.bakeCakeBase.detail'),
+        link: { label: t('rules.todos.bakeCakeBase.link'), route: '/kake' },
+      },
     grill && { id: 'checkGrill', date: at(2), title: t('rules.todos.checkGrill.title') },
     {
       id: 'partyReminder',
@@ -178,7 +185,13 @@ export function buildTasks(p: Party): TaskPlan {
     bake && {
       id: 'bakeMuffins',
       date: at(1),
-      title: t(p.cake.muffins ? 'rules.todos.bakeMuffins.titleMuffins' : 'rules.todos.bakeMuffins.title'),
+      title: t(
+        onlyMuffins
+          ? 'rules.todos.bakeMuffins.titleOnlyMuffins'
+          : cake.muffinPacks > 0
+            ? 'rules.todos.bakeMuffins.titleMuffins'
+            : 'rules.todos.bakeMuffins.title',
+      ),
       detail: candleNote
         ? t('rules.todos.bakeMuffins.detailJoint', { candles: candleNote, count: hc.kidsComing })
         : t('rules.todos.bakeMuffins.detail', { count: hc.kidsComing }),

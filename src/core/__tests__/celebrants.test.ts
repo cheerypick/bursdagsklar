@@ -77,7 +77,8 @@ describe('joint birthday: the rules', () => {
     const bought = buildTasks({ ...jointEmmaJonas(), cake: { mode: 'buy', cakeId: 'x', muffins: false } });
     expect(bought.tasks.find((t) => t.id === 'orderCake')).toMatchObject({
       title: 'Bestill én felles kake',
-      detail: 'Stor nok til alle gjestene. Ett lys-sett per bursdagsbarn',
+      // Kake: 1,5 pieces per child + 1 per adult (17 children incl. both birthday children, 0 adults here? see cake.test)
+      detail: expect.stringMatching(/^Én kake til alle, ca\. \d+ biter\. Ett lys-sett per bursdagsbarn$/),
     });
     // one child: unchanged
     expect(shoppingList(emma()).find((i) => i.id === 'kakelys')?.need).toBe(6);

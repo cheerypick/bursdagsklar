@@ -17,21 +17,22 @@ The rule that keeps this maintainable: **screens never calculate anything**. Eve
 
 ### src/core
 
-| File                         | Spec     | What                                                                                                                                                           |
-| ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model.ts`                   | §4       | `Party`, `Guest`, `Task`, `MenuChoice`, `ShoppingItem`, …                                                                                                      |
-| `rules/dates.ts`             | §6.3     | Date picker bounds, nb-NO formatting, weekday/weekend, Oslo «today». No day is preferred over another.                                                         |
-| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 17.00–19.00; Sat–Sun 12.00–14.00 (3–6 år) or 14.00–16.00 (7–10 år), youngest child; soft tips; follows the date until edited.            |
-| `rules/celebrants.ts`        | —        | Joint birthdays (1–3 children): «Emma, Jonas og Ali», «fyller 5 og 7»; ages 3–10. Portions use the OLDEST child's band, the time reason and cake the YOUNGEST. |
-| `rules/calendar.ts`          | —        | Our own month calendar: Monday-first grid, leap years, past days disabled, a year ahead, keyboard moves.                                                       |
-| `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                                                   |
-| `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                                               |
-| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, pasta, egen meny, extras and the allergy additions; the shopping list.                                     |
-| `rules/menu.ts`              | —        | The Mat screen: one main dish → each line's amount, pack rounding and a short reason; drinks, fruit, «Til kaken», the diet chips, item toggles; the Mat card.  |
-| `rules/constants.ts`         | §5–6     | Every number in one place; values marked (I) in the spec are our defaults.                                                                                     |
-| `texts/`                     | §7       | The pre-written template library (`templates.json`) and its renderer. No AI.                                                                                   |
-| `party.ts`                   |          | Creating a party from the setup, updates, and the summary numbers screens show.                                                                                |
-| `storage/PartyRepository.ts` | §9       | The storage interface and its key-value implementation.                                                                                                        |
+| File                         | Spec     | What                                                                                                                                                                                                                                                                 |
+| ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model.ts`                   | §4       | `Party`, `Guest`, `Task`, `MenuChoice`, `ShoppingItem`, …                                                                                                                                                                                                            |
+| `rules/dates.ts`             | §6.3     | Date picker bounds, nb-NO formatting, weekday/weekend, Oslo «today». No day is preferred over another.                                                                                                                                                               |
+| `rules/partyTime.ts`         | §6.2     | Default time: Mon–Fri 17.00–19.00; Sat–Sun 12.00–14.00 (3–6 år) or 14.00–16.00 (7–10 år), youngest child; soft tips; follows the date until edited.                                                                                                                  |
+| `rules/celebrants.ts`        | —        | Joint birthdays (1–3 children): «Emma, Jonas og Ali», «fyller 5 og 7»; ages 3–10. Portions use the OLDEST child's band, the time reason and cake the YOUNGEST.                                                                                                       |
+| `rules/calendar.ts`          | —        | Our own month calendar: Monday-first grid, leap years, past days disabled, a year ahead, keyboard moves.                                                                                                                                                             |
+| `rules/people.ts`            | §4.1     | Head-count (children coming, adults eating).                                                                                                                                                                                                                         |
+| `rules/todos.ts`             | §6.1     | Generates and dates every to-do relative to the party date, groups them, progress and next task.                                                                                                                                                                     |
+| `rules/food.ts`              | §6.4–6.8 | Amounts for grillpølser, wienerpølser, pizza, taco, pasta, egen meny, extras and the allergy additions; the shopping list.                                                                                                                                           |
+| `rules/cake.ts`              | —        | Kake: pieces needed (1,5 per child + 1 per staying adult, an assumption), Toro packs (24 pieces each), the TINE recipe scaled per langpanne, muffins, «Kjøpe ferdig»; the «Til kaken» lines on Handleliste. Old parties open with the Toro default (no schema bump). |
+| `rules/menu.ts`              | —        | The Mat screen: one main dish → each line's amount, pack rounding and a short reason; drinks, fruit, «Til kaken», the diet chips, item toggles; the Mat card.                                                                                                        |
+| `rules/constants.ts`         | §5–6     | Every number in one place; values marked (I) in the spec are our defaults.                                                                                                                                                                                           |
+| `texts/`                     | §7       | The pre-written template library (`templates.json`) and its renderer. No AI.                                                                                                                                                                                         |
+| `party.ts`                   |          | Creating a party from the setup, updates, and the summary numbers screens show.                                                                                                                                                                                      |
+| `storage/PartyRepository.ts` | §9       | The storage interface and its key-value implementation.                                                                                                                                                                                                              |
 
 Emma's worked example from the spec is the test fixture (`src/core/__fixtures__/emma.ts`); the tests assert the spec's numbers and dates exactly (test vectors A–D, all food amounts).
 
@@ -153,7 +154,7 @@ Frozen pizza stays as the second choice under Pizza (`frossenpizza`, 8 biter per
 
 What is on the list, grouped by store section (Kjøtt og pålegg, Brød, Frukt og grønt, Drikke, Tørrvarer, Frysedisk, Fest og pynt, Godteposer, Egne varer; empty sections are hidden):
 
-- every **included** Mat line, with the same amounts and pack sizes («5 pk», «à 10, 50 stk i alt»). Left out: lines deselected on Mat, her own dish («Noe annet»), the oven time, the trays of homemade pizza (the ingredients are listed), tap water and the cake (Kake comes later);
+- every **included** Mat line, with the same amounts and pack sizes («5 pk», «à 10, 50 stk i alt»). Left out: lines deselected on Mat, her own dish («Noe annet»), the oven time, the trays of homemade pizza (the ingredients are listed), tap water and the Mat screen's cake line; the cake's own lines come from the Kake screen (`rules/cake.ts`, group «Til kaken»: Toro mix, glaze and butter, muffins, or the from-scratch ingredients; nothing for a ready-made cake);
 - drinks and fruit, also before a main dish is chosen (they don't depend on it; the list says to pick a main dish for the rest);
 - the dietary extras ticked on Mat («1 pk kyllingpølser»), in the right section; diet notes that are not something to buy are skipped;
 - party things: goodie bags (one per child, the one children number), candles (one set per birthday child), plates/cups/napkins for everyone eating, balloons and the birthday crown, unless «Har dere dette hjemme?» says they are at home.
@@ -204,7 +205,7 @@ The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) i
 
 ## Routes
 
-`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/mat` (main dish, amounts, guest editor, item toggles) · `/festdagen` · placeholders for later milestones: `/invitasjon` `/kake` `/program`.
+`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/mat` (main dish, amounts, guest editor, item toggles) · `/festdagen` · `/invitasjon` · `/kake` (Toro by default, from scratch, muffins or ready-made) · placeholder for a later milestone: `/program`.
 
 ## Web vs native: what differs
 
@@ -233,3 +234,13 @@ The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) i
 - Foreldre som hjelper til regnes med i maten: 1 per 4 gjestebarn, rundet opp (gjestebarn = barn totalt minus bursdagsbarna). De er en del av de voksne som blir, så `headCount` bruker det største av hjelpere og det vanlige anslaget, ikke summen.
 - «Kopier tekst»: utklippstavlen på web. På iOS/Android åpner den delingsarket (som har «Kopier»), fordi appen ikke har en utklippsmodul ennå (`expo-clipboard`).
 - Etter MVP (ikke bygget): foreldre laster opp sitt eget bilde til invitasjonen. Trenger bildehosting (f.eks. Cloudinary).
+
+## Kake
+
+- Reglene ligger i `src/core/rules/cake.ts`, tekstene i `src/i18n/nb.ts` og `en.ts` (`cake.*` for skjermen, `rules.cake.*` for produkter, oppskrift og handlelista). Ingen priser i appen: de endrer seg.
+- Standard: Toro Sjokoladekake Langpanne (880 g, én langpanne 30×40, ca. 24 biter; 3,5 dl vann + 250 g smør, eggene er i miksen) med Toro Kremet Sjokoladeglasur (én boks per langpanne). Merket «Glutenfri ifølge Orkla – sjekk pakken». Alternativ glasur: Toro Sjokoladeglasur til langpanne (+ 1 dl flytende margarin og 0,5 dl vann).
+- Mengde (antakelse, godkjent av Ekaterina 27.10.2026): 1,5 bit per barn (det ene barnetallet, bursdagsbarna med) + 1 per voksen som blir (samme voksentall som maten, også foreldre som hjelper til), rundet opp. Pakker = biter ÷ 24, rundet opp. Mer enn én pakke: et mykt tips om to langpanner eller to runder i ovnen, eller én langpanne + en pakke Toro-muffins (12 per pakke). En muffins regnes som én bit.
+- Andre valg: «Bake fra bunnen» (TINE «Sjokoladekake i langpanne», 30×40, med lenke til tine.no; mengdene ganges med antall langpanner), «Muffins» (Toro Lyse eller Sjokolade, 12 per pakke) og «Kjøpe ferdig» (ingen produktliste, bare et mykt forslag og gjøremålet «Bestill kaken» fire dager før).
+- Handleliste: gruppen «Til kaken» med det som er valgt (ids `kake-…`, så ingenting legges til to ganger; smør og kakao fra kake og glasur er lagt sammen). Kakelysene står i «Fest og pynt» som før. Mat-skjermens kakelinje viser det samme bit-tallet.
+- Lagring: `cake.kind`, `glaze`, `muffinFlavour` og `chosen` er valgfrie felt (ingen ny schemaVersion). En eldre fest med `cakeId` «vaniljekake-langpanne» eller «sjokoladekake-langpanne» (valgt ut fra alder, aldri av forelderen) åpnes med Toro-standarden; `mode: 'buy'` åpnes som «Kjøpe ferdig». Planen-kortet viser valgt kake og «Valgt» når forelderen har valgt eller trykket «Ferdig».
+- Temaets pynteidé vises på Kake-skjermen når et tema er valgt.

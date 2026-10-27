@@ -142,10 +142,34 @@ export interface ShoppingState {
   custom: CustomShoppingItem[];
 }
 
+/** Kake (Oct 2026): what the parent picks on the Kake screen. See rules/cake.ts. */
+export type CakeKind = 'toro' | 'scratch' | 'muffins' | 'buy';
+/** The Toro glaze for the langpanne: «Kremet Sjokoladeglasur» (ready to use) or «Sjokoladeglasur til langpanne». */
+export type CakeGlaze = 'kremet' | 'langpanne';
+export type MuffinFlavour = 'lyse' | 'sjokolade';
+
 export interface CakeChoice {
+  /** 'buy' = a ready-made cake (kind 'buy'); everything else is baked at home. Kept in step with `kind`. */
   mode: 'bake' | 'buy';
+  /**
+   * Before the Kake screen: 'vaniljekake-langpanne' / 'sjokoladekake-langpanne' (picked from the youngest
+   * age, never by the parent). Now one id per kind (`CAKE_IDS` in rules/cake.ts); only `kind` is read.
+   */
   cakeId: string;
+  /**
+   * A pack of Toro muffins beside the langpanne. With the Toro cake and more than one pack needed, it takes
+   * the place of the extra langpanne (rules/cake.ts `cakePlan`).
+   */
   muffins: boolean;
+  /**
+   * The rest is optional and without a schema bump: a party saved before the Kake screen has none of it and
+   * opens with the default, Toro Sjokoladekake Langpanne with Kremet Sjokoladeglasur (`resolveCake`).
+   */
+  kind?: CakeKind;
+  glaze?: CakeGlaze;
+  muffinFlavour?: MuffinFlavour;
+  /** The parent has picked (or confirmed) the cake on the Kake screen: the Planen card shows it as done. */
+  chosen?: boolean;
 }
 
 export interface Guest {

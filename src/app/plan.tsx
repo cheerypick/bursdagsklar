@@ -73,7 +73,17 @@ export default function PlanScreen() {
       badge: food ? undefined : t('plan.cards.food.badgeChoose'),
       route: '/mat',
     },
-    { key: 'cake', image: images.cake, title: t('plan.cards.cake.title'), sub: s.cakeIdea, route: '/kake', half: true },
+    {
+      key: 'cake',
+      image: images.cake,
+      title: t('plan.cards.cake.title'),
+      // Kake: the chosen cake (the Toro default until she picks), «Valgt» once picked or confirmed;
+      // with a theme, its decoration idea as before («Lyseblå og hvit kake med snøkrystaller»)
+      sub: theme ? `${s.cakeChoice}\n${theme.copy.cakeIdea}` : s.cakeChoice,
+      badge: s.cakeChosen ? t('plan.cards.cake.done') : undefined,
+      route: '/kake',
+      half: true,
+    },
     {
       key: 'programme',
       image: images.pinata,
@@ -270,6 +280,7 @@ export default function PlanScreen() {
                   image={c.image}
                   title={c.title}
                   sub={c.sub}
+                  badge={c.badge}
                   aspectRatio={1}
                   arrow={false}
                   onPress={() => router.push(c.route)}

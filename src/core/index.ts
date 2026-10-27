@@ -12,5 +12,6 @@ export * from './rules/food';
 export * from './rules/menu';
 export * from './rules/todos';
 export * from './rules/shopping';
+export * from './rules/invitation';
 export * from './texts/render';
 export * from './storage/PartyRepository';

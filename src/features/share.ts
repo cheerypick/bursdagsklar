@@ -3,7 +3,7 @@ import { Platform, Share } from 'react-native';
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
 /** Copies text on the web: the async Clipboard API, else a hidden textarea + execCommand (older Safari). */
-async function copyOnWeb(text: string): Promise<boolean> {
+export async function copyOnWeb(text: string): Promise<boolean> {
   const nav = (globalThis as { navigator?: Navigator }).navigator;
   try {
     if (nav?.clipboard?.writeText) {
@@ -55,5 +55,14 @@ export async function shareList(title: string, text: string): Promise<ShareOutco
       if ((e as { name?: string })?.name === 'AbortError') return 'cancelled';
     }
   }
+  return (await copyOnWeb(text)) ? 'copied' : 'failed';
+}
+
+/**
+ * «Kopier tekst». Web: the clipboard (with the textarea fallback). Native: there is no clipboard module in
+ * the app yet (it would need expo-clipboard), so the system share sheet opens; it has «Kopier» in it.
+ */
+export async function copyText(title: string, text: string): Promise<ShareOutcome> {
+  if (Platform.OS !== 'web') return shareList(title, text);
   return (await copyOnWeb(text)) ? 'copied' : 'failed';
 }

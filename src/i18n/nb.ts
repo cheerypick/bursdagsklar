@@ -75,7 +75,10 @@ export const nb = {
   kids: {
     title: 'Hvor mange barn blir det?',
     lede: 'Med {{navn}}',
-    adultsLater: 'Voksne teller vi når svarene kommer.',
+    /** Under the children number: how the adults are counted (Invitasjon: «noen foreldre blir og hjelper til»). */
+    adultsHelp: 'Med de minste blir gjerne noen foreldre og hjelper til. Dem regner vi med i maten.',
+    adultsCounted:
+      'Dere voksne er med i maten. Vil dere ha med foreldre som hjelper til, krysser du av for det i invitasjonen.',
     unit: 'barn',
     fewer: 'Færre barn',
     more: 'Flere barn',
@@ -155,7 +158,7 @@ export const nb = {
     cards: {
       invite: {
         title: 'Invitasjon',
-        sub: 'Kort, tekst og melding til foreldrene',
+        sub: 'Kort og tekst, klar til å dele',
         badge: 'Klar til å sendes',
       },
       food: {
@@ -364,6 +367,47 @@ export const nb = {
     cta: 'Til forsiden',
   },
   loading: 'Laster …',
+  /** Invitasjon (from the Invitasjon card on Planen). The invitation text itself: invite.text below. */
+  invitation: {
+    eyebrow: 'Invitasjon',
+    title: 'Invitasjonen',
+    lede: 'Teksten lager vi fra planen. Fyll inn det som mangler, se over, og del den der dere pleier.',
+    preview: 'Slik ser kortet ut',
+    detailsTitle: 'Detaljer',
+    addressLabel: 'Adresse',
+    addressPlaceholder: 'F.eks. Bjerkeveien 12',
+    phoneLabel: 'Telefon for svar',
+    phonePlaceholder: 'F.eks. 900 00 000',
+    phoneTip: 'Tips: Legg gjerne til et telefonnummer, så er det lett å svare.',
+    parentsHelp: 'Vi vil gjerne at noen foreldre blir og hjelper til',
+    /** Under the checkbox when ticked (and on Mat): how many we count in the food. */
+    parentsHelpFood_one: 'I maten regner vi med {{count}} forelder som hjelper til.',
+    parentsHelpFood_other: 'I maten regner vi med {{count}} foreldre som hjelper til.',
+    siblings: 'Søsken er velkomne',
+    siblingsSub: 'Legger til «si gjerne fra hvor mange»',
+    replyTitle: 'Svar',
+    replyIfNot: 'Gi beskjed hvis dere ikke kommer',
+    replyIfComing: 'Gi beskjed om dere kommer',
+    rsvpLabel: 'Svarfrist',
+    rsvpEarlier: 'Tidligere svarfrist',
+    rsvpLater: 'Senere svarfrist',
+    textTitle: 'Teksten',
+    textHelp: 'Du kan endre teksten fritt før du deler den.',
+    textEdited: 'Du har endret teksten selv. Endringer over kommer med når du lager teksten på nytt.',
+    regenerate: 'Lag teksten på nytt',
+    regenerated: 'Teksten er laget på nytt',
+    copy: 'Kopier tekst',
+    copied: 'Kopiert',
+    copyFailed: 'Klarte ikke å kopiere. Prøv å markere teksten og kopiere den selv.',
+    share: 'Del invitasjonen',
+    shareFailed: 'Klarte ikke å dele. Prøv «Kopier tekst».',
+    shareTitle: 'Bursdagsinvitasjon fra {{names}}',
+    sent: 'Invitasjonen er sendt',
+    sentSub: 'Kryss av når dere har sendt den',
+    backToPlan: 'Tilbake til planen',
+    /** Planen card done-state. */
+    cardSent: 'Sendt ✓',
+  },
   rules: {
     time: {
       weekendSmall: 'midt på dagen – passer fint rundt lunsj',
@@ -908,7 +952,28 @@ export const nb = {
       headline: 'Bli med på {{fest}}!',
       line: 'fyller {{ages}}',
       when: '{{date}} kl. {{time}}',
+      /** The reply line on the card: «Gi beskjed om dere kommer» / «… hvis dere ikke kommer». */
       rsvp: 'Svar innen {{date}}',
+      rsvpIfNot: 'Kan dere ikke komme? Si fra innen {{date}}',
+    },
+    /** The generated invitation text (core/rules/invitation.ts). Soft and warm, never categorical. */
+    text: {
+      openSmall: 'Du er invitert i bursdag! 🎈',
+      openBig: 'Bli med i bursdag! 🎈',
+      /** count = the number of birthday children (the same in nb; en «is» / «are»). */
+      turns_one: '{{names}} fyller {{ages}} år, og vi vil gjerne feire sammen med deg!',
+      turns_other: '{{names}} fyller {{ages}} år, og vi vil gjerne feire sammen med deg!',
+      when: 'Når: {{date}} kl. {{time}}',
+      where: 'Hvor: {{address}}',
+      whereHome: 'Hvor: hjemme hos oss',
+      parentsHelp: 'Vi blir glade om noen foreldre har lyst til å bli og hjelpe til.',
+      siblings: 'Søsken er velkomne – si gjerne fra hvor mange.',
+      replyIfNot: 'Gi beskjed hvis dere ikke kommer, gjerne innen {{date}}.',
+      replyIfComing: 'Gi beskjed om dere kommer, gjerne innen {{date}}.',
+      phone: 'Send gjerne en melding til {{phone}}.',
+      allergies: 'Si gjerne fra om allergier.',
+      outro: 'Vi gleder oss!',
+      greeting: 'Hilsen {{names}}',
     },
     noTheme: {
       navn: 'Bursdag',

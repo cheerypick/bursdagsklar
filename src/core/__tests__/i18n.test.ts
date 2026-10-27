@@ -152,7 +152,8 @@ describe('core rules in nb and en', () => {
       expect(tasks.find((t) => t.id === 'sendInvite')!.title).toBe('Send the invitation');
       expect(groupTasks(p, tasks, p.plannedFrom).map((g) => g.title)).toContain('Party week');
       expect(summarize(p, p.plannedFrom).progressLine).toMatch(/^\d+ of \d+ to-dos done\./);
-      expect(invitationCard(p).rsvp).toMatch(/^Please reply by \d+ [A-Z]/);
+      // Invitasjon: the reply line follows the reply mode (default «if you can't come») and the svarfrist
+      expect(invitationCard(p).rsvp).toMatch(/^Can't come\? Let us know by \d+\u00a0[A-Z]/);
       expect(themeById('frost').name).toBe('Frozen');
       expect(licenseDisclaimer()).toBe(
         'Bursdagsklar is not affiliated with Disney, Spin Master or The Pokémon Company.',

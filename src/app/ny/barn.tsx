@@ -34,7 +34,7 @@ export default function KidsStep() {
         moreLabel={t('kids.more')}
       />
       <Text variant="small" style={{ marginTop: 10 }}>
-        {t('kids.adultsLater')}
+        {(draftYoungest(draft) ?? 5) <= 4 ? t('kids.adultsHelp') : t('kids.adultsCounted')}
       </Text>
       <View
         style={{

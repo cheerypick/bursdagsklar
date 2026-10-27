@@ -2,6 +2,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { BRAND_PALETTE, invitationCard, inviteNameLayout, themeById, type Party } from '../core';
 import { colors, fonts, images, radii, themeImages } from '../theme';
 import { Text } from '../ui';
+import { useTranslation } from 'react-i18next';
 
 /**
  * The invitation card preview («Festen er klar»). With a theme, colours, picture, motif and headline
@@ -9,6 +10,8 @@ import { Text } from '../ui';
  */
 /** `compact`: a wider, shorter picture, so «Festen er klar» on a phone shows its button without scrolling. */
 export function InvitationCard({ party, compact }: { party: Party; compact?: boolean }) {
+  // re-renders on a language switch; the card texts come from core in the active language
+  const { t } = useTranslation();
   // no theme chosen: the neutral brand card, our own picture and a neutral headline
   const theme = party.theme ? themeById(party.theme) : null;
   const { inviteTint, inviteInk } = theme ? theme.palette : BRAND_PALETTE;
@@ -22,7 +25,7 @@ export function InvitationCard({ party, compact }: { party: Party; compact?: boo
       testID="invitation-card"
       style={[styles.card, { backgroundColor: inviteTint }]}
       accessible
-      accessibilityLabel={`Invitasjon: ${card.headline} ${card.name} ${card.line}. ${card.when}. ${card.rsvp}.`}
+      accessibilityLabel={`${t('invitation.eyebrow')}: ${card.headline} ${card.name} ${card.line}. ${card.when}.${card.where ? ` ${card.where}.` : ''} ${card.rsvp}.`}
     >
       <View style={[styles.art, compact && { aspectRatio: 2.2 }]}>
         <Image source={art} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
@@ -49,6 +52,11 @@ export function InvitationCard({ party, compact }: { party: Party; compact?: boo
           {big.text}
         </Text>
         <Text style={styles.sub}>{card.when}</Text>
+        {card.where ? (
+          <Text testID="invitation-where" style={styles.where}>
+            {card.where}
+          </Text>
+        ) : null}
         <Text style={styles.meta}>{card.rsvp}</Text>
       </View>
     </View>
@@ -79,5 +87,6 @@ const styles = StyleSheet.create({
     overflowWrap: 'anywhere',
   } as object,
   sub: { fontFamily: fonts.displaySemi, fontSize: 19, color: colors.ink, textAlign: 'center', marginTop: 6 },
+  where: { fontFamily: fonts.body, fontSize: 17, color: colors.ink, textAlign: 'center', marginTop: 4 },
   meta: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 8, textAlign: 'center' },
 });

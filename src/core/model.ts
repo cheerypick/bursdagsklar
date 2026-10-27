@@ -238,6 +238,12 @@ export interface Party {
   guests: Guest[];
   haveAtHome: HomeItemId[];
   taskState: Record<string, TaskState>;
+  /**
+   * Invitasjon (Oct 2026): what the parent filled in on the invitation screen. Optional and without a
+   * schema bump: a party saved before it simply has none, and every field falls back to a default
+   * (see rules/invitation.ts `resolveInvitation`).
+   */
+  invitation?: InvitationSettings;
 }
 
 export interface Task {
@@ -266,4 +272,24 @@ export interface ShoppingItem {
   trip: 'torrvarer' | 'ferskvarer';
   homeItemId?: HomeItemId;
   ruleRef: string;
+}
+
+/** «Gi beskjed hvis dere ikke kommer» (default) or «Gi beskjed om dere kommer». RSVP is the hosts' own. */
+export type ReplyMode = 'ifNotComing' | 'ifComing';
+
+/** The invitation screen's choices. Every field is optional; a missing one means «use the default». */
+export interface InvitationSettings {
+  /** Free text from the invitation screen («Bjerkeveien 12»). */
+  address?: string;
+  /** The hosts' phone number for replies, as typed. */
+  phone?: string;
+  /** «Vi vil gjerne at noen foreldre blir og hjelper til». Missing = on when the youngest is 3–4. */
+  parentsHelp?: boolean;
+  /** «Søsken er velkomne – si gjerne fra hvor mange». Default off. */
+  siblings?: boolean;
+  /** Svarfrist. Missing = the day before the party. */
+  rsvpBy?: ISODate;
+  replyMode?: ReplyMode;
+  /** The parent's own edit of the text. Missing = the generated text («Lag teksten på nytt» clears it). */
+  customText?: string;
 }

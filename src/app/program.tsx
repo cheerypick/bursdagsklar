@@ -170,16 +170,16 @@ export default function ProgramScreen() {
               ))}
             </View>
             {a.tipYounger ? (
-              <Text variant="small">
-                <Text style={styles.tipLabel}>{`${t('program.tipYounger')}: `}</Text>
-                {a.tipYounger}
-              </Text>
+              <View style={{ gap: 2 }}>
+                <Text style={styles.label}>{t('program.tipYounger')}</Text>
+                <Text variant="small">{a.tipYounger}</Text>
+              </View>
             ) : null}
             {a.tipOlder ? (
-              <Text variant="small">
-                <Text style={styles.tipLabel}>{`${t('program.tipOlder')}: `}</Text>
-                {a.tipOlder}
-              </Text>
+              <View style={{ gap: 2 }}>
+                <Text style={styles.label}>{t('program.tipOlder')}</Text>
+                <Text variant="small">{a.tipOlder}</Text>
+              </View>
             ) : null}
             {a.themeTip ? <Text variant="small">{a.themeTip}</Text> : null}
             {id === 'fotojakt' ? photoList : null}
@@ -299,7 +299,6 @@ const useStyles = themedStyles((colors) => ({
   rules: { gap: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.line },
   step: { flexDirection: 'row', gap: 10 },
   stepNo: { width: 20, fontFamily: fonts.bodyBold, color: colors.green },
-  tipLabel: { fontFamily: fonts.bodyBold, color: colors.ink },
   time: { width: 56, fontFamily: fonts.bodySemi, color: colors.ink },
   more: { minHeight: TOUCH, justifyContent: 'center' },
   photo: { gap: 6, backgroundColor: colors.butter, borderRadius: radii.md, padding: 12 },

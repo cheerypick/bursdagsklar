@@ -2,6 +2,7 @@
  * Deterministic food rules (spec §6.4–6.8). Pure functions, no UI.
  * The Mat screen shows them through rules/menu.ts (amounts plus a reason line per item).
  */
+import { cakePieces as cakePiecesFor } from './cake';
 import type { AllergyTag, Dish, MenuChoice, Party, PizzaDough, PizzaTopping, ShoppingItem } from '../model';
 import { PIZZA_TOPPINGS } from '../model';
 import { dishShare, menuDishes } from './dishes';
@@ -520,7 +521,8 @@ export function customDish(m: Extract<MenuChoice, { kind: 'egen' }>, p: Pick<Peo
 export function extras(p: People, opts: { muffins: boolean; candleAges?: number[] }) {
   const saftLitres = (p.kidsComing * C.SAFT_DL_CHILD + p.adultsEating * C.SAFT_DL_ADULT) / 10;
   const fruitG = p.kidsComing * C.FRUIT_G_CHILD + p.adultsEating * C.FRUIT_G_ADULT;
-  const cakePieces = ceilSafe((p.kidsComing + p.adultsEating) * C.CAKE_PIECES_FACTOR);
+  // Kake (Oct 2026): 1,5 pieces per child + 1 per adult (rules/cake.ts, an assumption Ekaterina approved)
+  const cakePieces = cakePiecesFor(p.kidsComing, p.adultsEating);
   const muffins = opts.muffins ? Math.ceil((p.kidsComing * C.MUFFINS_PER_CHILD) / 6 - 1e-9) * 6 : 0;
   return {
     saftLitres: Math.round(saftLitres * 10) / 10,

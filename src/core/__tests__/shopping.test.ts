@@ -33,6 +33,7 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
       'Frukt og grønt',
       'Drikke',
       'Tørrvarer',
+      'Til kaken',
       'Fest og pynt',
       'Godteposer',
     ]);
@@ -105,9 +106,10 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
   });
 
   it('counts the items for the Planen card', () => {
-    expect(list.count).toBe(12);
-    expect(shoppingCardLine(list)).toBe('12 varer');
-    expect(shoppingCardLine(handleliste(withTick(emma(), 'saft', true)))).toBe('12 varer · 1 kjøpt');
+    // 12 + the cake's 4 (Toro mix, glaze, muffins, butter: Emma has muffins on)
+    expect(list.count).toBe(16);
+    expect(shoppingCardLine(list)).toBe('16 varer');
+    expect(shoppingCardLine(handleliste(withTick(emma(), 'saft', true)))).toBe('16 varer · 1 kjøpt');
   });
 
   it('without a main dish: drinks, fruit and party things only', () => {
@@ -191,7 +193,7 @@ describe('Handleliste follows the Mat screen and the party', () => {
     p = withoutCustomItem(p, 'egen-1');
     expect(p.shopping).toEqual({ ticked: [], custom: [{ id: 'egen-2', text: 'Sugerør' }] });
     expect(nextCustomId(p.shopping.custom)).toBe('egen-3');
-    expect(handleliste(p).count).toBe(13);
+    expect(handleliste(p).count).toBe(17);
   });
 });
 
@@ -273,6 +275,12 @@ describe('shareText', () => {
         '☐ Ketchup og sennep: 1 av hver',
         '☐ 2 poser sprøstekt løk',
         '',
+        'Til kaken',
+        '☐ 1 pk Toro Sjokoladekake Langpanne',
+        '☐ 1 pk Toro Kremet Sjokoladeglasur',
+        '☐ 1 pk Toro Lyse Muffins',
+        '☐ 350 g smør',
+        '',
         'Fest og pynt',
         '☐ 1 sett kakelys',
         '☐ Tallerkener, kopper og servietter til 17',
@@ -294,7 +302,7 @@ describe('shareText', () => {
     let p = emma();
     for (const id of handleliste(p).groups.flatMap((g) => g.items.map((i) => i.id))) p = withTick(p, id, true);
     expect(shareText(handleliste(p))).toBe('Handleliste – Emmas bursdag 7. nov\n\nAlt er handlet.');
-    expect(shoppingCardLine(handleliste(p))).toBe('Alt er handlet · 12 varer');
+    expect(shoppingCardLine(handleliste(p))).toBe('Alt er handlet · 16 varer');
   });
 });
 

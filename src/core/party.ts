@@ -28,6 +28,7 @@ import { diffDays, formatRangeCompact, isWeekend } from './rules/dates';
 import { defaultPartyTime } from './rules/partyTime';
 import { menuTitle } from './rules/menu';
 import { headCount } from './rules/people';
+import { CAKE_IDS, cakeChoiceLine, cakePlan, resolveCake } from './rules/cake';
 import { buildTasks, progress } from './rules/todos';
 import { themeById } from './themes';
 import { agePhrase, celebrantNames, clampAge, oldestAge, youngestAge } from './rules/celebrants';
@@ -198,9 +199,9 @@ export function createParty(d: SetupDraft, opts: { id: string; now: string; toda
     shopping: { ticked: [], custom: [] },
     cake: {
       mode: 'bake',
-      // one shared cake for everyone; the youngest decides the flavour
-      cakeId: youngest <= 6 ? 'vaniljekake-langpanne' : 'sjokoladekake-langpanne',
-      // off until the parent picks it on the Kake step (muffinsDefault suggests it there)
+      // one shared cake for everyone: the Toro chocolate langpanne until the parent picks on Kake (rules/cake.ts)
+      cakeId: CAKE_IDS.toro,
+      // off until the parent picks it on the Kake screen
       muffins: false,
     },
     programme: programmeDefaults(youngest),
@@ -317,7 +318,7 @@ export function homeItemsFor(p: Party): HomeItemId[] {
     if (id === 'stor-kjele') return kinds.includes('wienerpolser') || kinds.includes('pasta');
     if (id === 'grill') return kinds.includes('grillpolser');
     if (id === 'laken-fiskedam' || id === 'fiskestang') return p.programme.includeSkattejakt;
-    if (id === 'muffinsformer') return p.cake.muffins;
+    if (id === 'muffinsformer') return cakePlan(p).muffinPacks > 0;
     return true;
   });
 }
@@ -369,6 +370,10 @@ export interface PartySummary {
   cakeLine: string;
   /** The theme's cake suggestion («Lyseblå og hvit kake med snøkrystaller»), shown on Festen er klar and Planen. */
   cakeIdea: string;
+  /** Kake: the chosen cake in a few words («Toro sjokoladekake med glasur»), for the Planen card. */
+  cakeChoice: string;
+  /** The parent has picked or confirmed the cake on the Kake screen (the Planen card's done state). */
+  cakeChosen: boolean;
   programmeLine: string;
   tasksThisWeek: number;
   done: number;
@@ -414,6 +419,8 @@ export function summarize(p: Party, today: ISODate): PartySummary {
       p.cake.mode === 'buy'
         ? t('rules.party.cakeBakery')
         : muffins(theme ? theme.copy.cakeIdea : t('rules.party.neutralCakeIdea')),
+    cakeChoice: cakeChoiceLine(p),
+    cakeChosen: resolveCake(p.cake).chosen,
     programmeLine: t(p.programme.includeSkattejakt ? 'rules.party.programmeHunt' : 'rules.party.programme', { tid }),
     tasksThisWeek: pr.thisWeekOpen,
     done: pr.done,

@@ -80,7 +80,7 @@ test('Mat: choose Pølser, see the amounts, change the guests (the party), reloa
   expect(await page.locator('svg[aria-hidden="true"]').count()).toBeGreaterThan(0);
   await expect(visible(page, 'food-line-vann')).toBeVisible();
   await expect(visible(page, 'food-line-frukt')).toBeVisible();
-  await expect(visible(page, 'food-section-kake')).toContainText('Kake senere');
+  await expect(visible(page, 'food-section-kake')).toContainText('Kaken velger du under Kake');
   // every quantity line is a checkbox, and all start included
   for (const id of ['grillpolser', 'lomper', 'polsebrod', 'ketchup', 'lok', 'saft', 'vann', 'frukt'])
     await expect(visible(page, `food-line-${id}`)).toHaveAttribute('aria-checked', 'true');

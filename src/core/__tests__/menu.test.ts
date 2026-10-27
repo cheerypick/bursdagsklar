@@ -126,8 +126,9 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     expect(line(plan, 'frukt').amount).toBe('ca. 2,3 kg');
     expect(() => line(plan, 'godteri')).toThrow();
     expect(plan.sections.find((s) => s.id === 'snacks')!.lines.map((l) => l.id)).toEqual(['frukt']);
-    expect(line(plan, 'kake')).toMatchObject({ amount: 'ca. 19 biter' });
-    expect(line(plan, 'kake').why).toContain('Kake senere');
+    // Kake: 13 × 1,5 + 4 × 1 = 23,5 → 24 pieces
+    expect(line(plan, 'kake')).toMatchObject({ amount: 'ca. 24 biter' });
+    expect(line(plan, 'kake').why).toBe('1,5 bit per barn og 1 per voksen. Kaken velger du under Kake');
   });
 
   it('wienerpølser: 47 → 6 pk Gilde à 8 = 48, same per-person rule', () => {

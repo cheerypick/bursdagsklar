@@ -17,6 +17,8 @@ import {
   withMenu,
   withTheme,
   withInvitation,
+  withCake,
+  type CakeChoice,
   type DietTag,
   type InvitationSettings,
   type GoodieBagItemId,
@@ -66,6 +68,8 @@ interface PartyState {
   startOver: () => Promise<void>;
   /** Invitasjon: the invitation screen's fields (undefined in the patch = back to the default). */
   setInvitation: (patch: Partial<InvitationSettings>) => void;
+  /** Kake: the kind of cake, the glaze, the muffins and whether it is chosen (rules/cake.ts `withCake`). */
+  setCake: (patch: Partial<Pick<CakeChoice, 'kind' | 'glaze' | 'muffinFlavour' | 'muffins' | 'chosen'>>) => void;
 }
 
 const Ctx = createContext<PartyState | null>(null);
@@ -192,6 +196,11 @@ export function PartyProvider({
     (patch: Partial<InvitationSettings>) => update((p) => withInvitation(p, patch)),
     [update],
   );
+  const setCake = useCallback(
+    (patch: Partial<Pick<CakeChoice, 'kind' | 'glaze' | 'muffinFlavour' | 'muffins' | 'chosen'>>) =>
+      update((p) => withCake(p, patch)),
+    [update],
+  );
 
   const startOver = useCallback(async () => {
     // a change still waiting to be saved would write the old party back after the reset
@@ -224,6 +233,7 @@ export function PartyProvider({
       setGoodieBagItem,
       startOver,
       setInvitation,
+      setCake,
     }),
     [
       ready,
@@ -246,6 +256,7 @@ export function PartyProvider({
       setGoodieBagItem,
       startOver,
       setInvitation,
+      setCake,
     ],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

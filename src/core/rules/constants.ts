@@ -242,6 +242,7 @@ export const SAFT_DL_ADULT = 6;
 export const SAFT_LITRES_PER_BOTTLE = 5; // 1 l concentrate + 4 l water (I)
 export const FRUIT_G_CHILD = 130;
 export const FRUIT_G_ADULT = 140;
+/** @deprecated Oct 2026: the cake pieces follow rules/cake.ts `cakePieces` (1,5 per child + 1 per adult). */
 export const CAKE_PIECES_FACTOR = 1.1; // (I)
 export const CAKE_PIECES_PER_LANGPANNE = 24;
 export const MUFFINS_PER_CHILD = 0.75; // (I)

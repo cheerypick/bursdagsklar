@@ -175,13 +175,14 @@ describe('taco and egen meny (spec §6.6)', () => {
 });
 
 describe('extras (spec §6.7)', () => {
+  // cake (Kake, Oct 2026): 13 × 1,5 + 4 × 1 = 23,5 → 24 pieces = 1 langpanne
   it('saft 8,9 l → 2 bottles; fruit ca. 2,3 kg; 1 cake; 12 muffins; 6 candles; 13 bags', () => {
     expect(extras(P, { muffins: true })).toMatchObject({
       saftLitres: 8.9,
       saftBottles: 2,
       fruitG: 2250,
       fruitDisplay: 'ca. 2,3 kg',
-      cakePieces: 19,
+      cakePieces: 24,
       cakeBatches: 1,
       muffins: 12,
       candles: 6,

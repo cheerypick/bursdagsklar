@@ -69,7 +69,15 @@ export function buildTasks(p: Party): TaskPlan {
   const has = (id: Party['haveAtHome'][number]) => p.haveAtHome.includes(id);
 
   const rows: (Task | false)[] = [
-    { id: 'guestList', date: T, title: t('rules.todos.guestList.title'), detail: kidsCount(p.children), auto: true },
+    {
+      id: 'guestList',
+      date: T,
+      title: t('rules.todos.guestList.title'),
+      detail: kidsCount(p.children),
+      auto: true,
+      // the optional Gjesteliste screen (names, replies, allergies); the to-do stays done on its own
+      link: { label: t('rules.todos.guestList.link'), route: '/gjesteliste' },
+    },
     {
       id: 'sendInvite',
       date: front(19),

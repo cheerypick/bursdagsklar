@@ -21,6 +21,12 @@ import {
   withInvitation,
   withCake,
   withActivity,
+  withGuestAdded,
+  withGuestRemoved,
+  withGuestStatus,
+  withGuestNote,
+  withChildrenFromGuests,
+  type GuestStatus,
   type ActivityId,
   type CakeChoice,
   type DietTag,
@@ -69,6 +75,13 @@ interface PartyState {
   setGoodieStyle: (style: GoodieBagStyle) => void;
   /** «Vi dropper godteposer» (true) or take it back (false). */
   setGoodieSkip: (skip: boolean) => void;
+  /** Gjesteliste: add a child by name, take one off, the answer and the short allergy/diet note. */
+  addGuest: (name: string) => void;
+  removeGuest: (id: string) => void;
+  setGuestStatus: (id: string, status: GuestStatus) => void;
+  setGuestNote: (id: string, note: string) => void;
+  /** «Bruk N barn i planen» on the Gjesteliste: only when she taps it (rules/guests.ts). */
+  applyGuestCount: () => void;
   /**
    * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
    * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
@@ -205,6 +218,14 @@ export function PartyProvider({
 
   const setGoodieStyle = useCallback((style: GoodieBagStyle) => update((p) => withGoodieStyle(p, style)), [update]);
   const setGoodieSkip = useCallback((skip: boolean) => update((p) => withGoodieSkip(p, skip)), [update]);
+  const addGuest = useCallback((name: string) => update((p) => withGuestAdded(p, name)), [update]);
+  const removeGuest = useCallback((id: string) => update((p) => withGuestRemoved(p, id)), [update]);
+  const setGuestStatus = useCallback(
+    (id: string, status: GuestStatus) => update((p) => withGuestStatus(p, id, status)),
+    [update],
+  );
+  const setGuestNote = useCallback((id: string, note: string) => update((p) => withGuestNote(p, id, note)), [update]);
+  const applyGuestCount = useCallback(() => update((p) => withChildrenFromGuests(p)), [update]);
 
   const setInvitation = useCallback(
     (patch: Partial<InvitationSettings>) => update((p) => withInvitation(p, patch)),
@@ -249,6 +270,11 @@ export function PartyProvider({
       setGoodieBagItem,
       setGoodieStyle,
       setGoodieSkip,
+      addGuest,
+      removeGuest,
+      setGuestStatus,
+      setGuestNote,
+      applyGuestCount,
       startOver,
       setInvitation,
       setCake,
@@ -275,6 +301,11 @@ export function PartyProvider({
       setGoodieBagItem,
       setGoodieStyle,
       setGoodieSkip,
+      addGuest,
+      removeGuest,
+      setGuestStatus,
+      setGuestNote,
+      applyGuestCount,
       startOver,
       setInvitation,
       setCake,

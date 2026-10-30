@@ -12,7 +12,7 @@
  *   picked is always shown, so nothing she chose disappears.
  * - With a theme, the stickers and tattoos take its motif in plain words («Klistremerker med dinosaurer»).
  * - Amounts: one of each per bag, one bag per child coming (the ONE children number, birthday children
- *   included, minus those who said no: rules/people.ts `headCount`). Candy ca. 100 g per bag
+ *   included: rules/people.ts `headCount`; the Gjesteliste never changes it on its own). Candy ca. 100 g per bag
  *   (constants.ts `CANDY_G_CHILD`); with «Litt av begge» half of that (ASSUMPTION: 50 g, the rest is small
  *   toys).
  * - Old parties: a party saved before this screen has only `contents`; its style is read from them (candy
@@ -162,10 +162,8 @@ export function smallPartsHidden(p: Pick<Party, 'goodieBags' | 'celebrants'>): b
   );
 }
 
-/** One bag per child coming (the ONE children number minus those who said no). */
-export function goodieBagCount(
-  p: Pick<Party, 'children' | 'hostAdults' | 'guests' | 'celebrants' | 'invitation'>,
-): number {
+/** One bag per child: the ONE children number (the Gjesteliste never changes it on its own). */
+export function goodieBagCount(p: Pick<Party, 'children' | 'hostAdults' | 'celebrants' | 'invitation'>): number {
   return Math.max(0, headCount(p).kidsComing);
 }
 
@@ -203,14 +201,11 @@ function goodieLine(id: GoodieBagItemId, bags: number, p: Party): GoodieShopLine
     case 'godteri': {
       const g = candyPerBag(goodieStyle(p));
       const qty = formatGrams(bags * g);
-      const nuts = p.guests.some(
-        (x) => x.status !== 'no' && (x.allergies.includes('notter') || x.allergies.includes('peanott')),
-      );
       return {
         ...base,
         name: t('rules.shop.candy'),
         qty,
-        detail: t('rules.shop.candyDetail', { g }) + (nuts ? t('rules.shop.candyNuts') : ''),
+        detail: t('rules.shop.candyDetail', { g }),
         text: t('rules.shop.candyText', { qty }),
       };
     }

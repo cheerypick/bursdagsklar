@@ -1349,7 +1349,7 @@ export const en: LanguageResource = {
       rsvpReminder: {
         title: 'Reply deadline tomorrow: send a reminder',
         detail: "It's already written, for those who haven't replied",
-        link: 'The reminder',
+        link: 'Open the reminder',
       },
       borrowDispenser: {
         title: 'Borrow a drinks dispenser (5–8 l)',
@@ -1357,7 +1357,8 @@ export const en: LanguageResource = {
       },
       rsvpDeadline: {
         title: 'Reply deadline',
-        detail: 'The amounts update automatically',
+        detail: 'Once the replies are in, you can update the number of children from the guest list',
+        link: 'Guest list',
       },
       allergyCheck: {
         title: 'Check allergies against the menu',
@@ -1366,6 +1367,7 @@ export const en: LanguageResource = {
       },
       orderPizza: {
         title: 'Pre-order the pizzas',
+        link: 'Food',
         big: 'Large, about 40 cm',
         normal: 'Regular, about 30 cm',
       },
@@ -1379,8 +1381,8 @@ export const en: LanguageResource = {
       },
       partyReminder: {
         title: 'Send a reminder to the parents',
-        detail: "It's written, with address and time",
-        link: 'The reminder',
+        detail: "It's already written, with the time and place from the invitation",
+        link: 'Open the reminder',
       },
       printClues: {
         title: 'Make the treasure hunt clue notes',
@@ -1423,7 +1425,8 @@ export const en: LanguageResource = {
       },
       thanks: {
         title: 'Send a thank-you message',
-        detail: "It's written. And make notes for next year",
+        detail: "It's already written. And maybe jot down a few notes for next year",
+        link: 'Open the thank-you',
       },
       groups: {
         idag: 'Today',
@@ -1754,6 +1757,115 @@ export const en: LanguageResource = {
       playful: "Wrap up warm, it'll be cold and magical! There's going to be a Frozen party, and you're invited.",
       openingSmall: "You're invited to a Frozen party!",
       openingBig: 'Come to a Frozen party!',
+    },
+  },
+  reminders: {
+    eyebrow: 'Reminders',
+    title: 'Reminders and thanks',
+    lede: 'Three messages, already written from your plan. Copy or share them whenever it suits you.',
+    tabsLabel: 'Choose a message',
+    tabs: {
+      svar: 'Replies',
+      fest: 'Before the party',
+      takk: 'Thanks',
+    },
+    toneLabel: 'Tone',
+    tones: {
+      standard: 'Friendly',
+      kort: 'Short',
+      formell: 'Formal',
+    },
+    svar: {
+      title: 'Reply reminder',
+      lede: "For those who haven't replied yet. The reply deadline is {{date}}.",
+      personal_one: '{{count}} child on the guest list is waiting for a reply. Here is a message for them:',
+      personal_other: '{{count}} children on the guest list are waiting for a reply. Here is a message for each:',
+      noList: "Here is a general reminder. Add the names to the guest list and you'll get one for each child.",
+      allAnswered: 'Everyone on the guest list has replied. Here is a general reminder in case you still need it.',
+      listLink: 'Guest list',
+      ifNotNote: "You only asked to hear from those who can't come, so this one is entirely optional.",
+      person: 'Is {{name}} coming?',
+      copyLabel: 'Copy the reminder for {{name}}',
+      shareLabel: 'Share the reminder for {{name}}',
+    },
+    fest: {
+      title: 'Reminder before the party',
+      lede: 'For everyone who is coming. A couple of days before the party works well.',
+    },
+    takk: {
+      title: 'Thank-you message',
+      lede: 'For the parents, the day after the party.',
+      gift: 'We got a joint gift',
+      forgotten: 'Someone left something behind',
+    },
+    shareTitle: 'A message about {{gen}} party',
+    copy: 'Copy',
+    share: 'Share',
+    copied: 'Copied',
+    copyFailed: "Couldn't copy. Select the text and copy it yourself.",
+    shareFailed: "Couldn't share. Try «Copy» instead.",
+    sent: 'Sent',
+    sentSub: 'Ticked off under To-dos too',
+    gaps: {
+      both: "Tip: Add the address and a phone number on the Invitation, and they'll be in the messages.",
+      address: "Tip: Add the address on the Invitation, and it'll be in the messages.",
+      phone: "Tip: Add a phone number on the Invitation, and it'll be in the messages.",
+      link: 'Invitation',
+    },
+    calendar: {
+      title: 'Add to calendar',
+      lede: 'A calendar file for the party and one for the reply deadline. Open it and your phone adds it to the calendar.',
+      party: 'The party',
+      rsvp: 'Reply deadline',
+      partyLabel: 'Download a calendar file for the party',
+      rsvpLabel: 'Download a calendar file for the reply deadline',
+      done: 'The calendar file is downloaded',
+      failed: "Couldn't make the calendar file",
+      partyTitle: '{{gen}} birthday party',
+      rsvpTitle: 'Reply deadline for {{gen}} party',
+      rsvpDescription: "Check the guest list, and maybe send a reminder to those who haven't replied.",
+    },
+    entry: {
+      title: 'Reminders and thank-you message',
+      sub: 'Already written, ready to copy or share',
+    },
+    backToPlan: 'Back to the plan',
+    ctx: {
+      today: 'today',
+      tomorrow: 'by tomorrow',
+      byDate: 'by {{date}}',
+      at: 'at {{address}}',
+      atHome: 'at our place',
+      contact: 'us',
+      parents: '{{gen}} parents',
+      fromHosts: '{{names}}, {{hosts}}',
+      family: 'family',
+      happy_one: 'was so happy',
+      happy_other: 'were so happy',
+      yourChild: 'your child',
+    },
+    tpl: {
+      svar: {
+        standard:
+          'Hi! Just a little reminder about {barns} birthday party on {dato} at {tid}. Is {gjest} coming? It would be lovely to hear {svarfrist_ord}. Do let us know about any allergies too. Thank you so much!',
+        kort: 'Hi! Is {gjest} coming to {barns} party on {dato}? Let us know {svarfrist_ord} if you can. Thanks!',
+        formell:
+          'Hello, a reminder about {barns} birthday party on {dato} at {tid}. Please let us know {svarfrist_ord} whether {gjest} is coming, and about any allergies. Thank you.',
+      },
+      fest: {
+        standard:
+          "Hi everyone! We're looking forward to {barns} party on {dag} at {tid} {sted}.{#ute} We'll be outside for a while, so please dress the children for the weather.{/ute}{#allergier} We've noted what you told us ({allergier}) and will keep it in mind for the food.{/allergier}{#hente} Pick-up is at {slutt}.{/hente}\n{#tlf}Call {kontakt} on {telefon} if you can't find us. {/tlf}Best wishes, {avsendere}",
+        kort: "Reminder: {barns} party on {dag} at {tid} {sted}. We're looking forward to it! Best wishes, {avsendere}",
+        formell:
+          'Hello, a reminder about {barns} birthday party on {dato} at {tid} {sted}.{#hente} Pick-up is at {slutt}.{/hente}{#tlf} Please contact {kontakt} on {telefon} with any questions.{/tlf} Kind regards, {avsendere}',
+      },
+      takk: {
+        standard:
+          "Thank you so much for coming to {barns} party yesterday!{#spleis} And thank you for the lovely gift, {barn} {glad}.{/spleis}{^spleis} And thank you for the presents, {barn} {glad}.{/spleis} It was a really lovely day.{#gjenglemt} PS: A few things were left behind at our place. Let us know if you're missing anything!{/gjenglemt}\nLove from {fra}",
+        kort: 'Thanks for yesterday! {barn} had a wonderful day.{#gjenglemt} Let us know if anyone is missing anything, a few things were left behind.{/gjenglemt} Best wishes, {avsendere}',
+        formell:
+          'Hello, thank you very much for coming to {barns} birthday party.{#spleis} Thank you also for the joint gift.{/spleis}{#gjenglemt} A few things were left behind, so do let us know if you are missing anything.{/gjenglemt} Kind regards, {avsendere}',
+      },
     },
   },
   themeNote: {

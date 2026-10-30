@@ -230,7 +230,7 @@ describe('summary for «Festen er klar» and Planen (spec §10.2)', () => {
       programmeChoice: 'Skattejakt, Enhjørning-piñata',
       programmeCount: 2,
       tasksThisWeek: 2,
-      progressLine: '1 av 18 gjøremål er gjort. Godt i rute.',
+      progressLine: '1 av 21 gjøremål er gjort. Godt i rute.',
     });
   });
   it('countdown words for tomorrow and today', () => {

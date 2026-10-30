@@ -1,16 +1,25 @@
-import { useMemo } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { InvitationCard } from '../features/InvitationCard';
 import { copyText, shareList } from '../features/share';
-import { Button, CheckBox, Icon, Screen, Surface, Text, TopBar, useToast } from '../ui';
+import { printInvitations } from '../features/printInvitations';
+import { Button, CheckBox, Icon, Screen, Stepper, Surface, Text, TopBar, useToast } from '../ui';
 import { fonts, radii, TOUCH, useColors, useLayout, themedStyles } from '../theme';
 import { useTranslation } from 'react-i18next';
 import {
   addDays,
   buildInvitation,
+  buildPrintSheet,
+  clampPrintCount,
+  defaultPrintCount,
+  MAX_PRINT_CARDS,
+  minPrintCount,
+  printCards,
+  printNames,
+  toPages,
   capitalize,
   celebrantNames,
   formatLong,
@@ -41,6 +50,8 @@ export default function InvitasjonScreen() {
   const router = useRouter();
   const toast = useToast();
   const { isWide, gutter } = useLayout();
+  // the number of printed cards she picked (null: the suggestion that fills the pages); not saved
+  const [printCount, setPrintCount] = useState<number | null>(null);
   // the generated text follows the active language (i18n.language re-runs it after a switch)
   const inv = useMemo(
     () => (party ? buildInvitation(party, today) : null),
@@ -313,6 +324,62 @@ export default function InvitasjonScreen() {
     </Surface>
   ) : null;
 
+  // Skriv ut: four per A4 page, one per child on the list (not «Kommer ikke»), or blank «Til: ____» cards
+  const names = printNames(party).length;
+  const cardCount = clampPrintCount(party, printCount ?? defaultPrintCount(party));
+  const cards = printCards(party, cardCount);
+  const blanks = cards.filter((c) => c === null).length;
+  const sheets = toPages(cards).length;
+  const minCards = minPrintCount(party);
+  const print = async () => {
+    const sheet = buildPrintSheet(party, { count: cardCount, today });
+    const outcome = await printInvitations(sheet, t('print.title'));
+    if (outcome === 'failed') toast(t('print.failed'));
+  };
+  const printBox = (
+    <Surface testID="invitation-print" style={{ gap: 12 }}>
+      <Text style={styles.sectionTitle}>{t('print.title')}</Text>
+      <Text variant="small">{t('print.lede')}</Text>
+      <View style={{ gap: 4 }} testID="invitation-print-summary">
+        {names ? (
+          <Text style={styles.checkLabel} testID="invitation-print-named">
+            {t('print.cardsNamed', { count: names })}
+          </Text>
+        ) : null}
+        {blanks ? (
+          <Text style={styles.checkLabel} testID="invitation-print-blank">
+            {t('print.cardsBlank', { count: blanks })}
+          </Text>
+        ) : null}
+        <Text variant="small" testID="invitation-print-sheets">
+          {t('print.pages', { count: sheets })}
+        </Text>
+      </View>
+      <View style={{ gap: 8 }}>
+        <Text style={styles.label}>{t('print.countLabel')}</Text>
+        <Stepper
+          compact
+          testID="invitation-print-count"
+          value={cardCount}
+          min={minCards}
+          max={Math.max(minCards, MAX_PRINT_CARDS)}
+          unit={t('print.countUnit', { count: cardCount })}
+          onChange={setPrintCount}
+          lessLabel={t('print.fewer')}
+          moreLabel={t('print.more')}
+        />
+        <Text variant="small">{t('print.countHint')}</Text>
+      </View>
+      {!names ? (
+        <Text variant="small" testID="invitation-print-names-tip">
+          {t('print.namesTip')}
+        </Text>
+      ) : null}
+      <Button testID="invitation-print-button" label={t('print.button')} onPress={print} disabled={!inv.text.trim()} />
+      <Text variant="small">{Platform.OS === 'web' ? t('print.hintWeb') : t('print.hintApp')}</Text>
+    </Surface>
+  );
+
   return (
     <Screen tab="plan" testID="screen-invitation">
       {!isWide ? <TopBar onBack={back} /> : null}
@@ -334,6 +401,7 @@ export default function InvitasjonScreen() {
             {details}
             {textBox}
             {personalBox}
+            {printBox}
           </View>
         </View>
       ) : (
@@ -342,6 +410,7 @@ export default function InvitasjonScreen() {
           {details}
           {textBox}
           {personalBox}
+          {printBox}
         </View>
       )}
       <View style={{ paddingHorizontal: gutter, marginTop: 24, alignItems: isWide ? 'flex-start' : 'stretch' }}>

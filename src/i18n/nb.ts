@@ -459,8 +459,7 @@ export const nb = {
     scratchGlaze: 'Glasur',
     scratchHow: 'Slik gjør du',
     source: 'Oppskrift fra TINE (tine.no)',
-    buyText:
-      'Kjøp gjerne en ferdig kake, for eksempel på REMA 1000 eller hos et bakeri. Det trengs ca. {{count}} biter.',
+    buyText: 'Kjøp gjerne en ferdig kake i butikken eller hos et bakeri. Det trengs ca. {{count}} biter.',
     buyTodo: '«Bestill kaken» ligger i Gjøremål, noen dager før festen.',
     themeIdea: 'Pynteidé til temaet: {{idea}}',
     shopTitle: 'På handlelista',
@@ -1256,7 +1255,7 @@ export const nb = {
       orderCake: {
         title: 'Bestill kaken',
         titleJoint: 'Bestill én felles kake',
-        detail: 'Ca. {{pieces}} biter. For eksempel på REMA 1000 eller hos et bakeri',
+        detail: 'Ca. {{pieces}} biter, fra butikken eller et bakeri',
         detailJoint: 'Én kake til alle, ca. {{pieces}} biter. {{candles}}',
       },
       rsvpReminder: {
@@ -1282,18 +1281,6 @@ export const nb = {
         big: 'Store, ca. 40 cm',
         normal: 'Vanlige, ca. 30 cm',
       },
-      buyDry: {
-        title: 'Handle tørrvarer',
-        link: 'Handleliste',
-        firstAndSaft: '{{first}} og saft',
-        saft: 'Saft',
-        fallback: 'Det som står på handlelista',
-        lomper: 'Lomper',
-        polsebrod: 'Pølsebrød',
-        tortillas: 'Tortillas',
-        pizzasaus: 'Pizzasaus',
-        pasta: 'Pasta',
-      },
       bakeCakeBase: {
         title: 'Bak kakebunnen og frys den',
         detail: 'Da er fredagen roligere',
@@ -1316,11 +1303,18 @@ export const nb = {
         title: 'Lag pizzadeigen og la den heve kaldt',
         link: 'Mengder',
       },
-      buyFresh: {
-        title: 'Handle ferskvarer',
-        detail: '{{items}}, frukt og grønt',
-        noMenu: 'Frukt og grønt. Velg meny under Mat',
+      shopForParty: {
+        title: 'Handle til festen',
+        detail: '{{items}}, frukt og grønt.',
+        noMenu: 'Frukt og grønt. Velg meny under Mat.',
+        online: 'Bestiller du på nett? Velg gjerne levering dagen før.',
         link: 'Handleliste',
+        saft: 'saft',
+        lomper: 'lomper',
+        polsebrod: 'pølsebrød',
+        tortillas: 'tortillas',
+        pizzasaus: 'pizzasaus',
+        pasta: 'pasta',
       },
       bakeMuffins: {
         title: 'Pynt kaken',

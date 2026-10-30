@@ -9,7 +9,7 @@ import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { cakePlan } from './cake';
 import { goodieBagCount, goodieBagsOn } from './goodieBags';
 import { themeById } from '../themes';
-import { isIncluded, mainItemWord } from './food';
+import { isIncluded, mainItemWords, shoppingList } from './food';
 import { dishOn, menuDishes } from './dishes';
 import { kidsCount } from './units';
 import { pickedActivities } from './programme';
@@ -146,13 +146,6 @@ export function buildTasks(p: Party): TaskPlan {
         title: t('rules.todos.orderPizza.title'),
         detail: t(pizza.takeawaySize === '40' ? 'rules.todos.orderPizza.big' : 'rules.todos.orderPizza.normal'),
       },
-    {
-      id: 'buyDry',
-      date: at(4),
-      title: t('rules.todos.buyDry.title'),
-      detail: dryDetail(p),
-      link: { label: t('rules.todos.buyDry.link'), route: '/handleliste' },
-    },
     bake &&
       !onlyMuffins && {
         id: 'bakeCakeBase',
@@ -219,12 +212,15 @@ export function buildTasks(p: Party): TaskPlan {
         title: t('rules.todos.makeDough.title'),
         link: { label: t('rules.todos.makeDough.link'), route: '/mat' },
       },
+    // ONE shopping trip (Ekaterina, 30 Oct 2026: «why more work? Everyone would prefer to do everything in one
+    // go (or maybe they order online)»): the dry and the fresh goods together, the day before like the fresh
+    // ones were. Handleliste keeps its store sections; only the to-dos merged (old ids buyDry + buyFresh).
     {
-      id: 'buyFresh',
+      id: SHOP_TASK_ID,
       date: at(1),
-      title: t('rules.todos.buyFresh.title'),
-      detail: menu ? t('rules.todos.buyFresh.detail', { items: mainItemWord(menu) }) : t('rules.todos.buyFresh.noMenu'),
-      link: { label: t('rules.todos.buyFresh.link'), route: '/handleliste' },
+      title: t('rules.todos.shopForParty.title'),
+      detail: shopDetail(p),
+      link: { label: t('rules.todos.shopForParty.link'), route: '/handleliste' },
     },
     bake && {
       id: 'bakeMuffins',
@@ -274,10 +270,19 @@ export function buildTasks(p: Party): TaskPlan {
   return { avail, R, rsvpDeadline: at(R), tasks };
 }
 
-function dryDetail(p: Party): string {
-  // pølser and pizza together: pølser's bread comes first, pizzasaus after it
+/** The merged shopping to-do (Oct 2026); before it, `buyDry` (4 days before) and `buyFresh` (the day before). */
+export const SHOP_TASK_ID = 'shopForParty';
+
+/**
+ * «Pølser, lomper, saft, frukt og grønt. Bestiller du på nett? …»: the main item of each dish, the first dry
+ * item still on the shopping list (skipping a line she deselected on Mat), saft, then frukt og grønt. A word
+ * already in the dish's own words is not repeated (taco's tortillas, pasta).
+ */
+function shopDetail(p: Party): string {
+  const online = t('rules.todos.shopForParty.online');
+  const main = mainItemWords(p.menu);
+  if (main.length === 0) return `${t('rules.todos.shopForParty.noMenu')} ${online}`;
   const kinds = menuDishes(p.menu).map((d) => d.kind);
-  // the first dry item for the dish, skipping a line the parent deselected on the Mat screen
   type DryId = 'lomper' | 'polsebrod' | 'tortillas' | 'pizzasaus' | 'pasta';
   const candidates: DryId[] = kinds.flatMap((m): DryId[] =>
     m === 'grillpolser' || m === 'wienerpolser'
@@ -290,12 +295,35 @@ function dryDetail(p: Party): string {
             ? ['pasta']
             : [],
   );
-  const firstId = candidates.find((id) => isIncluded(p, id));
-  const first = firstId ? t(`rules.todos.buyDry.${firstId}`) : undefined;
-  const saft = isIncluded(p, 'saft');
-  // no candy: it moves to the goodie bags (godteposer) (picked on Handleliste)
-  if (first && saft) return t('rules.todos.buyDry.firstAndSaft', { first });
-  return first ?? (saft ? t('rules.todos.buyDry.saft') : t('rules.todos.buyDry.fallback'));
+  const onList = new Set(shoppingList(p).map((i) => i.id));
+  const firstId = candidates.find((id) => isIncluded(p, id) && onList.has(id));
+  const words = [...main];
+  const has = (w: string) => words.some((x) => x.toLowerCase().includes(w.toLowerCase()));
+  const dry = firstId ? t(`rules.todos.shopForParty.${firstId}`) : undefined;
+  if (dry && !has(dry)) words.push(dry);
+  if (isIncluded(p, 'saft') && onList.has('saft')) words.push(t('rules.todos.shopForParty.saft'));
+  return `${t('rules.todos.shopForParty.detail', { items: words.join(', ') })} ${online}`;
+}
+
+/**
+ * Old saved parties (before the merge) may have ticked or hidden `buyDry` / `buyFresh`. The merged to-do is
+ * ticked only if BOTH were ticked (one trip left undone is still a trip to make), and hidden only if both
+ * were hidden. A party that already has the merged id keeps it; the old ids are dropped.
+ */
+export function mergeShoppingTaskState(ts: Party['taskState']): Party['taskState'] {
+  const dry = ts?.buyDry;
+  const fresh = ts?.buyFresh;
+  if (!dry && !fresh) return ts;
+  const { buyDry: _d, buyFresh: _f, ...rest } = ts;
+  if (rest[SHOP_TASK_ID]) return rest;
+  const done = Boolean(dry?.done && fresh?.done);
+  const hidden = Boolean(dry?.hidden && fresh?.hidden);
+  if (!done && !hidden) return rest;
+  const doneAt = done ? [dry?.doneAt, fresh?.doneAt].filter(Boolean).sort().pop() : undefined;
+  return {
+    ...rest,
+    [SHOP_TASK_ID]: { done, ...(doneAt ? { doneAt } : {}), ...(hidden ? { hidden: true } : {}) },
+  };
 }
 
 /** A task is done if ticked, or if it is automatic and not explicitly unticked. */

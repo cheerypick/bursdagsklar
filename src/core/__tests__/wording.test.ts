@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emma } from '../__fixtures__/emma';
 import { nb } from '../../i18n/nb';
+import { en } from '../../i18n/en';
 import templates from '../texts/templates.json';
 import { DIET_TAGS, PIZZA_TOPPINGS, type FoodItemState, type MenuChoice } from '../model';
 import { shoppingList } from '../rules/food';
@@ -104,5 +105,47 @@ describe('no «juice» or «påbegynte» in anything she can read', () => {
     const saft = plan.sections.find((s) => s.id === 'drikke')!.lines.find((l) => l.id === 'saft')!;
     expect(saft.name).toBe('Saft eller jus');
     expect(saft.why).toContain('Jus i stedet');
+  });
+});
+
+/**
+ * Ekaterina, 30 Oct 2026: «Ta vekk referanser til konkrete butikkjeder». No store chain in any text she can
+ * read, nb or en. Product brands (Toro, Peppes, TINE …) can stay; code comments citing sources can too.
+ */
+const CHAINS =
+  /rema\s?1000|\brema\b|\bkiwi\b|\boda\b|\b(euro)?spar\b|\bcoop\b|\bobs\b|\bprix\b|\bjoker\b|bunnpris|baker hansen|europris|\bnille\b|\bikea\b|lekia|br-leker/i;
+/** «Meny» is also the ordinary word (Velg meny, Egen meny), so that chain is checked by hand, not here. */
+const chainHits = (xs: string[]) => xs.filter((x) => CHAINS.test(x));
+
+describe('no store chain names in anything she can read', () => {
+  it('the screen strings (nb + en) and the text templates', () => {
+    const seen: string[] = [];
+    const walk = (x: unknown): void => {
+      if (typeof x === 'string') seen.push(x);
+      else if (x && typeof x === 'object') Object.values(x).forEach(walk);
+    };
+    walk(nb);
+    walk(en);
+    walk(templates);
+    expect(seen.length).toBeGreaterThan(100);
+    expect(chainHits(seen)).toEqual([]);
+  });
+
+  it('every Mat line and shopping item for every dish', () => {
+    const seen: string[] = [];
+    for (const menu of MENUS)
+      for (const counts of COUNTS) {
+        const plan = foodPlan({ menu, counts, age: 5, diets: DIET_TAGS, celebrants: 1 });
+        for (const s of plan.sections) for (const l of s.lines) seen.push(l.name, l.amount, l.packs ?? '', l.why);
+      }
+    for (const menu of MENUS) for (const i of shoppingList(emma({ menu }))) seen.push(i.name, i.display, i.why ?? '');
+    expect(seen.length).toBeGreaterThan(100);
+    expect(chainHits(seen)).toEqual([]);
+  });
+
+  it('the check itself finds a chain name', () => {
+    expect(
+      chainHits(['for eksempel på REMA 1000', 'Kiwi', 'fra Oda', 'Velg meny', 'Egen meny', 'Oppskrift fra TINE']),
+    ).toEqual(['for eksempel på REMA 1000', 'Kiwi', 'fra Oda']);
   });
 });

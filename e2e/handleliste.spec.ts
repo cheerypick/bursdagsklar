@@ -201,8 +201,8 @@ test('Handleliste: a line deselected on Mat is not on the list', async ({ page }
   await openList(page);
   await expect(item(page, 'polsebrod')).toHaveCount(0);
   await expect(item(page, 'lomper')).toBeVisible();
-  // the «Handle tørrvarer» to-do links here too
+  // the «Handle til festen» to-do (one trip, dry + fresh) links here too
   await page.goto('/gjoremal');
-  await page.getByRole('link', { name: 'Handleliste: Handle tørrvarer' }).filter({ visible: true }).click();
+  await page.getByRole('link', { name: 'Handleliste: Handle til festen' }).filter({ visible: true }).click();
   await expect(visible(page, 'screen-shopping')).toBeVisible();
 });

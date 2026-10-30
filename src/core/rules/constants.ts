@@ -158,7 +158,7 @@ export const PIZZA_UNITS_PER = { frossen: 8, bestilt30: 8, bestilt40: 14 }; // (
  *   ca. 15 personer who eat pizza (not per langpanne)
  */
 export const PIZZA_DOUGH_PRODUCT = {
-  ferdigdeig: { examples: 'Peppes Pizzabunn original 550 g eller REMA 1000 Fersk stor pizzabunn 550 g' },
+  ferdigdeig: { examples: 'Peppes Pizzabunn original 550 g' },
   ferdigstekt: { examples: 'Staur Fjellbakeri 2 stk (ca. 29 cm) eller Villa Paradiso Pronto 2 stk', perPack: 2 },
   miks: { examples: 'Toro Pizzabunn Familiepakke 370 g' },
 } as const;
@@ -196,9 +196,9 @@ export const PIZZA_CHEESE = { name: 'TINE Norvegia revet 400 g', bagG: 400, gPer
 export const PIZZA_TOPPING_PRODUCT = {
   skinke: { name: 'Skinke', product: 'Gilde Smårettskinke strimlet 200 g', unit: 'pk', perLangpanne: 0.5 },
   pepperoni: { name: 'Pepperoni', product: 'Grilstad Pepperoni 100 g', unit: 'pk', perLangpanne: 1 },
-  sopp: { name: 'Sopp', product: 'REMA 1000 Sjampinjong skivet, boks 184 g', unit: 'boks', perLangpanne: 1 },
-  ananas: { name: 'Ananas', product: 'REMA 1000 Ananas i biter, boks 227 g (3-pk)', unit: 'boks', perLangpanne: 1 },
-  mais: { name: 'Mais', product: 'REMA 1000 Maiskorn, boks 340 g', unit: 'boks', perLangpanne: 0.5 },
+  sopp: { name: 'Sopp', product: 'Sjampinjong skivet, boks 184 g', unit: 'boks', perLangpanne: 1 },
+  ananas: { name: 'Ananas', product: 'Ananas i biter, boks 227 g (3-pk)', unit: 'boks', perLangpanne: 1 },
+  mais: { name: 'Mais', product: 'Maiskorn, boks 340 g', unit: 'boks', perLangpanne: 0.5 },
   paprika: { name: 'Paprika', product: 'Rød paprika (selges 2 i posen)', unit: 'stk', perLangpanne: 1 },
   kebab: { name: 'Kebab', product: 'Kanda Kebab av storfekjøtt 300 g', unit: 'pk', perLangpanne: 0.5 },
   rommedressing: { name: 'Rømmedressing', product: 'Idun Rømmedressing 435 g', unit: 'flaske', perEaters: 15 },

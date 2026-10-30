@@ -330,10 +330,13 @@ describe("item toggles (deselect what you don't need)", () => {
     expect(line(partyFoodPlan(p)!, 'polsebrod').included).toBe(false);
   });
   it('the shopping to-do skips a deselected item', () => {
-    const detail = (p: ReturnType<typeof emma>) => buildTasks(p).tasks.find((t) => t.id === 'buyDry')?.detail;
-    expect(detail(grill())).toBe('Lomper og saft');
-    expect(detail(withFoodItem(grill(), 'lomper', false))).toBe('Pølsebrød og saft');
-    expect(detail(emma({ menu: null }))).toBe('Saft');
+    const online = ' Bestiller du på nett? Velg gjerne levering dagen før.';
+    const detail = (p: ReturnType<typeof emma>) => buildTasks(p).tasks.find((t) => t.id === 'shopForParty')?.detail;
+    expect(detail(grill())).toBe('Pølser, lomper, saft, frukt og grønt.' + online);
+    expect(detail(withFoodItem(grill(), 'lomper', false))).toBe('Pølser, pølsebrød, saft, frukt og grønt.' + online);
+    expect(detail(withFoodItem(grill(), 'saft', false))).toBe('Pølser, lomper, frukt og grønt.' + online);
+    expect(detail(emma({ menu: { kind: 'taco' } }))).toBe('Kjøttdeig og tortillas, saft, frukt og grønt.' + online);
+    expect(detail(emma({ menu: null }))).toBe('Frukt og grønt. Velg meny under Mat.' + online);
   });
 });
 

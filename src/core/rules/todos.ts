@@ -6,8 +6,8 @@ import type { ISODate, Party, Task } from '../model';
 import { addDays, diffDays, formatLong, mondayOf, parts, weekday, weekdayName } from './dates';
 import { liveRecord, t } from '../../i18n/i18n';
 import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
-import { headCount } from './people';
 import { cakePlan } from './cake';
+import { goodieBagCount, goodieBagsOn } from './goodieBags';
 import { themeById } from '../themes';
 import { isIncluded, mainItemWord } from './food';
 import { dishOn, menuDishes } from './dishes';
@@ -44,7 +44,6 @@ export function buildTasks(p: Party): TaskPlan {
     return d < T ? T : d;
   };
   const front = (ideal: number) => at(frontOffset(ideal, avail, R));
-  const hc = headCount(p);
   // Nothing here depends on a theme; the theme only changes the words of a themed extra
   // (the piñata), and that to-do only exists when the parent has turned the activity on.
   const theme = p.theme ? themeById(p.theme) : null;
@@ -54,6 +53,7 @@ export function buildTasks(p: Party): TaskPlan {
   const picked = pickedActivities(p);
   const pinata = picked.includes('pinata');
   const hunt = picked.includes('skattejakt');
+  const bagsOn = goodieBagsOn(p);
   // 7+ get the clue-note variant (the to-do keeps the old id `printClues`); the youngest get a drawn map
   const clues = hunt && youngestAge(p.celebrants) >= 7;
   const map = hunt && !clues;
@@ -206,7 +206,8 @@ export function buildTasks(p: Party): TaskPlan {
     hunt && {
       id: 'hideTreasure',
       date: at(0),
-      title: t('program.todo.hideTreasure'),
+      // without goodie bags («Vi dropper godteposer») the treasure is something else
+      title: t(bagsOn ? 'program.todo.hideTreasure' : 'program.todo.hideTreasureNoBags'),
       link: { label: t('rules.todos.programmeLink'), route: '/program' },
     },
     // only when she makes the dough herself; ready-made dough is the default
@@ -235,10 +236,18 @@ export function buildTasks(p: Party): TaskPlan {
             ? 'rules.todos.bakeMuffins.titleMuffins'
             : 'rules.todos.bakeMuffins.title',
       ),
-      detail: candleNote
-        ? t('rules.todos.bakeMuffins.detailJoint', { candles: candleNote, count: hc.kidsComing })
-        : t('rules.todos.bakeMuffins.detail', { count: hc.kidsComing }),
+      // the goodie bags have their own to-do now («Pakk godteposene», below)
+      detail: candleNote ?? undefined,
       link: { label: t('rules.todos.bakeMuffins.link'), route: '/kake' },
+    },
+    // Godteposer (Oct 2026): one to-do the day before, unless she drops the goodie bags. Different from the
+    // skattejakt's «gjem godteposene» on the day, so both can be there.
+    bagsOn && {
+      id: 'packBags',
+      date: at(1),
+      title: t('rules.todos.packBags.title'),
+      detail: t('rules.todos.packBags.detail', { count: goodieBagCount(p) }),
+      link: { label: t('rules.todos.packBags.link'), route: '/godteposer' },
     },
     {
       id: 'partyDay',

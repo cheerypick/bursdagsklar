@@ -34,16 +34,17 @@ describe('to-dos, test vector A (spec §6.1)', () => {
       fillPinata: 'fre 6. nov',
       drawMap: 'fre 6. nov',
       hideTreasure: 'lør 7. nov',
+      packBags: 'fre 6. nov',
       partyDay: 'lør 7. nov',
       thanks: 'søn 8. nov',
     });
   });
-  it('18 tickable tasks, 1 done after setup', () => {
+  it('19 tickable tasks (with «Pakk godteposene»), 1 done after setup', () => {
     const p = emma();
     const t = tickable(plan.tasks);
-    expect(t).toHaveLength(18);
+    expect(t).toHaveLength(19);
     expect(t.filter((x) => isDone(p, x))).toHaveLength(1);
-    expect(progress(p, plan.tasks, '2026-10-19')).toMatchObject({ done: 1, total: 18, overdue: 0, thisWeekOpen: 2 });
+    expect(progress(p, plan.tasks, '2026-10-19')).toMatchObject({ done: 1, total: 19, overdue: 0, thisWeekOpen: 2 });
   });
   it('is sorted by date', () => {
     const ds = plan.tasks.map((t) => t.date);

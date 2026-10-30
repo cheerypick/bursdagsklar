@@ -14,7 +14,7 @@
  * except `bursdagsklar:language` (the language picker's choice is a device setting, not part of a plan).
  */
 import type { MenuChoice, Party } from '../model';
-import { GOODIE_BAG_ITEMS, SCHEMA_VERSION } from '../model';
+import { GOODIE_BAG_ITEMS, GOODIE_BAG_STYLES, SCHEMA_VERSION } from '../model';
 import { withoutHiddenDishes } from '../rules/dishes';
 import { normalizeDraft, type SetupDraft } from '../party';
 import { clampAge } from '../rules/celebrants';
@@ -159,7 +159,12 @@ function migrateV5(r: PartyV5): Party {
 function normalizeCurrent(p: Party): Party {
   const foodItems = p.foodItems && typeof p.foodItems === 'object' ? p.foodItems : {};
   const contents = Array.isArray(p.goodieBags?.contents) ? p.goodieBags.contents : [];
-  const goodieBags = { contents: GOODIE_BAG_ITEMS.filter((id) => contents.includes(id)) };
+  const style = GOODIE_BAG_STYLES.find((s) => s === p.goodieBags?.style);
+  const goodieBags: Party['goodieBags'] = {
+    contents: GOODIE_BAG_ITEMS.filter((id) => contents.includes(id)),
+    ...(style ? { style } : {}),
+    ...(p.goodieBags?.skip === true ? { skip: true } : {}),
+  };
   const s = p.shopping;
   const shopping = {
     ticked: Array.isArray(s?.ticked) ? s.ticked.filter((x): x is string => typeof x === 'string') : [],

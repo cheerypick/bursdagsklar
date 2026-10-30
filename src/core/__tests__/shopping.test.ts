@@ -13,6 +13,7 @@ import {
   withTicksCleared,
 } from '../rules/shopping';
 import { withFoodItem, withGuestCounts } from '../party';
+import { goodieChips } from '../rules/goodieBags';
 import { shoppingList } from '../rules/food';
 import { createPartyRepository, memoryStore, migrate } from '../storage/PartyRepository';
 import type { Party } from '../model';
@@ -79,15 +80,8 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
     expect(item(emma(), 'godteposer')).toMatchObject({ group: 'godteposer', qty: '13 stk', text: '13 godteposer' });
     // everyone fills the bags with what they want: no candy (or anything else) is assumed
     expect(ids(emma()).filter((i) => i.startsWith('pose-'))).toEqual([]);
-    expect(handleliste(emma()).goodieBagSuggestions.map((s) => [s.label, s.picked])).toEqual([
-      ['Godteri', false],
-      ['Popcorn', false],
-      ['Rosiner', false],
-      ['Klistremerker', false],
-      ['Såpebobler', false],
-      ['Viskelær/blyant', false],
-      ['Fruktstang', false],
-    ]);
+    // the suggestion chips are on the Godteposer screen, after a style is picked (goodieBags.test.ts)
+    expect(goodieChips(emma())).toEqual([]);
     expect(item(emma(), 'kakelys')).toMatchObject({ group: 'fest', qty: '1 sett', detail: '6 lys til Emma' });
     expect(item(emma(), 'pappkrus-og-fat')?.text).toBe('Tallerkener, kopper og servietter til 17');
     const joint = emma({
@@ -143,7 +137,7 @@ describe('Handleliste follows the Mat screen and the party', () => {
       qty: '13 stk',
       text: '13 små poser popcorn',
     });
-    expect(handleliste(on).goodieBagSuggestions.find((s) => s.id === 'popcorn')?.picked).toBe(true);
+    expect(goodieChips(on).find((s) => s.id === 'popcorn')?.picked).toBe(true);
     // candy, when picked: ca. 100 g per bag
     const both = withGoodieBagItem(on, 'godteri', true);
     expect(item(both, 'pose-godteri')).toMatchObject({ qty: 'ca. 1,3 kg', text: 'ca. 1,3 kg godteri til godteposene' });

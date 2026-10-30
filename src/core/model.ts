@@ -106,22 +106,52 @@ export interface FoodItemState {
   included: boolean;
 }
 
-/** «Forslag til innhold» for the goodie bags, the chips on Handleliste. */
+/**
+ * «Forslag til innhold» for the goodie bags: the chips on the Godteposer screen (rules/goodieBags.ts says
+ * which style shows which, and from what age). The order here is the order on Handleliste.
+ */
 export type GoodieBagItemId =
-  'godteri' | 'popcorn' | 'rosiner' | 'klistremerker' | 'sapebobler' | 'viskelaer' | 'fruktstang';
+  | 'godteri'
+  | 'sjokolade'
+  | 'popcorn'
+  | 'rosiner'
+  | 'fruktstang'
+  | 'klistremerker'
+  | 'tatoveringer'
+  | 'fargestifter'
+  | 'sapebobler'
+  | 'viskelaer'
+  | 'sprettball'
+  | 'smafigurer';
 export const GOODIE_BAG_ITEMS: readonly GoodieBagItemId[] = [
   'godteri',
+  'sjokolade',
   'popcorn',
   'rosiner',
+  'fruktstang',
   'klistremerker',
+  'tatoveringer',
+  'fargestifter',
   'sapebobler',
   'viskelaer',
-  'fruktstang',
+  'sprettball',
+  'smafigurer',
 ];
+
+/** The three styles on the Godteposer screen: candy, no candy at all, or a bit of both. */
+export type GoodieBagStyle = 'klassisk' | 'uten' | 'begge';
+export const GOODIE_BAG_STYLES: readonly GoodieBagStyle[] = ['klassisk', 'uten', 'begge'];
 
 export interface GoodieBags {
   /** The suggestions she tapped, each a line on the list. Empty by default: nothing is assumed. */
   contents: GoodieBagItemId[];
+  /**
+   * Godteposer (Oct 2026): the style she picked. Optional and without a schema bump: a party saved before
+   * it has none (rules/goodieBags.ts reads a style from the contents she already picked, if any).
+   */
+  style?: GoodieBagStyle;
+  /** «Vi dropper godteposer»: no bags on Handleliste, no to-do. Her picks are kept, so she can change her mind. */
+  skip?: boolean;
 }
 
 /** A free-text item she added herself on Handleliste («Legg til vare»). */
@@ -269,8 +299,9 @@ export interface Party {
   /** Per food line: included or deselected (see FoodItemState). Empty = everything included. */
   foodItems: Record<string, FoodItemState>;
   /**
-   * Goodie bags (godteposer): what she picked from «Forslag til innhold» on Handleliste. Nothing is
-   * pre-selected (everyone fills the bags with what they want); candy is never part of the food.
+   * Goodie bags (godteposer, optional): the style and what she picked on the Godteposer screen, or «Vi
+   * dropper godteposer». Nothing is pre-selected (everyone fills the bags with what they want); candy is
+   * never part of the food.
    */
   goodieBags: GoodieBags;
   /** Handleliste: what she has ticked off (by stable item id) and her own free-text items. */

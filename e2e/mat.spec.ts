@@ -254,7 +254,7 @@ test('One children number: 12 in setup is 12 on Planen, Mat and Festen er klar; 
   await expect(visible(page, 'screen-ready')).toContainText('Hjemmelaget pizza for 14 barn og 4 voksne');
   await page.goto('/gjoremal');
   await expect(visible(page, 'screen-todo')).toContainText('14 barn');
-  await expect(visible(page, 'screen-todo')).toContainText('Og fyll 14 godteposer');
+  await expect(visible(page, 'screen-todo')).toContainText('14 poser, én til hvert barn');
   await page.reload();
   await expect(visible(page, 'screen-todo')).toContainText('14 barn');
   for (const n of ['11', '13', '15']) await expect(visible(page, 'screen-todo')).not.toContainText(`${n} barn`);

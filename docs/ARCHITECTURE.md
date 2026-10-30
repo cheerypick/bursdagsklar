@@ -145,14 +145,23 @@ Products read on Oda (oda.com) on 21 Oct 2026, public pages, no prices. Every «
 Frozen pizza stays as the second choice under Pizza (`frossenpizza`, 8 biter per pizza). The dough to-do
 («Lag pizzadeigen») only appears when she picks «Lag deigen selv».
 
-### Later: godteposer (goodie bags)
+### Godteposer (goodie bags, optional)
+
+`rules/goodieBags.ts`, screen `/godteposer` from the card «Godteposer (valgfritt)» on Planen (Ekaterina, 30 Oct 2026). Nothing is chosen by default.
+
+- Three styles: «Klassisk godteri», «Uten godteri», «Litt av begge», or «Vi dropper godteposer». A style only decides which suggestion chips show (`STYLE_CHIPS`); nothing is picked for her, and switching style keeps her picks.
+- Chips (`GOODIE_BAG_ITEMS`): godteri, liten sjokolade, popcorn, rosiner, fruktstang, klistremerker, tatoveringer, fargestifter, såpebobler, viskelær/blyant, sprettball (4+), små figurer (4+). Small-parts toys are suggested from 4 years (youngest birthday child; our judgement); a pick is never hidden. With a theme, stickers and tattoos take its motif in plain words («Klistremerker med dinosaurer»), never a brand name. No balloons in the bags (choking risk).
+- Handleliste («Godteposer» group): the bags (one per child coming, the one children number) and one of each pick per bag. Candy ca. 100 g per bag (`CANDY_G_CHILD`), 50 g with «Litt av begge» (assumption). The chips live on the Godteposer screen only; Handleliste links there (one source of truth: `party.goodieBags`).
+- Gjøremål: «Pakk godteposene» the day before (replaces the old «Og fyll N godteposer» on the cake to-do). Skattejakt's «Gjem godteposene» on the day stays; without bags it says «Gjem skatten».
+- «Vi dropper godteposer» (`goodieBags.skip`): no bags on Handleliste, no to-do, the day plan ends «Takk for i dag og hjem». Her picks are kept for a change of heart.
+- Storage: `style` and `skip` are optional fields, no schema bump. A party saved before has only `contents`; the style is read from them (candy → klassisk, none → uten, both → begge).
 
 ### Handleliste (shopping list)
 
 `rules/shopping.ts` builds the list from the party every time (`handleliste(party)`), so a new menu, a line deselected on Mat or a new children count updates it. Only two things are stored on the party (schema v6):
 
 - `shopping.ticked`: the ids of the items she has ticked off, and `shopping.custom`: her own free-text items («Legg til vare», ids `egen-1`, `egen-2` …). Ticks are keyed by stable item ids (`grillpolser`, `saft`, `kakelys`, `pose-popcorn`, `egen-1`), so they survive a change in the amounts. «Nullstill avkrysninger» clears the ticks; «Start på nytt» clears everything.
-- `goodieBags.contents`: what she picked for the goodie bags.
+- `goodieBags`: the style, the picks (`contents`) and «Vi dropper» (`skip`), set on the Godteposer screen (above).
 
 What is on the list, grouped by store section (Kjøtt og pålegg, Brød, Frukt og grønt, Drikke, Tørrvarer, Frysedisk, Fest og pynt, Godteposer, Egne varer; empty sections are hidden):
 
@@ -161,7 +170,7 @@ What is on the list, grouped by store section (Kjøtt og pålegg, Brød, Frukt o
 - the dietary extras ticked on Mat («1 pk kyllingpølser»), in the right section; diet notes that are not something to buy are skipped;
 - party things: goodie bags (one per child, the one children number), candles (one set per birthday child), plates/cups/napkins for everyone eating, balloons and the birthday crown, unless «Har dere dette hjemme?» says they are at home.
 
-**Godteposer.** Candy is **not food**: it is not on the Mat screen or in `extras()`. Everyone fills the goodie bags with what they want (Ekaterina, 21 Oct 2026), so nothing inside them is on the list by default. Under the bags, «Forslag til innhold» shows chips, none pre-selected: Godteri, Popcorn, Rosiner, Klistremerker, Såpebobler, Viskelær/blyant, Fruktstang. A tap puts it on the list as a normal tickable item, about one per child (candy ca. 100 g per bag, `CANDY_G_CHILD`, nut-free when an RSVP says nøtter/peanøtt); a second tap takes it off. A small line says «Sunnere alternativer: rosiner, fruktstang og småleker.»
+**Godteposer.** Candy is **not food**: it is not on the Mat screen or in `extras()`. Everyone fills the goodie bags with what they want (Ekaterina, 21 Oct 2026), so nothing inside them is on the list by default. The suggestions are chosen on the Godteposer screen (above); each pick is a normal tickable item, one per child (candy nut-free when an RSVP says nøtter/peanøtt). Under the bags, Handleliste shows the chosen style and a link «Velg innhold».
 
 **Del listen** (`shareText`) is plain Norwegian: «Handleliste – Emmas bursdag 15. nov», then each section with «☐ 5 pk grillpølser» lines, only what is not ticked yet. Native: the system share sheet (React Native `Share`). Web: the Web Share API where the browser has it (Safari on iPhone), otherwise the clipboard and a «Kopiert» toast. No backend: she sends it to whoever shops by message.
 

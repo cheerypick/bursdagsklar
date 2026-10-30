@@ -14,6 +14,8 @@ import {
   foodCardSummary,
   formatLongCap,
   formatRangeCompact,
+  goodieCardLine,
+  goodieStatus,
   handleliste,
   menuCardOf,
   shoppingCardLine,
@@ -132,6 +134,35 @@ export default function PlanScreen() {
           {shoppingCardLine(shopping)}
         </Text>
       </View>
+      <Icon name="forward" size={22} strokeWidth={2.4} color={colors.green} />
+    </Pressable>
+  );
+
+  // Godteposer (optional): «Valgfritt: …», «Uten godteri · 3 ting» or «Vi dropper godteposer», «Valgt» once decided
+  const goodieLine = goodieCardLine(party);
+  const goodieDone = goodieStatus(party) !== 'open';
+  const goodieCard = (
+    <Pressable
+      testID="plan-card-goodie"
+      accessibilityRole="link"
+      accessibilityLabel={`${t('plan.cards.goodie.title')}. ${goodieLine}${goodieDone ? `. ${t('plan.cards.goodie.done')}` : ''}`}
+      onPress={() => router.push('/godteposer')}
+      style={({ pressed }) => [styles.shopCard, pressed && { opacity: 0.85 }]}
+    >
+      <View style={styles.shopThumb}>
+        <Text style={{ fontSize: 28 }}>🎁</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.themeTitle}>{t('plan.cards.goodie.title')}</Text>
+        <Text variant="small" testID="plan-card-goodie-line">
+          {goodieLine}
+        </Text>
+      </View>
+      {goodieDone ? (
+        <View style={styles.doneBadge} testID="plan-card-goodie-done">
+          <Text style={styles.doneBadgeText}>{t('plan.cards.goodie.done')}</Text>
+        </View>
+      ) : null}
       <Icon name="forward" size={22} strokeWidth={2.4} color={colors.green} />
     </Pressable>
   );
@@ -255,6 +286,7 @@ export default function PlanScreen() {
           />
         ) : null}
         {isWide ? shoppingCard : null}
+        {isWide ? goodieCard : null}
         {isWide ? null : (
           <>
             {cards
@@ -289,6 +321,7 @@ export default function PlanScreen() {
                 />
               )}
             />
+            {goodieCard}
             {cards
               .filter((c) => c.key === 'todo')
               .map((c) => (
@@ -378,4 +411,6 @@ const useStyles = themedStyles((colors) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  doneBadge: { backgroundColor: colors.sage, borderRadius: radii.pill, paddingVertical: 4, paddingHorizontal: 10 },
+  doneBadgeText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.green },
 }));

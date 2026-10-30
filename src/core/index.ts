@@ -16,5 +16,6 @@ export * from './rules/invitation';
 export * from './rules/cake';
 export * from './rules/activities';
 export * from './rules/programme';
+export * from './rules/goodieBags';
 export * from './texts/render';
 export * from './storage/PartyRepository';

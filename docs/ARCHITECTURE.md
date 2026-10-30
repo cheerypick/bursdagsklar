@@ -216,7 +216,7 @@ The older `shoppingList()` in `rules/food.ts` (by trip, tørrvarer/ferskvarer) i
 
 ## Routes
 
-`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/mat` (main dish, amounts, guest editor, item toggles) · `/festdagen` · `/invitasjon` · `/kake` (Toro by default, from scratch, muffins or ready-made) · `/program` (activity ideas with rules, pick any or none).
+`/` (welcome, or straight to the plan if a party exists) · `/ny/hvem` `/ny/dato` `/ny/barn` `/ny/hvor` (4 steps: who · when · how many · where) · `/klar` · `/plan` · `/endre` («Endre festen», opened from Planen) · `/tema` (optional theme, opened from Planen) · `/gjoremal` · `/mat` (main dish, amounts, guest editor, item toggles) · `/festdagen` · `/invitasjon` · `/kake` (Toro by default, from scratch, muffins or ready-made) · `/program` (activity ideas with rules, pick any or none).
 
 ## Web vs native: what differs
 
@@ -267,3 +267,13 @@ Ekaterina, 27. okt 2026: Program er mest IDEER («dere kan ha disse eller disse�
 - Velg så mange som dere vil, eller ingen (`programme.activities`). Handleliste får bare det de valgte lekene trenger, i gruppen «Til lekene» (piñata + godteri til å fylle den, laken/fiskestang/premier til fiskedam, egg eller poteter, muffinspynt); ballonger og godteposer står der fra før og legges ikke til to ganger. Gjøremål: bestill piñata ca. en uke før (kjøp i butikk ved kort varsel), fyll den dagen før; skattejakt: tegn kartet dagen før og gjem godteposene på dagen (7+: lappene, gamle id `printClues`); fotojakt: lag lista; fiskedam: lag fiskestang.
 - Forslag til dagen (`programmeTimeline`): ankomst og frilek → mat → lekene → kake → piñata → frilek → godteposer og hjem, i festens eget tidsrom; lekene forkortes forholdsmessig hvis de ikke får plass. Tydelig merket som forslag. `templates.json` «programme» er forbildet, men leses ikke (bare norsk).
 - Lagring: ingen ny schemaVersion. En eldre fest med `includeSkattejakt`/`includePinata` åpnes med «skattejakt»/«pinata» valgt; de gamle feltene skrives ikke igjen.
+
+## Endre festen
+
+Ekaterina, 30. okt 2026: oppsettsvarene skal kunne endres etterpå uten at noe går tapt.
+
+- Inngang: «Endre festen» i festheaderen på Planen → `/endre`. Samme felter og kontroller som oppsettet (delt mellom stegene og redigeringen: `src/features/setup/CelebrantFields.tsx`, `DateTimeFields.tsx`, `KidsFields.tsx`, `PlaceFields.tsx`), forhåndsutfylt: bursdagsbarn (1–3, navn og alder), dato (vår egen kalender), tidspunkt, barnetallet (TOTALT, bursdagsbarna med) og sted. Temaet har fortsatt sitt eget kort.
+- Redigeringen jobber på et lokalt `SetupDraft` (`draftFromParty`), så «Avbryt»/tilbake endrer ingenting, og et uferdig oppsett-utkast røres ikke. Klokkeslettet regnes som valgt av henne, så en ny dato beholder tiden. Validering som i oppsettet (`draftComplete`).
+- Lagre: `withSetupEdit` (rules/setupEdit.ts) skriver svarene inn i SAMME fest. Alt avledet (mat, kakebiter, godteposer, handleliste, gjøremålsdatoer, den genererte invitasjonsteksten) regnes fra festen hver gang og følger av seg selv; ny dato nullstiller `plannedFrom` som `withDate`. Avkrysninger (gjøremål og handleliste, etter stabil id), gjesteliste, tema, meny/mat-valg, kake, program, godteposer og hennes egen tekst blir stående. En egen svarfrist flyttes like mange dager som festen; passer den ikke lenger, brukes standarden (dagen før).
+- Egen invitasjonstekst overskrives aldri. Endres dato, tid, navn/alder (eller stedet når ingen adresse er skrevet), husker festen hva (`invitationChanges`, valgfritt felt, ingen ny schemaVersion), og Invitasjon viser et mykt hint («Du har endret datoen. Vil du oppdatere teksten?») med «Oppdater teksten» og «Behold teksten min».
+- En dato som har vært kan velges (opptil 60 dager tilbake) med et mykt hint, aldri en sperre.

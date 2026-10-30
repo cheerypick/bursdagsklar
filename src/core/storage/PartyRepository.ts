@@ -20,6 +20,7 @@ import { normalizeDraft, type SetupDraft } from '../party';
 import { clampAge } from '../rules/celebrants';
 import { THEMES } from '../themes';
 import { sanitizeInvitation } from '../rules/invitation';
+import { sanitizeInvitationChanges } from '../rules/setupEdit';
 import { sanitizeCake } from '../rules/cake';
 import { sanitizeProgramme } from '../rules/programme';
 import { sanitizeGuests } from '../rules/guests';
@@ -189,6 +190,8 @@ export function migrate(raw: unknown): Party | null {
   if (!p) return null;
   const { invitation: rawInvitation, ...rest } = p;
   const invitation = sanitizeInvitation(rawInvitation);
+  const invitationChanges = sanitizeInvitationChanges(rest.invitationChanges);
+  delete rest.invitationChanges;
   return {
     ...rest,
     menu: withoutHiddenDishes(p.menu),
@@ -202,6 +205,8 @@ export function migrate(raw: unknown): Party | null {
     // Oct 2026: «Handle tørrvarer» + «Handle ferskvarer» became one «Handle til festen» (rules/todos.ts)
     taskState: mergeShoppingTaskState(p.taskState ?? {}),
     ...(invitation ? { invitation } : {}),
+    // Endre festen (Oct 2026): no schema bump; what changed under her own invitation text, if anything
+    ...(invitationChanges ? { invitationChanges } : {}),
   };
 }
 

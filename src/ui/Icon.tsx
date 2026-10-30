@@ -14,7 +14,19 @@ const HIDDEN =
     : ({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' } as const);
 
 type Name =
-  'back' | 'forward' | 'close' | 'arrow' | 'check' | 'home' | 'list' | 'star' | 'plus' | 'minus' | 'calendar' | 'reset';
+  | 'back'
+  | 'forward'
+  | 'close'
+  | 'arrow'
+  | 'check'
+  | 'home'
+  | 'list'
+  | 'star'
+  | 'plus'
+  | 'minus'
+  | 'calendar'
+  | 'reset'
+  | 'edit';
 
 export function Icon({
   name,
@@ -58,6 +70,7 @@ export function Icon({
       )}
       {name === 'plus' && <Path d="M12 5v14M5 12h14" {...common} />}
       {name === 'minus' && <Path d="M5 12h14" {...common} />}
+      {name === 'edit' && <Path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4zM13.5 6.5l4 4" {...common} />}
       {name === 'reset' && <Path d="M4 12a8 8 0 1 0 2.4-5.7M4 4.5v4h4" {...common} />}
       {name === 'calendar' && (
         <>

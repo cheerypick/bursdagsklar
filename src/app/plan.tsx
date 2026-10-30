@@ -239,6 +239,22 @@ export default function PlanScreen() {
               kids: t('common.kids', { count: party.children }),
             })}
           </Text>
+          {/* «Endre festen»: names, ages, date, time, children and place, later, without losing anything */}
+          <Pressable
+            testID="edit-party"
+            accessibilityRole="button"
+            accessibilityLabel={t('editParty.actionLabel')}
+            onPress={() => router.push('/endre')}
+            hitSlop={6}
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+              styles.editPill,
+              hovered && { opacity: 0.85 },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Icon name="edit" size={18} strokeWidth={2.2} color={colors.onPrimary} />
+            <Text style={styles.editPillText}>{t('editParty.action')}</Text>
+          </Pressable>
         </View>
         <View style={[styles.heroArt, isWide && { width: 140, height: 140, borderRadius: 32 }]}>
           <Image source={heroImage} style={{ width: '100%', height: '100%' }} />
@@ -384,6 +400,20 @@ const useStyles = themedStyles((colors) => ({
     gap: 16,
   },
   heroArt: { width: 92, height: 92, borderRadius: 24, overflow: 'hidden', backgroundColor: colors.cardTint },
+  editPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    marginTop: 12,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.onPrimarySoft,
+  },
+  editPillText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
   greeting: { fontFamily: fonts.displaySemi, fontSize: 19, lineHeight: 24, color: colors.onPrimary, marginTop: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   next: { backgroundColor: colors.blush, borderRadius: radii.lg, padding: 20 },

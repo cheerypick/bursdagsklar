@@ -1,6 +1,6 @@
 /** Bundled images (our own illustrations and photos from the approved prototype). */
 import type { ImageSourcePropType } from 'react-native';
-import type { ThemeId } from '../core';
+import type { CardId, ThemeId } from '../core';
 
 export const images = {
   hero: require('../../assets/images/hero.webp'),
@@ -31,4 +31,27 @@ export const themeImages: Record<ThemeId, ImageSourcePropType> = {
   pokemon: require('../../assets/images/theme-pokemon.webp'),
   'paw-patrol': require('../../assets/images/theme-paw-patrol.webp'),
   frost: require('../../assets/images/theme-frost.webp'),
+};
+
+/**
+ * The printed invitation cards (Oct 2026): our own watercolour drawings, A5 at 300 dpi on white paper (the
+ * cream is laid over them when printing). Made once with scripts/make-invite-art.py; no text in the art.
+ */
+export const inviteCards: Record<CardId, number> = {
+  bursdag: require('../../assets/images/invite/bursdag.webp'),
+  enhjorning: require('../../assets/images/invite/enhjorning.webp'),
+  dinosaurer: require('../../assets/images/invite/dinosaurer.webp'),
+  verdensrommet: require('../../assets/images/invite/verdensrommet.webp'),
+  fotball: require('../../assets/images/invite/fotball.webp'),
+  'dyr-i-skogen': require('../../assets/images/invite/dyr-i-skogen.webp'),
+};
+
+/** Small versions for the «Velg kort» picker (on cream, 300 × 425). */
+export const inviteCardThumbs: Record<CardId, ImageSourcePropType> = {
+  bursdag: require('../../assets/images/invite/thumb-bursdag.webp'),
+  enhjorning: require('../../assets/images/invite/thumb-enhjorning.webp'),
+  dinosaurer: require('../../assets/images/invite/thumb-dinosaurer.webp'),
+  verdensrommet: require('../../assets/images/invite/thumb-verdensrommet.webp'),
+  fotball: require('../../assets/images/invite/thumb-fotball.webp'),
+  'dyr-i-skogen': require('../../assets/images/invite/thumb-dyr-i-skogen.webp'),
 };

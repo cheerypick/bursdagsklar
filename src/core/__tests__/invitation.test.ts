@@ -265,3 +265,29 @@ describe('Invitation in English (same rules, the English text)', () => {
     expect(buildInvitation(plain()).text).toContain('Emma fyller 5 år');
   });
 });
+
+describe("Invitasjon: the parents' names («Navn på foreldrene», optional)", () => {
+  afterEach(() => void i18n.changeLanguage('nb'));
+  it('stored trimmed-on-read and capped; old parties without it are fine', () => {
+    const p = withInvitation(plain(), { hostNames: 'x'.repeat(200) });
+    expect(p.invitation?.hostNames).toHaveLength(60);
+    expect(sanitizeInvitation({ hostNames: 'Kari og Per', phone: 1 })).toEqual({ hostNames: 'Kari og Per' });
+    expect(sanitizeInvitation({ hostNames: 42 })).toEqual({});
+    // a party saved before the field: the text is exactly as before
+    expect(buildInvitation(plain({ invitation: { phone: '90000000' } })).text).toContain(
+      'Send gjerne en melding til 900 00 000.',
+    );
+  });
+
+  it('used in the text where natural: «Send gjerne en melding til Kari og Per på 900 00 000.»', () => {
+    const inv = buildInvitation(plain({ invitation: { phone: '90000000', hostNames: ' Kari og Per ' } }));
+    expect(inv.text).toContain('Send gjerne en melding til Kari og Per på 900 00 000.');
+    expect(inv.settings.hostNames).toBe('Kari og Per');
+    // without a phone number the names are only on the printed card
+    expect(buildInvitation(plain({ invitation: { hostNames: 'Kari og Per' } })).text).not.toContain('Kari');
+    void i18n.changeLanguage('en');
+    expect(buildInvitation(plain({ invitation: { phone: '90000000', hostNames: 'Kari and Per' } })).text).toContain(
+      'Feel free to send Kari and Per a message on 900 00 000.',
+    );
+  });
+});

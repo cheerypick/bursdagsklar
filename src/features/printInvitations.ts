@@ -11,7 +11,8 @@ export const WEB_PRINT_ID = 'bk-print';
 /**
  * «Skriv ut invitasjoner (PDF)», without any server.
  *
- * - iOS / Android: expo-print turns the HTML into an A4 PDF on the phone, then the share sheet opens with it
+ * - iOS / Android: expo-print turns the HTML into an A4 PDF (landscape: two A5 cards side by side) on the
+ *   phone, then the share sheet opens with it
  *   (print, AirDrop, Messages, «Arkiver i Filer» …). Where sharing is not available, the system print dialog
  *   opens with the PDF instead.
  * - Web: the pages are added to the document behind a print style sheet that hides the app, and the
@@ -19,10 +20,10 @@ export const WEB_PRINT_ID = 'bk-print';
  *   suggested file name. The pages are taken away again after printing.
  */
 export async function printInvitations(sheet: PrintSheet, dialogTitle: string): Promise<PrintOutcome> {
-  if (Platform.OS === 'web') return printOnWeb(sheet);
+  if (Platform.OS === 'web') return await printOnWeb(sheet);
   try {
-    // A4 in points (72 per inch); the page layout itself is relative to the page, so it fills it
-    const { uri } = await Print.printToFileAsync({ html: sheet.html, width: 595, height: 842 });
+    // A4 landscape in points (72 per inch): two A5 cards side by side; the layout is relative to the page
+    const { uri } = await Print.printToFileAsync({ html: sheet.html, width: 842, height: 595 });
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle });
       return 'shared';
@@ -34,7 +35,7 @@ export async function printInvitations(sheet: PrintSheet, dialogTitle: string): 
   }
 }
 
-function printOnWeb(sheet: PrintSheet): PrintOutcome {
+async function printOnWeb(sheet: PrintSheet): Promise<PrintOutcome> {
   const g = globalThis as { document?: Document; window?: Window };
   const doc = g.document;
   const win = g.window;
@@ -61,6 +62,9 @@ function printOnWeb(sheet: PrintSheet): PrintOutcome {
       win.removeEventListener('afterprint', cleanUp);
     };
     win.addEventListener('afterprint', cleanUp);
+    // the embedded fonts are ready before the dialog opens (at most a moment; then it opens anyway)
+    const fonts = (doc as Document & { fonts?: FontFaceSet }).fonts;
+    if (fonts?.ready) await Promise.race([fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
     win.print();
     return 'printed';
   } catch {

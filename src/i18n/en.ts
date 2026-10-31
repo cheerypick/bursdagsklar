@@ -344,25 +344,107 @@ export const en: LanguageResource = {
     day: 'Party day',
     menu: 'Main menu',
   },
-  soon: {
-    eyebrow: 'Coming soon',
-    invite: {
-      title: 'Invitation',
-      text: 'This is where the finished invitation card, the text for the parent group and the reminders will be. Everything is written in advance and filled in with names, date and address.',
+  /** Party day: the checklist, the day's order and the notes, all read from the plan. */
+  day: {
+    eyebrowToday: "It's party day!",
+    eyebrowBefore_one: 'Party day · tomorrow',
+    eyebrowBefore_other: 'Party day · in {{count}} days',
+    eyebrowAfter: 'Party day',
+    meta: '{{dato}} · {{tid}}',
+    lede: 'Everything for the day in one place, in an order that works. Only suggestions – you know the children best.',
+    checklist: {
+      title: 'Checklist for the day',
+      note: 'Most of it can be done before the guests arrive. The ticks are the same as in To-dos.',
+      before: 'Before the party',
+      approx: 'about {{time}}',
+      empty: "Nothing to do on the day itself yet. It shows up here once you've picked food, cake and games.",
+      counter: '{{x}} of {{y}}',
     },
-    cake: {
-      title: 'Cake',
-      text: 'This is where the cake will be, with a recipe that fits the number of guests.',
+    steps: {
+      title: 'The day, step by step',
+      note: 'An order that often works. Feel free to switch things around.',
+      arrive: 'Guests arrive – arrival and free play',
+      food: 'Food',
+      foodChosen: 'Food: {{menu}}',
+      mealLunch: 'Nice around lunchtime',
+      mealDinner: 'Nice around dinnertime',
+      cake: 'Cake and birthday song',
+      pickup: 'The party ends – parents pick up',
+      rules: 'How to play',
+      noActivities: 'No games picked yet. That is perfectly fine – would you like some ideas?',
+      toProgramme: 'See ideas in Programme',
     },
-    programme: {
-      title: 'Programme and games',
-      text: 'This is where a ready-made programme with times and games you choose yourself will be.',
+    notes: {
+      title: 'Allergies and notes',
+      guests: 'From the guest list',
+      diets: 'Ticked on Food',
+      onlyNotes: "Only notes: feel free to ask the parents if you're unsure.",
+      empty: 'No notes yet. Allergies can be added on the guest list.',
+      toGuests: 'To the guest list',
     },
-    day: {
-      title: 'Party day',
-      text: 'On the day itself we gather everything in the right order: when to start, what needs to be ready and who has allergies.',
+    links: {
+      title: 'Good to have at hand',
+      shopping: 'Shopping list',
+      shoppingLeft_one: '{{count}} item left to buy',
+      shoppingLeft_other: '{{count}} items left to buy',
+      shoppingDone: 'Everything is bought',
+      shoppingEmpty: 'The list fills up when you pick food and cake',
+      invite: 'The invitation',
+      phone: 'Replies to: {{phone}}',
+      noPhone: 'No phone number on the invitation yet',
+      programme: 'Programme and rules',
+      programmeLine: 'The rules for the games you picked',
+      programmeEmpty: 'Game ideas, if you like',
     },
-    backToPlan: 'Back to the plan',
+    prep: {
+      activities: {
+        title: 'Get out what you need for the games',
+        detail: 'Ideally before {{time}}: {{names}}',
+      },
+      food: {
+        grill: { title: 'Light the grill', detail: 'About {{time}}, so it is hot for the food around {{food}}' },
+        wiener: {
+          title: 'Warm the sausages',
+          detail: 'About {{time}}. Sausages do best in hot water that is not boiling',
+        },
+        pizzaOven: {
+          title: 'Turn on the oven for the pizza',
+          detail: 'About {{time}}, so the first tray is ready around {{food}}',
+        },
+        pizzaOrdered: {
+          title: 'Pick up or receive the pizza',
+          detail: 'About {{time}}, so it is warm for the food around {{food}}',
+        },
+        taco: {
+          title: 'Fry the mince and set out the toppings',
+          detail: 'About {{time}}, for the food around {{food}}',
+        },
+        pastaHot: {
+          title: 'Cook the pasta and heat the sauce',
+          detail: 'About {{time}}, for the food around {{food}}',
+        },
+        pastaSalad: { title: 'Set out the pasta salad', detail: 'About {{time}}, for the food around {{food}}' },
+        other: { title: 'Get the food ready', detail: 'About {{time}}, so it is ready around {{food}}' },
+      },
+      cake: {
+        home: {
+          title: 'Get out the cake, candles and matches',
+          detail: 'About {{time}}, for the cake around {{cake}}',
+        },
+        muffins: {
+          title: 'Get out the muffins, candles and matches',
+          detail: 'About {{time}}, for the cake around {{cake}}',
+        },
+        buy: {
+          title: 'Take the cake out of the fridge',
+          detail: 'About {{time}} if it is kept cold. Candles and matches too',
+        },
+      },
+      bags: {
+        title: 'Put the goodie bags by the door',
+        detail: 'Before the guests arrive, so they are ready for the goodbyes around {{time}}',
+      },
+    },
   },
   notFound: {
     title: "This page doesn't exist",

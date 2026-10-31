@@ -352,25 +352,104 @@ export const nb = {
     day: 'Festdagen',
     menu: 'Hovedmeny',
   },
-  soon: {
-    eyebrow: 'Kommer snart',
-    invite: {
-      title: 'Invitasjon',
-      text: 'Her kommer det ferdige invitasjonskortet, teksten til foreldregruppa og påminnelsene. Alt er skrevet på forhånd og fylles ut med navn, dato og adresse.',
+  /** Festdagen (the party day): the checklist, the day's order and the notes, all read from the plan. */
+  day: {
+    eyebrowToday: 'I dag er det fest!',
+    eyebrowBefore_one: 'Festdagen · i morgen',
+    eyebrowBefore_other: 'Festdagen · om {{count}} dager',
+    eyebrowAfter: 'Festdagen',
+    meta: '{{dato}} · kl. {{tid}}',
+    lede: 'Alt for dagen samlet på ett sted, i en rekkefølge som passer. Bare forslag – dere kjenner barna best.',
+    checklist: {
+      title: 'Sjekkliste for dagen',
+      note: 'Det meste kan gjøres før gjestene kommer. Hakene er de samme som i Gjøremål.',
+      before: 'Før festen',
+      approx: 'ca. {{time}}',
+      empty: 'Ingenting å gjøre på selve dagen ennå. Det kommer her når dere har valgt mat, kake og leker.',
+      counter: '{{x}} av {{y}}',
     },
-    cake: {
-      title: 'Kake',
-      text: 'Her kommer kaken, med oppskrift tilpasset antall gjester.',
+    steps: {
+      title: 'Dagen, steg for steg',
+      note: 'En rekkefølge som ofte fungerer. Bytt gjerne om.',
+      arrive: 'Gjestene kommer – ankomst og frilek',
+      food: 'Mat',
+      foodChosen: 'Mat: {{menu}}',
+      mealLunch: 'Passer fint rundt lunsj',
+      mealDinner: 'Passer fint rundt middag',
+      cake: 'Kake og bursdagssang',
+      pickup: 'Festen er slutt – foreldrene henter',
+      rules: 'Slik leker dere',
+      noActivities: 'Ingen leker valgt ennå. Det er helt greit – vil dere ha noen ideer?',
+      toProgramme: 'Se ideer i Program',
     },
-    programme: {
-      title: 'Program og leker',
-      text: 'Her kommer et ferdig program med klokkeslett og leker dere velger selv.',
+    notes: {
+      title: 'Allergier og notater',
+      guests: 'Fra gjestelista',
+      diets: 'Avkrysset på Mat',
+      onlyNotes: 'Bare notater: spør gjerne foreldrene hvis du er usikker.',
+      empty: 'Ingen notater ennå. Allergier kan skrives inn på gjestelista.',
+      toGuests: 'Til gjestelista',
     },
-    day: {
-      title: 'Festdagen',
-      text: 'På selve dagen samler vi alt i riktig rekkefølge: når du skal starte, hva som må være klart og hvem som har allergier.',
+    links: {
+      title: 'Greit å ha for hånden',
+      shopping: 'Handleliste',
+      shoppingLeft_one: '{{count}} vare igjen å kjøpe',
+      shoppingLeft_other: '{{count}} varer igjen å kjøpe',
+      shoppingDone: 'Alt er handlet',
+      shoppingEmpty: 'Lista fylles når dere velger mat og kake',
+      invite: 'Invitasjonen',
+      phone: 'Svar til: {{phone}}',
+      noPhone: 'Ingen telefonnummer på invitasjonen ennå',
+      programme: 'Program og regler',
+      programmeLine: 'Reglene for lekene dere har valgt',
+      programmeEmpty: 'Ideer til leker, hvis dere vil',
     },
-    backToPlan: 'Tilbake til planen',
+    prep: {
+      activities: {
+        title: 'Finn fram det dere trenger til lekene',
+        detail: 'Gjerne før kl. {{time}}: {{names}}',
+      },
+      food: {
+        grill: { title: 'Tenn grillen', detail: 'Ca. kl. {{time}}, så er den varm til maten rundt kl. {{food}}' },
+        wiener: {
+          title: 'Varm pølsene',
+          detail: 'Ca. kl. {{time}}. Pølsene trekker best i varmt vann som ikke koker',
+        },
+        pizzaOven: {
+          title: 'Skru på ovnen til pizzaen',
+          detail: 'Ca. kl. {{time}}, så første brett er klart rundt kl. {{food}}',
+        },
+        pizzaOrdered: {
+          title: 'Hent eller ta imot pizzaen',
+          detail: 'Ca. kl. {{time}}, så er den varm til maten rundt kl. {{food}}',
+        },
+        taco: {
+          title: 'Stek kjøttdeigen og sett fram tilbehøret',
+          detail: 'Ca. kl. {{time}}, til maten rundt kl. {{food}}',
+        },
+        pastaHot: { title: 'Kok pastaen og varm sausen', detail: 'Ca. kl. {{time}}, til maten rundt kl. {{food}}' },
+        pastaSalad: { title: 'Sett fram pastasalaten', detail: 'Ca. kl. {{time}}, til maten rundt kl. {{food}}' },
+        other: { title: 'Gjør klar maten', detail: 'Ca. kl. {{time}}, så den er klar rundt kl. {{food}}' },
+      },
+      cake: {
+        home: {
+          title: 'Finn fram kaken, kakelys og fyrstikker',
+          detail: 'Ca. kl. {{time}}, til kaken rundt kl. {{cake}}',
+        },
+        muffins: {
+          title: 'Finn fram muffinsene, kakelys og fyrstikker',
+          detail: 'Ca. kl. {{time}}, til kaken rundt kl. {{cake}}',
+        },
+        buy: {
+          title: 'Ta kaken ut av kjøleskapet',
+          detail: 'Ca. kl. {{time}} hvis den står kaldt. Kakelys og fyrstikker også',
+        },
+      },
+      bags: {
+        title: 'Sett fram godteposene ved døra',
+        detail: 'Før gjestene kommer, så er de klare til avskjeden rundt kl. {{time}}',
+      },
+    },
   },
   notFound: {
     title: 'Denne siden finnes ikke',

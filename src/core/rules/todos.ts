@@ -15,6 +15,7 @@ import { dishOn, menuDishes } from './dishes';
 import { kidsCount } from './units';
 import { pickedActivities } from './programme';
 import { youngestAge } from './celebrants';
+import { dayPrepRows } from './dayPrep';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -261,6 +262,9 @@ export function buildTasks(p: Party): TaskPlan {
       detail: t('rules.todos.packBags.detail', { count: goodieBagCount(p) }),
       link: { label: t('rules.todos.packBags.link'), route: '/godteposer' },
     },
+    // Festdagen (Oct 2026): the jobs on the day itself, each with a soft «ca. kl.» (rules/dayPrep.ts). The same
+    // to-dos are the checklist on the Festdagen screen, so a tick in one place is a tick in the other.
+    ...dayPrepRows(p).map((r) => ({ id: r.id, date: D, title: r.title, detail: r.detail, link: r.link })),
     {
       id: 'partyDay',
       date: D,

@@ -8,6 +8,8 @@ import {
   toggleTask as toggleTaskRule,
   toggleDiet as toggleDietRule,
   withGoodieBagItem,
+  withGoodieStyle,
+  withGoodieSkip,
   withCustomItem,
   withFoodItem,
   withGuestCounts,
@@ -24,6 +26,7 @@ import {
   type DietTag,
   type InvitationSettings,
   type GoodieBagItemId,
+  type GoodieBagStyle,
   type HomeItemId,
   type MenuChoice,
   type ISODate,
@@ -62,6 +65,10 @@ interface PartyState {
   removeCustomItem: (id: string) => void;
   /** «Forslag til innhold» for the goodie bags: put a suggestion on the list or take it off. */
   setGoodieBagItem: (id: GoodieBagItemId, picked: boolean) => void;
+  /** Godteposer: the style (klassisk / uten / begge); picking one also takes back «Vi dropper». */
+  setGoodieStyle: (style: GoodieBagStyle) => void;
+  /** «Vi dropper godteposer» (true) or take it back (false). */
+  setGoodieSkip: (skip: boolean) => void;
   /**
    * «Start på nytt»: deletes everything the app has stored (every party, the unfinished setup,
    * the theme) and empties the in-memory state, so the theme falls back to the neutral look.
@@ -196,6 +203,9 @@ export function PartyProvider({
     [update],
   );
 
+  const setGoodieStyle = useCallback((style: GoodieBagStyle) => update((p) => withGoodieStyle(p, style)), [update]);
+  const setGoodieSkip = useCallback((skip: boolean) => update((p) => withGoodieSkip(p, skip)), [update]);
+
   const setInvitation = useCallback(
     (patch: Partial<InvitationSettings>) => update((p) => withInvitation(p, patch)),
     [update],
@@ -237,6 +247,8 @@ export function PartyProvider({
       addCustomItem,
       removeCustomItem,
       setGoodieBagItem,
+      setGoodieStyle,
+      setGoodieSkip,
       startOver,
       setInvitation,
       setCake,
@@ -261,6 +273,8 @@ export function PartyProvider({
       addCustomItem,
       removeCustomItem,
       setGoodieBagItem,
+      setGoodieStyle,
+      setGoodieSkip,
       startOver,
       setInvitation,
       setCake,

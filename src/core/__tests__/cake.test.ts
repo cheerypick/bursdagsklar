@@ -140,7 +140,7 @@ describe('shopping lines per choice', () => {
     const order = buildTasks(p).tasks.find((x) => x.id === 'orderCake');
     expect(order).toMatchObject({
       title: 'Bestill kaken',
-      detail: 'Ca. 17 biter. For eksempel på REMA 1000 eller hos et bakeri',
+      detail: 'Ca. 17 biter, fra butikken eller et bakeri',
     });
     expect(buildTasks(p).tasks.map((x) => x.id)).not.toContain('bakeCakeBase');
   });
@@ -207,7 +207,7 @@ describe('names in nb and en', () => {
     expect(scratchRecipe(1).cake[3]).toMatchObject({ amount: '0.75 dl', name: 'Rapeseed oil' });
     expect(scratchRecipe(1).cake[7].amount).toBe('1 tbsp');
     const order = buildTasks(party(10, 2, { kind: 'buy', mode: 'buy' })).tasks.find((x) => x.id === 'orderCake');
-    expect(order?.detail).toBe('About 17 pieces. For example at REMA 1000 or a bakery');
+    expect(order?.detail).toBe('About 17 pieces, from a shop or a bakery');
     expect(handleliste(party(10, 2)).groups.find((g) => g.id === 'kake')?.title).toBe('For the cake');
   });
 });

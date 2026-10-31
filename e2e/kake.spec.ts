@@ -73,7 +73,8 @@ test('Kake: Toro by default, from scratch, muffins, ready-made; Handleliste and 
 
   // ready-made: a soft note, nothing to buy here
   await visible(page, 'cake-kind-buy').click();
-  await expect(visible(page, 'cake-buy-text')).toContainText('REMA 1000');
+  await expect(visible(page, 'cake-buy-text')).toContainText('i butikken eller hos et bakeri');
+  await expect(visible(page, 'cake-buy-text')).not.toContainText('REMA');
   await expect(visible(page, 'cake-shopping')).toContainText('Ingenting å handle til kaken');
 
   // back to scratch, «Ferdig» → Planen shows the chosen cake and «Valgt»

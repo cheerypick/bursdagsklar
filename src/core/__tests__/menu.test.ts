@@ -330,10 +330,13 @@ describe("item toggles (deselect what you don't need)", () => {
     expect(line(partyFoodPlan(p)!, 'polsebrod').included).toBe(false);
   });
   it('the shopping to-do skips a deselected item', () => {
-    const detail = (p: ReturnType<typeof emma>) => buildTasks(p).tasks.find((t) => t.id === 'buyDry')?.detail;
-    expect(detail(grill())).toBe('Lomper og saft');
-    expect(detail(withFoodItem(grill(), 'lomper', false))).toBe('Pølsebrød og saft');
-    expect(detail(emma({ menu: null }))).toBe('Saft');
+    const online = ' Bestiller du på nett? Velg gjerne levering dagen før.';
+    const detail = (p: ReturnType<typeof emma>) => buildTasks(p).tasks.find((t) => t.id === 'shopForParty')?.detail;
+    expect(detail(grill())).toBe('Pølser, lomper, saft, frukt og grønt.' + online);
+    expect(detail(withFoodItem(grill(), 'lomper', false))).toBe('Pølser, pølsebrød, saft, frukt og grønt.' + online);
+    expect(detail(withFoodItem(grill(), 'saft', false))).toBe('Pølser, lomper, frukt og grønt.' + online);
+    expect(detail(emma({ menu: { kind: 'taco' } }))).toBe('Kjøttdeig og tortillas, saft, frukt og grønt.' + online);
+    expect(detail(emma({ menu: null }))).toBe('Frukt og grønt. Velg meny under Mat.' + online);
   });
 });
 
@@ -353,9 +356,10 @@ describe('guest count: one source of truth (the party)', () => {
     expect(buildTasks(p).tasks.find((t) => t.id === 'guestList')?.detail).toBe('15 barn');
     expect(line(partyFoodPlan(p)!, 'grillpolser').why).not.toBe(line(partyFoodPlan(before)!, 'grillpolser').why);
     // the party-wide reminder that counts the goodie bags follows too
-    const fill = (q: typeof p) => buildTasks(q).tasks.find((t) => t.id === 'bakeMuffins')?.detail ?? '';
-    expect(fill(before)).toContain('13 godteposer');
-    expect(fill(p)).toContain('15 godteposer');
+    // (Godteposer, Oct 2026: its own to-do «Pakk godteposene», no longer a line on the cake to-do)
+    const fill = (q: typeof p) => buildTasks(q).tasks.find((t) => t.id === 'packBags')?.detail ?? '';
+    expect(fill(before)).toBe('13 poser, én til hvert barn');
+    expect(fill(p)).toBe('15 poser, én til hvert barn');
   });
   it('changing the adults sets hostAdults so the adults eating is exactly the number asked for', () => {
     const p0 = emma();

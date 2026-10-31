@@ -22,6 +22,7 @@ import {
 } from './activities';
 import { youngestAge } from './celebrants';
 import { cakePlan } from './cake';
+import { goodieBagsOn } from './goodieBags';
 import { formatClock, fromMinutes, minutesOf, parts } from './dates';
 import { headCount } from './people';
 import { themeById } from '../themes';
@@ -273,7 +274,8 @@ export function programmeTimeline(p: Party): TimelineBlock[] {
   }
   out.push({
     id: 'home',
-    title: t('program.timeline.home'),
+    // «Godteposer og hjem», or just «Takk for i dag» when she drops the goodie bags
+    title: t(goodieBagsOn(p) ? 'program.timeline.home' : 'program.timeline.homeNoBags'),
     minutes: 0,
     time: formatClock(fromMinutes((start + span - home) % (24 * 60))),
   });

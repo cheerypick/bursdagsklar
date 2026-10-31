@@ -17,14 +17,12 @@
  *   the fiskedam's sheet, rod and small prizes, eggs or potatoes, muffin decorations; nothing twice;
  * - party things: goodie bags, candles (one set per birthday child), plates/cups/napkins, balloons
  *   and the birthday crown, unless «Har dere dette hjemme?» says they are at home;
- * - what she picked for the goodie bags from «Forslag til innhold» (none by default), about one per
- *   child where that makes sense, candy ca. 100 g per bag;
+ * - the goodie bags (optional, rules/goodieBags.ts): the bags and what she picked on the Godteposer screen
+ *   (none by default), one per child, candy ca. 100 g per bag; nothing when she chose «Vi dropper godteposer»;
  * - her own free-text items («Legg til vare»).
  */
 import type { CustomShoppingItem, GoodieBagItemId, Party } from '../model';
 import { DIET_TAGS, GOODIE_BAG_ITEMS } from '../model';
-import * as C from './constants';
-import { formatGrams } from './food';
 import {
   dietGroup,
   foodPlan,
@@ -37,12 +35,13 @@ import {
 import { menuDishes } from './dishes';
 import { cakeShopLines } from './cake';
 import { programmeShopLines } from './programme';
+import { goodieShopLines } from './goodieBags';
 import { headCount } from './people';
 import { celebrantNames, oldestAge } from './celebrants';
 import { genitive } from '../texts/render';
 import { formatDayMonthShort } from './dates';
 import { liveRecord, t } from '../../i18n/i18n';
-import { forPeople, packsWord, pcs, sets, sheets } from './units';
+import { forPeople, packsWord, pcs, sets } from './units';
 
 export type ShopGroupId =
   'kjott' | 'brod' | 'frukt' | 'drikke' | 'torrvarer' | 'frys' | 'kake' | 'leker' | 'fest' | 'godteposer' | 'egne';
@@ -102,8 +101,6 @@ export interface Handleliste {
   /** All items on the list, ticked or not. */
   count: number;
   tickedCount: number;
-  /** The goodie-bag suggestions, in chip order, and whether she picked each. */
-  goodieBagSuggestions: { id: GoodieBagItemId; label: string; picked: boolean }[];
   /** false while no main dish is chosen: only drinks, fruit and party things are on the list. */
   menuChosen: boolean;
 }
@@ -285,7 +282,6 @@ function programmeItems(p: Party): Omit<ShopItem, 'ticked'>[] {
 /** Goodie bags, candy, candles, tableware, balloons and the crown. */
 function partyThings(p: Party): Omit<ShopItem, 'ticked'>[] {
   const hc = headCount(p);
-  const bags = Math.max(0, hc.kidsComing);
   const home = new Set(p.haveAtHome);
   const out: Omit<ShopItem, 'ticked'>[] = [];
   const sets_ = p.celebrants.length;
@@ -330,94 +326,9 @@ function partyThings(p: Party): Omit<ShopItem, 'ticked'>[] {
       qty: pcs(sets_),
       text: t('rules.shop.crownText', { count: sets_ }),
     });
-  out.push({
-    id: 'godteposer',
-    group: 'godteposer',
-    name: t('rules.shop.bags'),
-    qty: pcs(bags),
-    detail: t('rules.shop.bagsDetail'),
-    text: t('rules.shop.bagsText', { count: bags }),
-  });
-  for (const id of GOODIE_BAG_ITEMS) {
-    if (p.goodieBags.contents.includes(id)) out.push(goodieBagLine(id, bags, p));
-  }
+  // the goodie bags and what she picked for them (rules/goodieBags.ts); nothing when she drops them
+  out.push(...goodieShopLines(p).map((l) => ({ ...l, group: 'godteposer' as const })));
   return out;
-}
-
-/** The chip label for each goodie-bag suggestion («Forslag til innhold»), in the active language. */
-export const GOODIE_BAG_LABELS: Readonly<Record<GoodieBagItemId, string>> = liveRecord(
-  GOODIE_BAG_ITEMS,
-  (id) => `rules.shop.labels.${id}`,
-);
-
-/** One goodie-bag suggestion as a list line: about one per child (candy ca. 100 g per bag). */
-function goodieBagLine(id: GoodieBagItemId, bags: number, p: Party): Omit<ShopItem, 'ticked'> {
-  const base = { id: `pose-${id}`, group: 'godteposer' as const };
-  const one = t('rules.shop.oneEach');
-  const count = bags;
-  switch (id) {
-    case 'godteri': {
-      const qty = formatGrams(bags * C.CANDY_G_CHILD);
-      const nuts = p.guests.some(
-        (g) => g.status !== 'no' && (g.allergies.includes('notter') || g.allergies.includes('peanott')),
-      );
-      return {
-        ...base,
-        name: t('rules.shop.candy'),
-        qty,
-        detail: t('rules.shop.candyDetail', { g: C.CANDY_G_CHILD }) + (nuts ? t('rules.shop.candyNuts') : ''),
-        text: t('rules.shop.candyText', { qty }),
-      };
-    }
-    case 'popcorn':
-      return {
-        ...base,
-        name: t('rules.shop.popcorn'),
-        qty: pcs(bags),
-        detail: one,
-        text: t('rules.shop.popcornText', { count }),
-      };
-    case 'rosiner':
-      return {
-        ...base,
-        name: t('rules.shop.raisins'),
-        qty: pcs(bags),
-        detail: one,
-        text: t('rules.shop.raisinsText', { count }),
-      };
-    case 'klistremerker':
-      return {
-        ...base,
-        name: t('rules.shop.stickers'),
-        qty: sheets(bags),
-        detail: t('rules.shop.stickersDetail'),
-        text: t('rules.shop.stickersText', { count }),
-      };
-    case 'sapebobler':
-      return {
-        ...base,
-        name: t('rules.shop.bubbles'),
-        qty: pcs(bags),
-        detail: one,
-        text: t('rules.shop.bubblesText', { count }),
-      };
-    case 'viskelaer':
-      return {
-        ...base,
-        name: t('rules.shop.eraser'),
-        qty: pcs(bags),
-        detail: one,
-        text: t('rules.shop.eraserText', { count }),
-      };
-    case 'fruktstang':
-      return {
-        ...base,
-        name: t('rules.shop.fruitBars'),
-        qty: pcs(bags),
-        detail: one,
-        text: t('rules.shop.fruitBarsText', { count }),
-      };
-  }
 }
 
 /** «Emmas bursdag 15. nov», «Emma og Jonas' bursdag 15. nov» */
@@ -458,11 +369,6 @@ export function handleliste(p: Party): Handleliste {
     groups,
     count: all.length,
     tickedCount: all.filter((i) => i.ticked).length,
-    goodieBagSuggestions: GOODIE_BAG_ITEMS.map((id) => ({
-      id,
-      label: GOODIE_BAG_LABELS[id],
-      picked: p.goodieBags.contents.includes(id),
-    })),
     menuChosen: food.menuChosen,
   };
 }
@@ -520,7 +426,7 @@ export function withoutCustomItem(p: Party, id: string): Party {
   };
 }
 
-/** A «Forslag til innhold» chip: tap to put it on the list, tap again to take it off. */
+/** A «Forslag til innhold» chip on the Godteposer screen: tap to put it on the list, tap again to take it off. */
 export function withGoodieBagItem(p: Party, id: GoodieBagItemId, picked: boolean): Party {
   const rest = p.goodieBags.contents.filter((x) => x !== id);
   const contents = picked ? GOODIE_BAG_ITEMS.filter((x) => x === id || rest.includes(x)) : rest;

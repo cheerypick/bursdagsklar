@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { emma } from '../__fixtures__/emma';
-import { buildTasks, groupTasks, nextTask, progress, rsvpOffset, tickable, isDone } from '../rules/todos';
+import {
+  buildTasks,
+  groupTasks,
+  mergeShoppingTaskState,
+  nextTask,
+  progress,
+  rsvpOffset,
+  tickable,
+  isDone,
+} from '../rules/todos';
+import { migrate } from '../storage/PartyRepository';
 import { formatShort } from '../rules/dates';
 import { toggleHome, toggleTask } from '../party';
 
@@ -24,21 +34,22 @@ describe('to-dos, test vector A (spec §6.1)', () => {
       // Program (Oct 2026): order the piñata about a week before
       orderPinata: 'lør 31. okt',
       allergyCheck: 'søn 1. nov',
-      buyDry: 'tir 3. nov',
       bakeCakeBase: 'ons 4. nov',
       partyReminder: 'tor 5. nov',
       checkGrill: 'tor 5. nov',
-      buyFresh: 'fre 6. nov',
+      // one shopping trip the day before (dry + fresh merged, 30 Oct 2026)
+      shopForParty: 'fre 6. nov',
       bakeMuffins: 'fre 6. nov',
       // skattejakt for a 5-year-old: Ekaterina's drawn map, then hide the goodie bags on the day
       fillPinata: 'fre 6. nov',
       drawMap: 'fre 6. nov',
       hideTreasure: 'lør 7. nov',
+      packBags: 'fre 6. nov',
       partyDay: 'lør 7. nov',
       thanks: 'søn 8. nov',
     });
   });
-  it('18 tickable tasks, 1 done after setup', () => {
+  it('18 tickable tasks (one shopping trip, with «Pakk godteposene»), 1 done after setup', () => {
     const p = emma();
     const t = tickable(plan.tasks);
     expect(t).toHaveLength(18);
@@ -68,7 +79,7 @@ describe('test vector B: planned Wed 28 Oct (avail 10)', () => {
     expect(d.rsvpReminder).toBe('søn 1. nov');
     expect(d.borrowDispenser).toBe('søn 1. nov');
     expect(d.allergyCheck).toBe('tir 3. nov');
-    expect(d.buyDry).toBe('tir 3. nov');
+    expect(d.shopForParty).toBe('fre 6. nov');
     expect(d.bakeCakeBase).toBe('ons 4. nov');
     expect(d.partyDay).toBe('lør 7. nov');
   });
@@ -175,5 +186,44 @@ describe('to-dos never depend on a theme', () => {
     expect(JSON.stringify(off.tasks)).not.toMatch(/piñata/i);
     const on = buildTasks(emma({ theme: 'frost' }));
     expect(on.tasks.find((t) => t.id === 'orderPinata')?.title).toBe('Bestill snøkrystall-piñata');
+  });
+});
+
+describe('one shopping trip (Ekaterina, 30 Oct 2026: «why more work?»)', () => {
+  it('one «Handle til festen» the day before, no «tørrvarer» / «ferskvarer» to-dos', () => {
+    const tasks = buildTasks(emma({ menu: { kind: 'grillpolser' } })).tasks;
+    expect(tasks.find((t) => t.id === 'buyDry' || t.id === 'buyFresh')).toBeUndefined();
+    const shop = tasks.find((t) => t.id === 'shopForParty')!;
+    expect(shop).toMatchObject({
+      title: 'Handle til festen',
+      date: '2026-11-06',
+      link: { label: 'Handleliste', route: '/handleliste' },
+    });
+    expect(shop.detail).toContain('Bestiller du på nett? Velg gjerne levering dagen før.');
+    expect(tasks.map((t) => t.title).join(' ')).not.toMatch(/tørrvarer|ferskvarer/i);
+  });
+
+  it('an old party: ticked only if BOTH old trips were ticked, hidden only if both were hidden', () => {
+    const at = '2026-11-01T10:00:00.000Z';
+    const later = '2026-11-06T10:00:00.000Z';
+    expect(
+      mergeShoppingTaskState({ buyDry: { done: true, doneAt: at }, buyFresh: { done: true, doneAt: later } }),
+    ).toEqual({ shopForParty: { done: true, doneAt: later } });
+    expect(mergeShoppingTaskState({ buyDry: { done: true, doneAt: at }, guestList: { done: true } })).toEqual({
+      guestList: { done: true },
+    });
+    expect(
+      mergeShoppingTaskState({ buyDry: { done: false, hidden: true }, buyFresh: { done: false, hidden: true } }),
+    ).toEqual({ shopForParty: { done: false, hidden: true } });
+    // already merged: kept as it is
+    expect(mergeShoppingTaskState({ shopForParty: { done: false } })).toEqual({ shopForParty: { done: false } });
+  });
+
+  it('a saved party with both old trips ticked opens with «Handle til festen» ticked', () => {
+    const old = { ...emma(), taskState: { buyDry: { done: true }, buyFresh: { done: true } } };
+    const p = migrate(JSON.parse(JSON.stringify(old)))!;
+    const shop = buildTasks(p).tasks.find((t) => t.id === 'shopForParty')!;
+    expect(isDone(p, shop)).toBe(true);
+    expect(p.taskState.buyDry).toBeUndefined();
   });
 });

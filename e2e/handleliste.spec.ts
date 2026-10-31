@@ -78,10 +78,9 @@ test('Handleliste: pick Pølser, tick 2 items, reload keeps them; goodie-bag sug
   await expect(visible(page, 'shop-qty-godteposer')).toHaveText('12 stk');
   // nothing inside the goodie bags is assumed
   await expect(visible(page, 'shop-group-godteposer').locator('[data-testid^="shop-item-pose-"]')).toHaveCount(0);
+  // the suggestions live on the Godteposer screen; Handleliste links there
   await expect(visible(page, 'shopping-goodie-suggestions')).toContainText('Forslag til innhold');
-  await expect(visible(page, 'shopping-healthier')).toHaveText(
-    'Sunnere alternativer: rosiner, fruktstang og småleker.',
-  );
+  await expect(visible(page, 'shopping-goodie-link')).toBeVisible();
   await expect(visible(page, 'shop-qty-kakelys')).toHaveText('1 sett');
 
   // tick two
@@ -92,10 +91,13 @@ test('Handleliste: pick Pølser, tick 2 items, reload keeps them; goodie-bag sug
   await expect(item(page, 'lomper')).toHaveAttribute('aria-checked', 'false');
   await expect(visible(page, 'shopping-progress')).toHaveText(/^2 av \d+ kjøpt$/);
 
-  // tap Popcorn: one small bag per child goes on the list
+  // Godteposer: «Klassisk godteri», tap Popcorn: one small bag per child goes on the list
+  await visible(page, 'shopping-goodie-link').click();
+  await visible(page, 'goodie-style-klassisk').click();
   await expect(visible(page, 'goodie-popcorn')).toHaveAttribute('aria-pressed', 'false');
   await visible(page, 'goodie-popcorn').click();
   await expect(visible(page, 'goodie-popcorn')).toHaveAttribute('aria-pressed', 'true');
+  await visible(page, 'goodie-shopping-link').click();
   await expect(visible(page, 'shop-qty-pose-popcorn')).toHaveText('12 stk');
   await expect(item(page, 'pose-popcorn')).toContainText('Popcorn, små poser');
 
@@ -105,7 +107,6 @@ test('Handleliste: pick Pølser, tick 2 items, reload keeps them; goodie-bag sug
   await expect(visible(page, 'screen-shopping')).toBeVisible();
   await expect(item(page, 'grillpolser')).toHaveAttribute('aria-checked', 'true');
   await expect(item(page, 'saft')).toHaveAttribute('aria-checked', 'true');
-  await expect(visible(page, 'goodie-popcorn')).toHaveAttribute('aria-pressed', 'true');
   await expect(item(page, 'pose-popcorn')).toBeVisible();
   await expect(item(page, 'pose-godteri')).toHaveCount(0);
   // a ticked row moves to the bottom of its group
@@ -120,8 +121,10 @@ test('Handleliste: pick Pølser, tick 2 items, reload keeps them; goodie-bag sug
 
   // «Nullstill avkrysninger» (with a confirm)
   await openList(page);
-  // a second tap on the chip takes Popcorn off the list again
+  // a second tap on the chip (on Godteposer) takes Popcorn off the list again
+  await visible(page, 'shopping-goodie-link').click();
   await visible(page, 'goodie-popcorn').click();
+  await visible(page, 'goodie-shopping-link').click();
   await expect(item(page, 'pose-popcorn')).toHaveCount(0);
   await visible(page, 'shopping-clear').click();
   await page.getByRole('button', { name: 'Nullstill', exact: true }).filter({ visible: true }).click();
@@ -198,8 +201,8 @@ test('Handleliste: a line deselected on Mat is not on the list', async ({ page }
   await openList(page);
   await expect(item(page, 'polsebrod')).toHaveCount(0);
   await expect(item(page, 'lomper')).toBeVisible();
-  // the «Handle tørrvarer» to-do links here too
+  // the «Handle til festen» to-do (one trip, dry + fresh) links here too
   await page.goto('/gjoremal');
-  await page.getByRole('link', { name: 'Handleliste: Handle tørrvarer' }).filter({ visible: true }).click();
+  await page.getByRole('link', { name: 'Handleliste: Handle til festen' }).filter({ visible: true }).click();
   await expect(visible(page, 'screen-shopping')).toBeVisible();
 });

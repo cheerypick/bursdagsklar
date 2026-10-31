@@ -45,7 +45,7 @@ describe('homemade pizza for Emma (13 barn, 4 voksne, 5 år)', () => {
     ]);
     expect(line(plan, 'pizzadeig')).toMatchObject({ name: 'Ferdig pizzadeig', amount: '4 pk' });
     expect(line(plan, 'pizzadeig').why).toContain('Peppes Pizzabunn original 550 g');
-    expect(line(plan, 'pizzadeig').why).toContain('REMA 1000 Fersk stor pizzabunn 550 g');
+    expect(line(plan, 'pizzadeig').why).not.toMatch(/REMA/i);
     expect(line(plan, 'pizzasaus')).toMatchObject({ amount: '2 glass' });
     expect(line(plan, 'pizzasaus').why).toContain('Mutti');
     expect(line(plan, 'pizzaost')).toMatchObject({ amount: '2 poser', packs: 'à 400 g' });

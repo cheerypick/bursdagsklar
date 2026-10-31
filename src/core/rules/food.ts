@@ -574,9 +574,16 @@ export const MENU_NAMES: Record<MenuChoice['kind'], string> = {
 
 /** Short word for the main item on a shopping trip («Pølser, frukt og grønt»; «Pølser og pizzadeig» for two). */
 export function mainItemWord(menu: MenuChoice | null): string {
-  const words = menuDishes(menu).map(dishItemWord);
+  const words = mainItemWords(menu);
   if (words.length === 0) return t('rules.food.itemWord.food');
-  return joinList(words.map((w, i) => (i === 0 ? w : w.charAt(0).toLowerCase() + w.slice(1))));
+  return joinList(words);
+}
+
+/** The main item of each dish, the first capitalised and the rest lower case («Pølser», «pizzadeig og ost»). */
+export function mainItemWords(menu: MenuChoice | null): string[] {
+  return menuDishes(menu)
+    .map(dishItemWord)
+    .map((w, i) => (i === 0 ? w : w.charAt(0).toLowerCase() + w.slice(1)));
 }
 
 function dishItemWord(menu: Dish): string {

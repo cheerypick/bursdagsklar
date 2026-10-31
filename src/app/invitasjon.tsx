@@ -275,6 +275,18 @@ export default function InvitasjonScreen() {
         () => toggleTask('sendInvite', !sent),
         t('invitation.sentSub'),
       )}
+      {/* Påminnelser: the reminders and the thank-you message, written from the same plan */}
+      <Pressable
+        testID="invitation-reminders"
+        accessibilityRole="link"
+        onPress={() => router.push('/paminnelser')}
+        style={({ pressed }) => [styles.check, pressed && { opacity: 0.85 }]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.checkLabel}>{t('reminders.entry.title')} →</Text>
+          <Text variant="small">{t('reminders.entry.sub')}</Text>
+        </View>
+      </Pressable>
     </Surface>
   );
 

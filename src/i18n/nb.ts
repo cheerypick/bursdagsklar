@@ -9,6 +9,8 @@
  * Adding a string: add it to the right section here AND the same key in en.ts (TypeScript and the
  * unit test in src/i18n/__tests__ both refuse a missing key).
  */
+import templates from '../core/texts/templates.json';
+
 export const BRAND = 'bursdagsklar';
 
 export const nb = {
@@ -1352,7 +1354,7 @@ export const nb = {
       rsvpReminder: {
         title: 'Svarfrist i morgen: send påminnelse',
         detail: 'Den er ferdig skrevet, til de som ikke har svart',
-        link: 'Påminnelsen',
+        link: 'Åpne påminnelsen',
       },
       borrowDispenser: {
         title: 'Lån en saftdispenser (5–8 l)',
@@ -1360,7 +1362,8 @@ export const nb = {
       },
       rsvpDeadline: {
         title: 'Svarfrist',
-        detail: 'Mengdene oppdateres automatisk',
+        detail: 'Når svarene er inne, kan du gjerne oppdatere antallet barn fra gjestelista',
+        link: 'Gjestelista',
       },
       allergyCheck: {
         title: 'Sjekk allergier mot menyen',
@@ -1369,12 +1372,13 @@ export const nb = {
       },
       orderPizza: {
         title: 'Forhåndsbestill pizzaene',
+        link: 'Mat',
         big: 'Store, ca. 40 cm',
         normal: 'Vanlige, ca. 30 cm',
       },
       bakeCakeBase: {
         title: 'Bak kakebunnen og frys den',
-        detail: 'Da er fredagen roligere',
+        detail: 'Da blir dagen før festen roligere',
         link: 'Oppskrift',
       },
       checkGrill: {
@@ -1382,8 +1386,8 @@ export const nb = {
       },
       partyReminder: {
         title: 'Send påminnelse til foreldrene',
-        detail: 'Den er skrevet, med adresse og tid',
-        link: 'Påminnelsen',
+        detail: 'Den er ferdig skrevet, med tid og sted fra invitasjonen',
+        link: 'Åpne påminnelsen',
       },
       printClues: {
         title: 'Lag lappene til skattejakten',
@@ -1426,7 +1430,8 @@ export const nb = {
       },
       thanks: {
         title: 'Send takkemelding',
-        detail: 'Den er skrevet. Og noter til neste år',
+        detail: 'Den er ferdig skrevet. Og noter gjerne litt til neste år',
+        link: 'Åpne takkemeldingen',
       },
       groups: {
         idag: 'I dag',
@@ -1759,6 +1764,100 @@ export const nb = {
       playful: 'Kle deg godt, det blir kaldt og magisk! Det blir Frost-fest, og du er invitert.',
       openingSmall: 'Du er invitert til Frost-fest!',
       openingBig: 'Bli med på Frost-fest!',
+    },
+  },
+  /** Påminnelser (/paminnelser): the ready-written reminders and thank-you message (core/rules/reminders.ts). */
+  reminders: {
+    eyebrow: 'Påminnelser',
+    title: 'Påminnelser og takk',
+    lede: 'Tre meldinger, ferdig skrevet fra planen. Kopier eller del dem når det passer.',
+    tabsLabel: 'Velg melding',
+    tabs: {
+      svar: 'Svar',
+      fest: 'Før festen',
+      takk: 'Takk',
+    },
+    toneLabel: 'Tone',
+    tones: {
+      standard: 'Vanlig',
+      kort: 'Kort',
+      formell: 'Formell',
+    },
+    svar: {
+      title: 'Svarpåminnelse',
+      lede: 'Til dem som ikke har svart ennå. Svarfristen er {{date}}.',
+      personal_one: '{{count}} venter på svar på gjestelista. Her er en melding til hver:',
+      personal_other: '{{count}} venter på svar på gjestelista. Her er en melding til hver:',
+      noList: 'Her er en felles påminnelse. Legger du inn navnene på gjestelista, får du én til hvert barn.',
+      allAnswered: 'Alle på gjestelista har svart. Her er en felles påminnelse hvis du likevel trenger den.',
+      listLink: 'Gjestelista',
+      ifNotNote: 'Du ba om beskjed bare fra dem som ikke kan komme, så denne er helt valgfri.',
+      person: 'Kommer {{name}}?',
+      copyLabel: 'Kopier påminnelsen til {{name}}',
+      shareLabel: 'Del påminnelsen til {{name}}',
+    },
+    fest: {
+      title: 'Påminnelse før festen',
+      lede: 'Til alle som kommer. Passer fint et par dager før festen.',
+    },
+    takk: {
+      title: 'Takkemelding',
+      lede: 'Til foreldrene, dagen etter festen.',
+      gift: 'Vi fikk en felles gave (spleis)',
+      forgotten: 'Noen glemte igjen noe hos oss',
+    },
+    shareTitle: 'Melding om {{gen}} bursdag',
+    copy: 'Kopier',
+    share: 'Del',
+    copied: 'Kopiert',
+    copyFailed: 'Klarte ikke å kopiere. Merk teksten og kopier den selv.',
+    shareFailed: 'Klarte ikke å dele. Prøv «Kopier» i stedet.',
+    sent: 'Sendt',
+    sentSub: 'Hukes av på Gjøremål også',
+    gaps: {
+      both: 'Tips: Legg gjerne inn adresse og telefon på Invitasjon, så kommer de med i meldingene.',
+      address: 'Tips: Legg gjerne inn adressen på Invitasjon, så kommer den med i meldingene.',
+      phone: 'Tips: Legg gjerne inn et telefonnummer på Invitasjon, så kommer det med i meldingene.',
+      link: 'Invitasjon',
+    },
+    calendar: {
+      title: 'Legg i kalenderen',
+      lede: 'En kalenderfil for festen og en for svarfristen. Åpne den, så legger telefonen den i kalenderen.',
+      party: 'Festen',
+      rsvp: 'Svarfristen',
+      partyLabel: 'Last ned kalenderfil for festen',
+      rsvpLabel: 'Last ned kalenderfil for svarfristen',
+      done: 'Kalenderfilen er lastet ned',
+      failed: 'Klarte ikke å lage kalenderfilen',
+      partyTitle: '{{gen}} bursdag',
+      rsvpTitle: 'Svarfrist for {{gen}} bursdag',
+      rsvpDescription: 'Sjekk gjestelista og send gjerne en påminnelse til dem som ikke har svart.',
+    },
+    entry: {
+      title: 'Påminnelser og takkemelding',
+      sub: 'Ferdig skrevet, klare til å kopieres eller deles',
+    },
+    backToPlan: 'Tilbake til planen',
+    /** Slot values for the templates (core/rules/reminders.ts). */
+    ctx: {
+      today: 'i dag',
+      tomorrow: 'i morgen',
+      byDate: '{{date}}',
+      at: 'i {{address}}',
+      atHome: 'hjemme hos oss',
+      contact: 'oss',
+      parents: '{{gen}} foreldre',
+      fromHosts: '{{names}}, {{hosts}}',
+      family: 'familien',
+      happy_one: 'glad',
+      happy_other: 'glade',
+      yourChild: 'barnet deres',
+    },
+    /** The templates themselves: nb reads them from core/texts/templates.json (the one source). */
+    tpl: {
+      svar: templates.texts.rsvpReminder.variants,
+      fest: templates.texts.partyReminder.variants,
+      takk: templates.texts.thankYou.variants,
     },
   },
   themeNote: {

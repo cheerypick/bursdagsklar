@@ -46,7 +46,10 @@
     "dato_en": "English date for the English versions. «Saturday 7 November»",
     "svarfrist_en": "English RSVP date. «Saturday 31 October»",
     "spleisfrist_en": "English gift deadline. «Wednesday 4 November»",
-    "gavelinje_en": "texts.gift.english[mode]"
+    "gavelinje_en": "texts.gift.english[mode]",
+    "sted": "Hvor festen er, med preposisjon: «i Bjerkeveien 12», «hjemme hos oss» (hus/leilighet uten adresse), ellers tomt.",
+    "fra": "Hilsen i takkemeldingen: «Emma, Kari og Per» når foreldrenes navn er fylt inn, ellers «Emma og familien».",
+    "glad": "«glad» (ett bursdagsbarn) / «glade» (flere)."
   },
   "flags": {
     "sma": "alder ≤ 6",
@@ -59,7 +62,8 @@
     "allergier": "minst én allergi eller kosttagg er meldt (M4; før det er flagget av)",
     "spleis": "gavemodus er «spleis-vipps» eller «spleis-lenke»",
     "gjenglemt": "forelderen slår på «Noen glemte noe?» på Etter-skjermen",
-    "flere": "mer enn ett bursdagsbarn (felles bursdag)"
+    "flere": "mer enn ett bursdagsbarn (felles bursdag)",
+    "tlf": "et telefonnummer er fylt inn på Invitasjon"
   },
   "texts": {
     "invitation": {
@@ -151,16 +155,16 @@
       "purpose": "Påminnelse til alle som kommer, to dager før (ny oppgave partyReminder, D − 2).",
       "default": "standard",
       "variants": {
-        "standard": "Hei alle sammen! Vi gleder oss til {barns} bursdag på {dag} kl. {tid} i {adresse}.{#ute} Vi er ute en stund, så kle barna etter været.{/ute}{#allergier} Vi har notert det dere har sagt fra om ({allergier}), så det blir mat alle kan spise.{/allergier}{#hente} Henting kl. {slutt}.{/hente}\nRing {kontakt} på {telefon} hvis dere ikke finner fram. Hilsen {avsendere}",
-        "kort": "Påminnelse: {barns} bursdag på {dag} kl. {tid} i {adresse}. Vi gleder oss! Hilsen {avsendere}",
-        "formell": "Hei, en påminnelse om {barns} bursdag {dato} kl. {tid} i {adresse}.{#hente} Henting kl. {slutt}.{/hente} Ta kontakt med {kontakt} på {telefon} ved spørsmål. Vennlig hilsen {avsendere}"
+        "standard": "Hei alle sammen! Vi gleder oss til {barns} bursdag på {dag} kl. {tid} {sted}.{#ute} Vi er ute en stund, så kle barna etter været.{/ute}{#allergier} Vi har notert det dere har sagt fra om ({allergier}), og tar hensyn til det i maten.{/allergier}{#hente} Henting kl. {slutt}.{/hente}\n{#tlf}Ring {kontakt} på {telefon} hvis dere ikke finner fram. {/tlf}Hilsen {avsendere}",
+        "kort": "Påminnelse: {barns} bursdag på {dag} kl. {tid} {sted}. Vi gleder oss! Hilsen {avsendere}",
+        "formell": "Hei, en påminnelse om {barns} bursdag {dato} kl. {tid} {sted}.{#hente} Henting kl. {slutt}.{/hente}{#tlf} Ta kontakt med {kontakt} på {telefon} ved spørsmål.{/tlf} Vennlig hilsen {avsendere}"
       }
     },
     "thankYou": {
       "purpose": "Takkemelding til foreldregruppa dagen etter (oppgaven thanks, D + 1).",
       "default": "standard",
       "variants": {
-        "standard": "Tusen takk for at dere kom i {barns} bursdag i går!{#spleis} Og takk for den fine gaven, {barn} ble så glad.{/spleis}{^spleis} Og takk for gavene, {barn} ble så glad.{/spleis} Det var en skikkelig fin dag.{#gjenglemt} PS: Noen har glemt igjen ting hos oss. Si fra hvis dere savner noe!{/gjenglemt}\nHilsen {barn}, {avsendere}",
+        "standard": "Tusen takk for at dere kom i {barns} bursdag i går!{#spleis} Og takk for den fine gaven, {barn} ble så {glad}.{/spleis}{^spleis} Og takk for gavene, {barn} ble så {glad}.{/spleis} Det var en skikkelig fin dag.{#gjenglemt} PS: Noen har glemt igjen ting hos oss. Si fra hvis dere savner noe!{/gjenglemt}\nHilsen {fra}",
         "kort": "Takk for i går! {barn} hadde en kjempedag.{#gjenglemt} Si fra hvis noen savner noe, vi har noen gjenglemte ting.{/gjenglemt} Hilsen {avsendere}",
         "formell": "Hei, tusen takk for at dere kom i {barns} bursdag.{#spleis} Takk også for den felles gaven.{/spleis}{#gjenglemt} Vi har noen gjenglemte ting, så gi beskjed hvis dere savner noe.{/gjenglemt} Vennlig hilsen {avsendere}"
       }

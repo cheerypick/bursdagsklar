@@ -262,3 +262,24 @@ describe('stored parties', () => {
     expect(sanitizeInvitationChanges(['time', 'date'])).toEqual(['date', 'time']);
   });
 });
+
+describe('what came later on main: Påminnelser, the print cards, Festdagen', () => {
+  it('the parents’ names and the chosen card stay; the svar line still uses the names', () => {
+    const p = withInvitation(emma(), { hostNames: 'Kari og Per', cardId: 'dinosaurer', phone: '90000000' });
+    const e = edit(p, { date: '2026-11-21', children: 9 });
+    expect(e.invitation).toMatchObject({ hostNames: 'Kari og Per', cardId: 'dinosaurer' });
+    expect(buildInvitation(e).text).toContain('Kari og Per');
+  });
+
+  it('the party-day jobs (Festdagen) move to the new day, and a tick on one stays', () => {
+    const p0 = emma();
+    const day = buildTasks(p0).tasks.filter((x) => x.date === p0.date && x.id.startsWith('day'));
+    expect(day.length).toBeGreaterThan(0);
+    const p = toggleTask(p0, day[0].id, true, '2026-10-30T10:00:00Z');
+    const e = edit(p, { date: '2026-11-21' });
+    const moved = buildTasks(e).tasks.filter((x) => x.id.startsWith('day'));
+    expect(moved.map((x) => x.id)).toEqual(day.map((x) => x.id));
+    for (const x of moved) expect(x.date).toBe('2026-11-21');
+    expect(e.taskState[day[0].id]?.done).toBe(true);
+  });
+});

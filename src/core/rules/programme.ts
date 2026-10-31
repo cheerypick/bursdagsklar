@@ -9,7 +9,7 @@
  * - a soft suggested order for the party day (`programmeTimeline`), clearly a suggestion.
  * Nothing is picked by default and nothing is required.
  */
-import type { Party, ProgrammeChoice } from '../model';
+import type { HHMM, Party, ProgrammeChoice } from '../model';
 import {
   ACTIVITIES,
   activityById,
@@ -213,6 +213,8 @@ export interface TimelineBlock {
   id: string;
   /** «12.15» / «12:15» */
   time: string;
+  /** The same moment as 'HH:MM' (Festdagen counts back from it: the oven, the cake). */
+  clock: HHMM;
   title: string;
   /** ca. minutes (0 for the goodbye) */
   minutes: number;
@@ -256,7 +258,7 @@ export function programmeTimeline(p: Party): TimelineBlock[] {
     title: t('program.timeline.activity', { name: partyActivityName(id, p) }),
     minutes: mins.get(id) ?? 15,
   });
-  const blocks: Omit<TimelineBlock, 'time'>[] = [
+  const blocks: Omit<TimelineBlock, 'time' | 'clock'>[] = [
     { id: 'arrive', title: t('program.timeline.arrive'), minutes: arrive },
     { id: 'food', title: t('program.timeline.food'), minutes: food },
     ...picked.filter((id) => id !== 'pinata').map(act),
@@ -269,15 +271,18 @@ export function programmeTimeline(p: Party): TimelineBlock[] {
   const out: TimelineBlock[] = [];
   let at = start;
   for (const b of blocks) {
-    out.push({ ...b, time: formatClock(fromMinutes(round5(at) % (24 * 60))) });
+    const clock = fromMinutes(round5(at) % (24 * 60));
+    out.push({ ...b, time: formatClock(clock), clock });
     at += b.minutes;
   }
+  const homeClock = fromMinutes((start + span - home) % (24 * 60));
   out.push({
     id: 'home',
     // «Godteposer og hjem», or just «Takk for i dag» when she drops the goodie bags
     title: t(goodieBagsOn(p) ? 'program.timeline.home' : 'program.timeline.homeNoBags'),
     minutes: 0,
-    time: formatClock(fromMinutes((start + span - home) % (24 * 60))),
+    time: formatClock(homeClock),
+    clock: homeClock,
   });
   return out;
 }

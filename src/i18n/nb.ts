@@ -9,6 +9,8 @@
  * Adding a string: add it to the right section here AND the same key in en.ts (TypeScript and the
  * unit test in src/i18n/__tests__ both refuse a missing key).
  */
+import templates from '../core/texts/templates.json';
+
 export const BRAND = 'bursdagsklar';
 
 export const nb = {
@@ -376,25 +378,104 @@ export const nb = {
     day: 'Festdagen',
     menu: 'Hovedmeny',
   },
-  soon: {
-    eyebrow: 'Kommer snart',
-    invite: {
-      title: 'Invitasjon',
-      text: 'Her kommer det ferdige invitasjonskortet, teksten til foreldregruppa og påminnelsene. Alt er skrevet på forhånd og fylles ut med navn, dato og adresse.',
+  /** Festdagen (the party day): the checklist, the day's order and the notes, all read from the plan. */
+  day: {
+    eyebrowToday: 'I dag er det fest!',
+    eyebrowBefore_one: 'Festdagen · i morgen',
+    eyebrowBefore_other: 'Festdagen · om {{count}} dager',
+    eyebrowAfter: 'Festdagen',
+    meta: '{{dato}} · kl. {{tid}}',
+    lede: 'Alt for dagen samlet på ett sted, i en rekkefølge som passer. Bare forslag – dere kjenner barna best.',
+    checklist: {
+      title: 'Sjekkliste for dagen',
+      note: 'Det meste kan gjøres før gjestene kommer. Hakene er de samme som i Gjøremål.',
+      before: 'Før festen',
+      approx: 'ca. {{time}}',
+      empty: 'Ingenting å gjøre på selve dagen ennå. Det kommer her når dere har valgt mat, kake og leker.',
+      counter: '{{x}} av {{y}}',
     },
-    cake: {
-      title: 'Kake',
-      text: 'Her kommer kaken, med oppskrift tilpasset antall gjester.',
+    steps: {
+      title: 'Dagen, steg for steg',
+      note: 'En rekkefølge som ofte fungerer. Bytt gjerne om.',
+      arrive: 'Gjestene kommer – ankomst og frilek',
+      food: 'Mat',
+      foodChosen: 'Mat: {{menu}}',
+      mealLunch: 'Passer fint rundt lunsj',
+      mealDinner: 'Passer fint rundt middag',
+      cake: 'Kake og bursdagssang',
+      pickup: 'Festen er slutt – foreldrene henter',
+      rules: 'Slik leker dere',
+      noActivities: 'Ingen leker valgt ennå. Det er helt greit – vil dere ha noen ideer?',
+      toProgramme: 'Se ideer i Program',
     },
-    programme: {
-      title: 'Program og leker',
-      text: 'Her kommer et ferdig program med klokkeslett og leker dere velger selv.',
+    notes: {
+      title: 'Allergier og notater',
+      guests: 'Fra gjestelista',
+      diets: 'Avkrysset på Mat',
+      onlyNotes: 'Bare notater: spør gjerne foreldrene hvis du er usikker.',
+      empty: 'Ingen notater ennå. Allergier kan skrives inn på gjestelista.',
+      toGuests: 'Til gjestelista',
     },
-    day: {
-      title: 'Festdagen',
-      text: 'På selve dagen samler vi alt i riktig rekkefølge: når du skal starte, hva som må være klart og hvem som har allergier.',
+    links: {
+      title: 'Greit å ha for hånden',
+      shopping: 'Handleliste',
+      shoppingLeft_one: '{{count}} vare igjen å kjøpe',
+      shoppingLeft_other: '{{count}} varer igjen å kjøpe',
+      shoppingDone: 'Alt er handlet',
+      shoppingEmpty: 'Lista fylles når dere velger mat og kake',
+      invite: 'Invitasjonen',
+      phone: 'Svar til: {{phone}}',
+      noPhone: 'Ingen telefonnummer på invitasjonen ennå',
+      programme: 'Program og regler',
+      programmeLine: 'Reglene for lekene dere har valgt',
+      programmeEmpty: 'Ideer til leker, hvis dere vil',
     },
-    backToPlan: 'Tilbake til planen',
+    prep: {
+      activities: {
+        title: 'Finn fram det dere trenger til lekene',
+        detail: 'Gjerne før kl. {{time}}: {{names}}',
+      },
+      food: {
+        grill: { title: 'Tenn grillen', detail: 'Ca. kl. {{time}}, så er den varm til maten rundt kl. {{food}}' },
+        wiener: {
+          title: 'Varm pølsene',
+          detail: 'Ca. kl. {{time}}. Pølsene trekker best i varmt vann som ikke koker',
+        },
+        pizzaOven: {
+          title: 'Skru på ovnen til pizzaen',
+          detail: 'Ca. kl. {{time}}, så første brett er klart rundt kl. {{food}}',
+        },
+        pizzaOrdered: {
+          title: 'Hent eller ta imot pizzaen',
+          detail: 'Ca. kl. {{time}}, så er den varm til maten rundt kl. {{food}}',
+        },
+        taco: {
+          title: 'Stek kjøttdeigen og sett fram tilbehøret',
+          detail: 'Ca. kl. {{time}}, til maten rundt kl. {{food}}',
+        },
+        pastaHot: { title: 'Kok pastaen og varm sausen', detail: 'Ca. kl. {{time}}, til maten rundt kl. {{food}}' },
+        pastaSalad: { title: 'Sett fram pastasalaten', detail: 'Ca. kl. {{time}}, til maten rundt kl. {{food}}' },
+        other: { title: 'Gjør klar maten', detail: 'Ca. kl. {{time}}, så den er klar rundt kl. {{food}}' },
+      },
+      cake: {
+        home: {
+          title: 'Finn fram kaken, kakelys og fyrstikker',
+          detail: 'Ca. kl. {{time}}, til kaken rundt kl. {{cake}}',
+        },
+        muffins: {
+          title: 'Finn fram muffinsene, kakelys og fyrstikker',
+          detail: 'Ca. kl. {{time}}, til kaken rundt kl. {{cake}}',
+        },
+        buy: {
+          title: 'Ta kaken ut av kjøleskapet',
+          detail: 'Ca. kl. {{time}} hvis den står kaldt. Kakelys og fyrstikker også',
+        },
+      },
+      bags: {
+        title: 'Sett fram godteposene ved døra',
+        detail: 'Før gjestene kommer, så er de klare til avskjeden rundt kl. {{time}}',
+      },
+    },
   },
   notFound: {
     title: 'Denne siden finnes ikke',
@@ -419,6 +500,9 @@ export const nb = {
     parentsHelpFood_other: 'I maten regner vi med {{count}} foreldre som hjelper til.',
     siblings: 'Søsken er velkomne',
     siblingsSub: 'Legger til «si gjerne fra hvor mange»',
+    hostNamesLabel: 'Navn på foreldrene',
+    hostNamesPlaceholder: 'F.eks. Kari og Per',
+    hostNamesSub: 'Valgfritt. Står på det utskrevne kortet, så gjestene vet hvem de svarer.',
     replyTitle: 'Svar',
     replyIfNot: 'Gi beskjed hvis dere ikke kommer',
     replyIfComing: 'Gi beskjed om dere kommer',
@@ -624,7 +708,7 @@ export const nb = {
   /** Utskrivbare invitasjoner (Oct 2026): A4, four per page, made on the device (no server). */
   print: {
     title: 'Skriv ut invitasjoner',
-    lede: 'Fire invitasjoner på hvert A4-ark, med svake linjer å klippe etter. Blir fine i svart-hvitt også.',
+    lede: 'Tegnede kort i A5, to på hvert A4-ark, med en stiplet linje å klippe etter. Navn, dato og svar fylles inn fra planen.',
     cardsNamed_one: '{{count}} kort med navn fra gjestelista',
     cardsNamed_other: '{{count}} kort med navn fra gjestelista',
     cardsBlank_one: '{{count}} kort med «Til: ____» som du kan skrive navn på',
@@ -644,6 +728,50 @@ export const nb = {
     failed: 'Klarte ikke å lage utskriften. Prøv gjerne igjen.',
     to: 'Til:',
     docTitle: 'Bursdagsinvitasjoner fra {{names}}',
+    /** «Velg kort»: the illustrated cards (one per theme with our own drawing, «Bursdag» for the rest). */
+    cardTitle: 'Velg kort',
+    cardHint: 'Kortet til temaet deres er valgt. Velg gjerne et annet.',
+    cardSelected: 'Valgt kort: {{name}}',
+    cards: {
+      bursdag: 'Bursdag',
+      enhjorning: 'Enhjørning',
+      dinosaurer: 'Dinosaurer',
+      verdensrommet: 'Verdensrommet',
+      fotball: 'Fotball',
+      'dyr-i-skogen': 'Dyr i skogen',
+    },
+    /** The extra lines on the card, picked from the plan. */
+    infoTitle: 'Ekstra linjer på kortet',
+    infoHint: 'Velg inntil to. Vi har foreslått noen ut fra planen.',
+    infoMax: 'Du har valgt to. Fjern en hvis du vil bytte.',
+    whitePaper: 'Hvit bakgrunn (sparer blekk)',
+    whitePaperSub: 'Tegningene blir med, bare papirfargen blir hvit.',
+    hostsTip: 'Tips: Skriver du navnene på foreldrene over, står de på kortet: «Svar til Kari og Per».',
+    info: {
+      siblings: 'Søsken er hjertelig velkomne',
+      parentsHelp: 'Foreldre er velkomne til å bli',
+      menu: 'Vi spiser {{food}}',
+      outdoor: 'Ta gjerne med klær for å være ute',
+      allergies: 'Si fra om allergier',
+    },
+    /** The card itself. */
+    card: {
+      headline_one: '{{names}} fyller {{ages}}!',
+      headline_other: '{{names}} fyller {{ages}}!',
+      welcome: 'Bli med på {{fest}}!',
+      fest: 'bursdagsfest',
+      time: 'kl. {{time}}',
+      home: 'Hjemme hos oss',
+      parentsOne: '{{name}} foreldre',
+      parentsMany: 'foreldrene til {{names}}',
+      replyTo: 'Svar til {{hosts}} ({{parents}})',
+      replyToIfNot: 'Gi beskjed til {{hosts}} ({{parents}}) hvis dere ikke kommer',
+      replyPhoneBy: 'Svar til {{phone}} · innen {{date}}',
+      replyBy: 'Svar innen {{date}}',
+      replyIfNot: 'Gi beskjed hvis dere ikke kommer',
+      phoneBy: '{{phone}} · innen {{date}}',
+      by: 'Innen {{date}}',
+    },
   },
   program: {
     eyebrow: 'Program',
@@ -1378,7 +1506,7 @@ export const nb = {
       rsvpReminder: {
         title: 'Svarfrist i morgen: send påminnelse',
         detail: 'Den er ferdig skrevet, til de som ikke har svart',
-        link: 'Påminnelsen',
+        link: 'Åpne påminnelsen',
       },
       borrowDispenser: {
         title: 'Lån en saftdispenser (5–8 l)',
@@ -1386,7 +1514,8 @@ export const nb = {
       },
       rsvpDeadline: {
         title: 'Svarfrist',
-        detail: 'Mengdene oppdateres automatisk',
+        detail: 'Når svarene er inne, kan du gjerne oppdatere antallet barn fra gjestelista',
+        link: 'Gjestelista',
       },
       allergyCheck: {
         title: 'Sjekk allergier mot menyen',
@@ -1395,12 +1524,13 @@ export const nb = {
       },
       orderPizza: {
         title: 'Forhåndsbestill pizzaene',
+        link: 'Mat',
         big: 'Store, ca. 40 cm',
         normal: 'Vanlige, ca. 30 cm',
       },
       bakeCakeBase: {
         title: 'Bak kakebunnen og frys den',
-        detail: 'Da er fredagen roligere',
+        detail: 'Da blir dagen før festen roligere',
         link: 'Oppskrift',
       },
       checkGrill: {
@@ -1408,8 +1538,8 @@ export const nb = {
       },
       partyReminder: {
         title: 'Send påminnelse til foreldrene',
-        detail: 'Den er skrevet, med adresse og tid',
-        link: 'Påminnelsen',
+        detail: 'Den er ferdig skrevet, med tid og sted fra invitasjonen',
+        link: 'Åpne påminnelsen',
       },
       printClues: {
         title: 'Lag lappene til skattejakten',
@@ -1452,7 +1582,8 @@ export const nb = {
       },
       thanks: {
         title: 'Send takkemelding',
-        detail: 'Den er skrevet. Og noter til neste år',
+        detail: 'Den er ferdig skrevet. Og noter gjerne litt til neste år',
+        link: 'Åpne takkemeldingen',
       },
       groups: {
         idag: 'I dag',
@@ -1668,6 +1799,7 @@ export const nb = {
       replyIfNot: 'Gi beskjed hvis dere ikke kommer, gjerne innen {{date}}.',
       replyIfComing: 'Gi beskjed om dere kommer, gjerne innen {{date}}.',
       phone: 'Send gjerne en melding til {{phone}}.',
+      phoneHosts: 'Send gjerne en melding til {{hosts}} på {{phone}}.',
       allergies: 'Si gjerne fra om allergier.',
       outro: 'Vi gleder oss!',
       greeting: 'Hilsen {{names}}',
@@ -1785,6 +1917,100 @@ export const nb = {
       playful: 'Kle deg godt, det blir kaldt og magisk! Det blir Frost-fest, og du er invitert.',
       openingSmall: 'Du er invitert til Frost-fest!',
       openingBig: 'Bli med på Frost-fest!',
+    },
+  },
+  /** Påminnelser (/paminnelser): the ready-written reminders and thank-you message (core/rules/reminders.ts). */
+  reminders: {
+    eyebrow: 'Påminnelser',
+    title: 'Påminnelser og takk',
+    lede: 'Tre meldinger, ferdig skrevet fra planen. Kopier eller del dem når det passer.',
+    tabsLabel: 'Velg melding',
+    tabs: {
+      svar: 'Svar',
+      fest: 'Før festen',
+      takk: 'Takk',
+    },
+    toneLabel: 'Tone',
+    tones: {
+      standard: 'Vanlig',
+      kort: 'Kort',
+      formell: 'Formell',
+    },
+    svar: {
+      title: 'Svarpåminnelse',
+      lede: 'Til dem som ikke har svart ennå. Svarfristen er {{date}}.',
+      personal_one: '{{count}} venter på svar på gjestelista. Her er en melding til hver:',
+      personal_other: '{{count}} venter på svar på gjestelista. Her er en melding til hver:',
+      noList: 'Her er en felles påminnelse. Legger du inn navnene på gjestelista, får du én til hvert barn.',
+      allAnswered: 'Alle på gjestelista har svart. Her er en felles påminnelse hvis du likevel trenger den.',
+      listLink: 'Gjestelista',
+      ifNotNote: 'Du ba om beskjed bare fra dem som ikke kan komme, så denne er helt valgfri.',
+      person: 'Kommer {{name}}?',
+      copyLabel: 'Kopier påminnelsen til {{name}}',
+      shareLabel: 'Del påminnelsen til {{name}}',
+    },
+    fest: {
+      title: 'Påminnelse før festen',
+      lede: 'Til alle som kommer. Passer fint et par dager før festen.',
+    },
+    takk: {
+      title: 'Takkemelding',
+      lede: 'Til foreldrene, dagen etter festen.',
+      gift: 'Vi fikk en felles gave (spleis)',
+      forgotten: 'Noen glemte igjen noe hos oss',
+    },
+    shareTitle: 'Melding om {{gen}} bursdag',
+    copy: 'Kopier',
+    share: 'Del',
+    copied: 'Kopiert',
+    copyFailed: 'Klarte ikke å kopiere. Merk teksten og kopier den selv.',
+    shareFailed: 'Klarte ikke å dele. Prøv «Kopier» i stedet.',
+    sent: 'Sendt',
+    sentSub: 'Hukes av på Gjøremål også',
+    gaps: {
+      both: 'Tips: Legg gjerne inn adresse og telefon på Invitasjon, så kommer de med i meldingene.',
+      address: 'Tips: Legg gjerne inn adressen på Invitasjon, så kommer den med i meldingene.',
+      phone: 'Tips: Legg gjerne inn et telefonnummer på Invitasjon, så kommer det med i meldingene.',
+      link: 'Invitasjon',
+    },
+    calendar: {
+      title: 'Legg i kalenderen',
+      lede: 'En kalenderfil for festen og en for svarfristen. Åpne den, så legger telefonen den i kalenderen.',
+      party: 'Festen',
+      rsvp: 'Svarfristen',
+      partyLabel: 'Last ned kalenderfil for festen',
+      rsvpLabel: 'Last ned kalenderfil for svarfristen',
+      done: 'Kalenderfilen er lastet ned',
+      failed: 'Klarte ikke å lage kalenderfilen',
+      partyTitle: '{{gen}} bursdag',
+      rsvpTitle: 'Svarfrist for {{gen}} bursdag',
+      rsvpDescription: 'Sjekk gjestelista og send gjerne en påminnelse til dem som ikke har svart.',
+    },
+    entry: {
+      title: 'Påminnelser og takkemelding',
+      sub: 'Ferdig skrevet, klare til å kopieres eller deles',
+    },
+    backToPlan: 'Tilbake til planen',
+    /** Slot values for the templates (core/rules/reminders.ts). */
+    ctx: {
+      today: 'i dag',
+      tomorrow: 'i morgen',
+      byDate: '{{date}}',
+      at: 'i {{address}}',
+      atHome: 'hjemme hos oss',
+      contact: 'oss',
+      parents: '{{gen}} foreldre',
+      fromHosts: '{{names}}, {{hosts}}',
+      family: 'familien',
+      happy_one: 'glad',
+      happy_other: 'glade',
+      yourChild: 'barnet deres',
+    },
+    /** The templates themselves: nb reads them from core/texts/templates.json (the one source). */
+    tpl: {
+      svar: templates.texts.rsvpReminder.variants,
+      fest: templates.texts.partyReminder.variants,
+      takk: templates.texts.thankYou.variants,
     },
   },
   themeNote: {

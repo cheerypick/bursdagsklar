@@ -11,7 +11,7 @@
  * After the MVP (not built): let parents upload their own picture to the invitation card. That needs
  * image hosting (e.g. Cloudinary), so it waits; see docs/ARCHITECTURE.md «Invitasjon».
  */
-import type { ISODate, InvitationSettings, Party, ReplyMode } from '../model';
+import type { CardId, ISODate, InfoLineId, InvitationSettings, Party, ReplyMode } from '../model';
 import { THEMES } from '../themes';
 import { addDays, capitalize, formatDayMonth, formatLong, formatRangeCompact } from './dates';
 import { agesText, celebrantNames, youngestAge } from './celebrants';
@@ -26,12 +26,16 @@ export interface ResolvedInvitation {
   rsvpBy: ISODate;
   replyMode: ReplyMode;
   customText: string | null;
+  /** «Kari og Per», trimmed; '' when not filled in. */
+  hostNames: string;
 }
 
 /** Text fields are capped so a pasted novel cannot break the card. */
 export const INVITATION_ADDRESS_MAX = 120;
 export const INVITATION_PHONE_MAX = 24;
 export const INVITATION_TEXT_MAX = 2000;
+/** «Kari og Per»: room for two names, never a paragraph. */
+export const INVITATION_HOSTS_MAX = 60;
 
 /**
  * One helping parent per this many guest children, rounded up (Oct 2026 assumption: «1 per 3–4
@@ -72,6 +76,7 @@ export function resolveInvitation(
     rsvpBy: s.rsvpBy ?? defaultRsvpBy(p, today),
     replyMode: s.replyMode ?? 'ifNotComing',
     customText: typeof s.customText === 'string' ? s.customText : null,
+    hostNames: (s.hostNames ?? '').trim(),
   };
 }
 
@@ -143,7 +148,13 @@ export function buildInvitation(p: Party, today?: ISODate): Invitation {
   lines.push(
     s.replyMode === 'ifComing' ? t('invite.text.replyIfComing', { date }) : t('invite.text.replyIfNot', { date }),
   );
-  if (s.phone) lines.push(t('invite.text.phone', { phone: formatPhone(s.phone) }));
+  // the parents' names, when she wrote them: «Send gjerne en melding til Kari og Per på 900 00 000.»
+  if (s.phone)
+    lines.push(
+      s.hostNames
+        ? t('invite.text.phoneHosts', { hosts: s.hostNames, phone: formatPhone(s.phone) })
+        : t('invite.text.phone', { phone: formatPhone(s.phone) }),
+    );
   lines.push(t('invite.text.allergies'));
   lines.push('', t('invite.text.outro'), t('invite.text.greeting', { names }));
   const generated = lines.join('\n');
@@ -172,6 +183,8 @@ export function withInvitation(p: Party, patch: Partial<InvitationSettings>): Pa
   if (next.address !== undefined) next.address = next.address.slice(0, INVITATION_ADDRESS_MAX);
   if (next.phone !== undefined) next.phone = next.phone.slice(0, INVITATION_PHONE_MAX);
   if (next.customText !== undefined) next.customText = next.customText.slice(0, INVITATION_TEXT_MAX);
+  if (next.hostNames !== undefined) next.hostNames = next.hostNames.slice(0, INVITATION_HOSTS_MAX);
+  if (next.infoLines !== undefined) next.infoLines = sanitizeInfoLines(next.infoLines);
   for (const k of Object.keys(next) as (keyof InvitationSettings)[]) if (next[k] === undefined) delete next[k];
   return { ...p, invitation: next };
 }
@@ -188,5 +201,29 @@ export function sanitizeInvitation(raw: unknown): InvitationSettings | undefined
   if (typeof r.rsvpBy === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.rsvpBy)) out.rsvpBy = r.rsvpBy as ISODate;
   if (r.replyMode === 'ifComing' || r.replyMode === 'ifNotComing') out.replyMode = r.replyMode;
   if (typeof r.customText === 'string') out.customText = r.customText.slice(0, INVITATION_TEXT_MAX);
+  if (typeof r.hostNames === 'string') out.hostNames = r.hostNames.slice(0, INVITATION_HOSTS_MAX);
+  if (typeof r.cardId === 'string' && (CARD_IDS as readonly string[]).includes(r.cardId))
+    out.cardId = r.cardId as CardId;
+  if (Array.isArray(r.infoLines)) out.infoLines = sanitizeInfoLines(r.infoLines);
+  if (typeof r.whitePaper === 'boolean') out.whitePaper = r.whitePaper;
   return out;
+}
+
+/** The ids of the printed cards, in the order the picker shows them. */
+export const CARD_IDS: readonly CardId[] = [
+  'bursdag',
+  'enhjorning',
+  'dinosaurer',
+  'verdensrommet',
+  'fotball',
+  'dyr-i-skogen',
+];
+/** The extra lines on the printed card, in the order they are offered and printed. */
+export const INFO_LINE_IDS: readonly InfoLineId[] = ['siblings', 'parentsHelp', 'menu', 'outdoor', 'allergies'];
+/** At most this many extra lines on the printed card (Ekaterina: «1-2 lines»). */
+export const MAX_INFO_LINES = 2;
+
+/** Known ids only, each once, in the printed order, at most MAX_INFO_LINES. */
+export function sanitizeInfoLines(raw: readonly unknown[]): InfoLineId[] {
+  return INFO_LINE_IDS.filter((id) => raw.includes(id)).slice(0, MAX_INFO_LINES);
 }

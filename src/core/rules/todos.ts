@@ -9,11 +9,13 @@ import { RSVP_DAYS_DEFAULT, RSVP_FULL_PLAN_MIN_AVAIL } from './constants';
 import { cakePlan } from './cake';
 import { goodieBagCount, goodieBagsOn } from './goodieBags';
 import { themeById } from '../themes';
+import { reminderRoute } from './reminders';
 import { isIncluded, mainItemWords, shoppingList } from './food';
 import { dishOn, menuDishes } from './dishes';
 import { kidsCount } from './units';
 import { pickedActivities } from './programme';
 import { youngestAge } from './celebrants';
+import { dayPrepRows } from './dayPrep';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -102,6 +104,7 @@ export function buildTasks(p: Party): TaskPlan {
           ? t('rules.todos.orderPinata.title', { pinata: theme.pinata })
           : t('rules.todos.orderPinata.titleNeutral'),
         detail: t('rules.todos.orderPinata.detail'),
+        link: { label: t('rules.todos.programmeLink'), route: '/program' },
       },
     pinata &&
       avail < 8 && {
@@ -109,6 +112,7 @@ export function buildTasks(p: Party): TaskPlan {
         date: at(4),
         title: t('rules.todos.buyPinata.title'),
         detail: t('rules.todos.buyPinata.detail'),
+        link: { label: t('rules.todos.programmeLink'), route: '/program' },
       },
     // a ready-made cake: order it a few days before (REMA 1000 takes orders the day before, a bakery a little more)
     !bake && {
@@ -125,7 +129,8 @@ export function buildTasks(p: Party): TaskPlan {
       date: at(R + 1),
       title: t('rules.todos.rsvpReminder.title'),
       detail: t('rules.todos.rsvpReminder.detail'),
-      link: { label: t('rules.todos.rsvpReminder.link'), route: '/invitasjon' },
+      // the ready-written reminder lives on Påminnelser (one «Kommer Ola?» per child still waiting)
+      link: { label: t('rules.todos.rsvpReminder.link'), route: reminderRoute('svar') },
     },
     !has('saftdispenser') && {
       id: 'borrowDispenser',
@@ -138,6 +143,8 @@ export function buildTasks(p: Party): TaskPlan {
       date: at(R),
       title: t('rules.todos.rsvpDeadline.title'),
       detail: t('rules.todos.rsvpDeadline.detail'),
+      // the guest list never changes the counts on its own; its soft hint offers «Bruk N barn i planen»
+      link: { label: t('rules.todos.rsvpDeadline.link'), route: '/gjesteliste' },
       milestone: true,
     },
     {
@@ -152,7 +159,9 @@ export function buildTasks(p: Party): TaskPlan {
         id: 'orderPizza',
         date: at(2),
         title: t('rules.todos.orderPizza.title'),
+        // only a party saved while ordered pizza was a choice; Mat now offers homemade or frozen
         detail: t(pizza.takeawaySize === '40' ? 'rules.todos.orderPizza.big' : 'rules.todos.orderPizza.normal'),
+        link: { label: t('rules.todos.orderPizza.link'), route: '/mat' },
       },
     bake &&
       !onlyMuffins && {
@@ -168,7 +177,7 @@ export function buildTasks(p: Party): TaskPlan {
       date: at(2),
       title: t('rules.todos.partyReminder.title'),
       detail: t('rules.todos.partyReminder.detail'),
-      link: { label: t('rules.todos.partyReminder.link'), route: '/invitasjon' },
+      link: { label: t('rules.todos.partyReminder.link'), route: reminderRoute('fest') },
     },
     // Program (Oct 2026): the to-dos of the picked ideas, linked to the Program screen
     fishing && {
@@ -253,6 +262,9 @@ export function buildTasks(p: Party): TaskPlan {
       detail: t('rules.todos.packBags.detail', { count: goodieBagCount(p) }),
       link: { label: t('rules.todos.packBags.link'), route: '/godteposer' },
     },
+    // Festdagen (Oct 2026): the jobs on the day itself, each with a soft «ca. kl.» (rules/dayPrep.ts). The same
+    // to-dos are the checklist on the Festdagen screen, so a tick in one place is a tick in the other.
+    ...dayPrepRows(p).map((r) => ({ id: r.id, date: D, title: r.title, detail: r.detail, link: r.link })),
     {
       id: 'partyDay',
       date: D,
@@ -265,6 +277,7 @@ export function buildTasks(p: Party): TaskPlan {
       date: addDays(D, 1),
       title: t('rules.todos.thanks.title'),
       detail: t('rules.todos.thanks.detail'),
+      link: { label: t('rules.todos.thanks.link'), route: reminderRoute('takk') },
     },
   ];
 

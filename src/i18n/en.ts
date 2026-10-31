@@ -370,25 +370,107 @@ export const en: LanguageResource = {
     day: 'Party day',
     menu: 'Main menu',
   },
-  soon: {
-    eyebrow: 'Coming soon',
-    invite: {
-      title: 'Invitation',
-      text: 'This is where the finished invitation card, the text for the parent group and the reminders will be. Everything is written in advance and filled in with names, date and address.',
+  /** Party day: the checklist, the day's order and the notes, all read from the plan. */
+  day: {
+    eyebrowToday: "It's party day!",
+    eyebrowBefore_one: 'Party day · tomorrow',
+    eyebrowBefore_other: 'Party day · in {{count}} days',
+    eyebrowAfter: 'Party day',
+    meta: '{{dato}} · {{tid}}',
+    lede: 'Everything for the day in one place, in an order that works. Only suggestions – you know the children best.',
+    checklist: {
+      title: 'Checklist for the day',
+      note: 'Most of it can be done before the guests arrive. The ticks are the same as in To-dos.',
+      before: 'Before the party',
+      approx: 'about {{time}}',
+      empty: "Nothing to do on the day itself yet. It shows up here once you've picked food, cake and games.",
+      counter: '{{x}} of {{y}}',
     },
-    cake: {
-      title: 'Cake',
-      text: 'This is where the cake will be, with a recipe that fits the number of guests.',
+    steps: {
+      title: 'The day, step by step',
+      note: 'An order that often works. Feel free to switch things around.',
+      arrive: 'Guests arrive – arrival and free play',
+      food: 'Food',
+      foodChosen: 'Food: {{menu}}',
+      mealLunch: 'Nice around lunchtime',
+      mealDinner: 'Nice around dinnertime',
+      cake: 'Cake and birthday song',
+      pickup: 'The party ends – parents pick up',
+      rules: 'How to play',
+      noActivities: 'No games picked yet. That is perfectly fine – would you like some ideas?',
+      toProgramme: 'See ideas in Programme',
     },
-    programme: {
-      title: 'Programme and games',
-      text: 'This is where a ready-made programme with times and games you choose yourself will be.',
+    notes: {
+      title: 'Allergies and notes',
+      guests: 'From the guest list',
+      diets: 'Ticked on Food',
+      onlyNotes: "Only notes: feel free to ask the parents if you're unsure.",
+      empty: 'No notes yet. Allergies can be added on the guest list.',
+      toGuests: 'To the guest list',
     },
-    day: {
-      title: 'Party day',
-      text: 'On the day itself we gather everything in the right order: when to start, what needs to be ready and who has allergies.',
+    links: {
+      title: 'Good to have at hand',
+      shopping: 'Shopping list',
+      shoppingLeft_one: '{{count}} item left to buy',
+      shoppingLeft_other: '{{count}} items left to buy',
+      shoppingDone: 'Everything is bought',
+      shoppingEmpty: 'The list fills up when you pick food and cake',
+      invite: 'The invitation',
+      phone: 'Replies to: {{phone}}',
+      noPhone: 'No phone number on the invitation yet',
+      programme: 'Programme and rules',
+      programmeLine: 'The rules for the games you picked',
+      programmeEmpty: 'Game ideas, if you like',
     },
-    backToPlan: 'Back to the plan',
+    prep: {
+      activities: {
+        title: 'Get out what you need for the games',
+        detail: 'Ideally before {{time}}: {{names}}',
+      },
+      food: {
+        grill: { title: 'Light the grill', detail: 'About {{time}}, so it is hot for the food around {{food}}' },
+        wiener: {
+          title: 'Warm the sausages',
+          detail: 'About {{time}}. Sausages do best in hot water that is not boiling',
+        },
+        pizzaOven: {
+          title: 'Turn on the oven for the pizza',
+          detail: 'About {{time}}, so the first tray is ready around {{food}}',
+        },
+        pizzaOrdered: {
+          title: 'Pick up or receive the pizza',
+          detail: 'About {{time}}, so it is warm for the food around {{food}}',
+        },
+        taco: {
+          title: 'Fry the mince and set out the toppings',
+          detail: 'About {{time}}, for the food around {{food}}',
+        },
+        pastaHot: {
+          title: 'Cook the pasta and heat the sauce',
+          detail: 'About {{time}}, for the food around {{food}}',
+        },
+        pastaSalad: { title: 'Set out the pasta salad', detail: 'About {{time}}, for the food around {{food}}' },
+        other: { title: 'Get the food ready', detail: 'About {{time}}, so it is ready around {{food}}' },
+      },
+      cake: {
+        home: {
+          title: 'Get out the cake, candles and matches',
+          detail: 'About {{time}}, for the cake around {{cake}}',
+        },
+        muffins: {
+          title: 'Get out the muffins, candles and matches',
+          detail: 'About {{time}}, for the cake around {{cake}}',
+        },
+        buy: {
+          title: 'Take the cake out of the fridge',
+          detail: 'About {{time}} if it is kept cold. Candles and matches too',
+        },
+      },
+      bags: {
+        title: 'Put the goodie bags by the door',
+        detail: 'Before the guests arrive, so they are ready for the goodbyes around {{time}}',
+      },
+    },
   },
   notFound: {
     title: "This page doesn't exist",
@@ -412,6 +494,9 @@ export const en: LanguageResource = {
     parentsHelpFood_other: "In the food we're counting {{count}} parents who stay to help.",
     siblings: 'Siblings are welcome',
     siblingsSub: 'Adds «just let us know how many»',
+    hostNamesLabel: "Parents' names",
+    hostNamesPlaceholder: 'E.g. Kari and Per',
+    hostNamesSub: 'Optional. Goes on the printed card, so guests know who they are replying to.',
     replyTitle: 'Replies',
     replyIfNot: "Let us know if you can't come",
     replyIfComing: "Let us know if you're coming",
@@ -617,7 +702,7 @@ export const en: LanguageResource = {
   /** Printable invitations (Oct 2026): A4, four per page, made on the device (no server). */
   print: {
     title: 'Print invitations',
-    lede: 'Four invitations on each A4 sheet, with faint lines to cut along. They look good in black and white too.',
+    lede: 'Illustrated A5 cards, two on each A4 sheet, with a dashed line to cut along. Names, date and reply details come from the plan.',
     cardsNamed_one: '{{count}} card with a name from the guest list',
     cardsNamed_other: '{{count}} cards with names from the guest list',
     cardsBlank_one: '{{count}} card with «To: ____» to write a name on',
@@ -637,6 +722,50 @@ export const en: LanguageResource = {
     failed: 'Could not make the printout. Please try again.',
     to: 'To:',
     docTitle: 'Birthday invitations from {{names}}',
+    /** «Velg kort»: the illustrated cards (one per theme with our own drawing, «Bursdag» for the rest). */
+    cardTitle: 'Choose a card',
+    cardHint: 'The card for your theme is chosen. Feel free to pick another.',
+    cardSelected: 'Chosen card: {{name}}',
+    cards: {
+      bursdag: 'Birthday',
+      enhjorning: 'Unicorn',
+      dinosaurer: 'Dinosaurs',
+      verdensrommet: 'Space',
+      fotball: 'Football',
+      'dyr-i-skogen': 'Forest animals',
+    },
+    /** The extra lines on the card, picked from the plan. */
+    infoTitle: 'Extra lines on the card',
+    infoHint: 'Pick up to two. We have suggested some from the plan.',
+    infoMax: 'You have picked two. Remove one if you would like to swap.',
+    whitePaper: 'White background (saves ink)',
+    whitePaperSub: 'The drawings stay, only the paper colour turns white.',
+    hostsTip: "Tip: if you add the parents' names above, they go on the card: «Reply to Kari and Per».",
+    info: {
+      siblings: 'Brothers and sisters are very welcome',
+      parentsHelp: 'Parents are welcome to stay',
+      menu: "We're having {{food}}",
+      outdoor: 'Feel free to bring clothes for outdoors',
+      allergies: 'Let us know about any allergies',
+    },
+    /** The card itself. */
+    card: {
+      headline_one: '{{names}} is turning {{ages}}!',
+      headline_other: '{{names}} are turning {{ages}}!',
+      welcome: 'Come to the {{fest}}!',
+      fest: 'birthday party',
+      time: '{{time}}',
+      home: 'At our place',
+      parentsOne: '{{name}} parents',
+      parentsMany: 'parents of {{names}}',
+      replyTo: 'Reply to {{hosts}} ({{parents}})',
+      replyToIfNot: "Let {{hosts}} ({{parents}}) know if you can't come",
+      replyPhoneBy: 'Reply to {{phone}} · by {{date}}',
+      replyBy: 'Reply by {{date}}',
+      replyIfNot: "Let us know if you can't come",
+      phoneBy: '{{phone}} · by {{date}}',
+      by: 'By {{date}}',
+    },
   },
   program: {
     eyebrow: 'Programme',
@@ -1375,7 +1504,7 @@ export const en: LanguageResource = {
       rsvpReminder: {
         title: 'Reply deadline tomorrow: send a reminder',
         detail: "It's already written, for those who haven't replied",
-        link: 'The reminder',
+        link: 'Open the reminder',
       },
       borrowDispenser: {
         title: 'Borrow a drinks dispenser (5–8 l)',
@@ -1383,7 +1512,8 @@ export const en: LanguageResource = {
       },
       rsvpDeadline: {
         title: 'Reply deadline',
-        detail: 'The amounts update automatically',
+        detail: 'Once the replies are in, you can update the number of children from the guest list',
+        link: 'Guest list',
       },
       allergyCheck: {
         title: 'Check allergies against the menu',
@@ -1392,6 +1522,7 @@ export const en: LanguageResource = {
       },
       orderPizza: {
         title: 'Pre-order the pizzas',
+        link: 'Food',
         big: 'Large, about 40 cm',
         normal: 'Regular, about 30 cm',
       },
@@ -1405,8 +1536,8 @@ export const en: LanguageResource = {
       },
       partyReminder: {
         title: 'Send a reminder to the parents',
-        detail: "It's written, with address and time",
-        link: 'The reminder',
+        detail: "It's already written, with the time and place from the invitation",
+        link: 'Open the reminder',
       },
       printClues: {
         title: 'Make the treasure hunt clue notes',
@@ -1449,7 +1580,8 @@ export const en: LanguageResource = {
       },
       thanks: {
         title: 'Send a thank-you message',
-        detail: "It's written. And make notes for next year",
+        detail: "It's already written. And maybe jot down a few notes for next year",
+        link: 'Open the thank-you',
       },
       groups: {
         idag: 'Today',
@@ -1662,6 +1794,7 @@ export const en: LanguageResource = {
       replyIfNot: "Let us know if you can't come, ideally by {{date}}.",
       replyIfComing: "Let us know if you're coming, ideally by {{date}}.",
       phone: 'Feel free to send a message to {{phone}}.',
+      phoneHosts: 'Feel free to send {{hosts}} a message on {{phone}}.',
       allergies: 'Please let us know about any allergies.',
       outro: "We're looking forward to it!",
       greeting: 'Love, {{names}}',
@@ -1780,6 +1913,115 @@ export const en: LanguageResource = {
       playful: "Wrap up warm, it'll be cold and magical! There's going to be a Frozen party, and you're invited.",
       openingSmall: "You're invited to a Frozen party!",
       openingBig: 'Come to a Frozen party!',
+    },
+  },
+  reminders: {
+    eyebrow: 'Reminders',
+    title: 'Reminders and thanks',
+    lede: 'Three messages, already written from your plan. Copy or share them whenever it suits you.',
+    tabsLabel: 'Choose a message',
+    tabs: {
+      svar: 'Replies',
+      fest: 'Before the party',
+      takk: 'Thanks',
+    },
+    toneLabel: 'Tone',
+    tones: {
+      standard: 'Friendly',
+      kort: 'Short',
+      formell: 'Formal',
+    },
+    svar: {
+      title: 'Reply reminder',
+      lede: "For those who haven't replied yet. The reply deadline is {{date}}.",
+      personal_one: '{{count}} child on the guest list is waiting for a reply. Here is a message for them:',
+      personal_other: '{{count}} children on the guest list are waiting for a reply. Here is a message for each:',
+      noList: "Here is a general reminder. Add the names to the guest list and you'll get one for each child.",
+      allAnswered: 'Everyone on the guest list has replied. Here is a general reminder in case you still need it.',
+      listLink: 'Guest list',
+      ifNotNote: "You only asked to hear from those who can't come, so this one is entirely optional.",
+      person: 'Is {{name}} coming?',
+      copyLabel: 'Copy the reminder for {{name}}',
+      shareLabel: 'Share the reminder for {{name}}',
+    },
+    fest: {
+      title: 'Reminder before the party',
+      lede: 'For everyone who is coming. A couple of days before the party works well.',
+    },
+    takk: {
+      title: 'Thank-you message',
+      lede: 'For the parents, the day after the party.',
+      gift: 'We got a joint gift',
+      forgotten: 'Someone left something behind',
+    },
+    shareTitle: 'A message about {{gen}} party',
+    copy: 'Copy',
+    share: 'Share',
+    copied: 'Copied',
+    copyFailed: "Couldn't copy. Select the text and copy it yourself.",
+    shareFailed: "Couldn't share. Try «Copy» instead.",
+    sent: 'Sent',
+    sentSub: 'Ticked off under To-dos too',
+    gaps: {
+      both: "Tip: Add the address and a phone number on the Invitation, and they'll be in the messages.",
+      address: "Tip: Add the address on the Invitation, and it'll be in the messages.",
+      phone: "Tip: Add a phone number on the Invitation, and it'll be in the messages.",
+      link: 'Invitation',
+    },
+    calendar: {
+      title: 'Add to calendar',
+      lede: 'A calendar file for the party and one for the reply deadline. Open it and your phone adds it to the calendar.',
+      party: 'The party',
+      rsvp: 'Reply deadline',
+      partyLabel: 'Download a calendar file for the party',
+      rsvpLabel: 'Download a calendar file for the reply deadline',
+      done: 'The calendar file is downloaded',
+      failed: "Couldn't make the calendar file",
+      partyTitle: '{{gen}} birthday party',
+      rsvpTitle: 'Reply deadline for {{gen}} party',
+      rsvpDescription: "Check the guest list, and maybe send a reminder to those who haven't replied.",
+    },
+    entry: {
+      title: 'Reminders and thank-you message',
+      sub: 'Already written, ready to copy or share',
+    },
+    backToPlan: 'Back to the plan',
+    ctx: {
+      today: 'today',
+      tomorrow: 'by tomorrow',
+      byDate: 'by {{date}}',
+      at: 'at {{address}}',
+      atHome: 'at our place',
+      contact: 'us',
+      parents: '{{gen}} parents',
+      fromHosts: '{{names}}, {{hosts}}',
+      family: 'family',
+      happy_one: 'was so happy',
+      happy_other: 'were so happy',
+      yourChild: 'your child',
+    },
+    tpl: {
+      svar: {
+        standard:
+          'Hi! Just a little reminder about {barns} birthday party on {dato} at {tid}. Is {gjest} coming? It would be lovely to hear {svarfrist_ord}. Do let us know about any allergies too. Thank you so much!',
+        kort: 'Hi! Is {gjest} coming to {barns} party on {dato}? Let us know {svarfrist_ord} if you can. Thanks!',
+        formell:
+          'Hello, a reminder about {barns} birthday party on {dato} at {tid}. Please let us know {svarfrist_ord} whether {gjest} is coming, and about any allergies. Thank you.',
+      },
+      fest: {
+        standard:
+          "Hi everyone! We're looking forward to {barns} party on {dag} at {tid} {sted}.{#ute} We'll be outside for a while, so please dress the children for the weather.{/ute}{#allergier} We've noted what you told us ({allergier}) and will keep it in mind for the food.{/allergier}{#hente} Pick-up is at {slutt}.{/hente}\n{#tlf}Call {kontakt} on {telefon} if you can't find us. {/tlf}Best wishes, {avsendere}",
+        kort: "Reminder: {barns} party on {dag} at {tid} {sted}. We're looking forward to it! Best wishes, {avsendere}",
+        formell:
+          'Hello, a reminder about {barns} birthday party on {dato} at {tid} {sted}.{#hente} Pick-up is at {slutt}.{/hente}{#tlf} Please contact {kontakt} on {telefon} with any questions.{/tlf} Kind regards, {avsendere}',
+      },
+      takk: {
+        standard:
+          "Thank you so much for coming to {barns} party yesterday!{#spleis} And thank you for the lovely gift, {barn} {glad}.{/spleis}{^spleis} And thank you for the presents, {barn} {glad}.{/spleis} It was a really lovely day.{#gjenglemt} PS: A few things were left behind at our place. Let us know if you're missing anything!{/gjenglemt}\nLove from {fra}",
+        kort: 'Thanks for yesterday! {barn} had a wonderful day.{#gjenglemt} Let us know if anyone is missing anything, a few things were left behind.{/gjenglemt} Best wishes, {avsendere}',
+        formell:
+          'Hello, thank you very much for coming to {barns} birthday party.{#spleis} Thank you also for the joint gift.{/spleis}{#gjenglemt} A few things were left behind, so do let us know if you are missing anything.{/gjenglemt} Kind regards, {avsendere}',
+      },
     },
   },
   themeNote: {

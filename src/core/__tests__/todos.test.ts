@@ -45,16 +45,20 @@ describe('to-dos, test vector A (spec §6.1)', () => {
       drawMap: 'fre 6. nov',
       hideTreasure: 'lør 7. nov',
       packBags: 'fre 6. nov',
+      // Festdagen (Oct 2026): the jobs on the day itself, with a soft «ca. kl.» (rules/dayPrep.ts)
+      dayActivities: 'lør 7. nov',
+      'dayFood-grill': 'lør 7. nov',
+      dayCake: 'lør 7. nov',
       partyDay: 'lør 7. nov',
       thanks: 'søn 8. nov',
     });
   });
-  it('18 tickable tasks (one shopping trip, with «Pakk godteposene»), 1 done after setup', () => {
+  it('21 tickable tasks (one shopping trip, «Pakk godteposene», 3 jobs on the day), 1 done after setup', () => {
     const p = emma();
     const t = tickable(plan.tasks);
-    expect(t).toHaveLength(18);
+    expect(t).toHaveLength(21);
     expect(t.filter((x) => isDone(p, x))).toHaveLength(1);
-    expect(progress(p, plan.tasks, '2026-10-19')).toMatchObject({ done: 1, total: 18, overdue: 0, thisWeekOpen: 2 });
+    expect(progress(p, plan.tasks, '2026-10-19')).toMatchObject({ done: 1, total: 21, overdue: 0, thisWeekOpen: 2 });
   });
   it('is sorted by date', () => {
     const ds = plan.tasks.map((t) => t.date);

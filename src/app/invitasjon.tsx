@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Platform, Pressable, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Platform, Pressable, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
@@ -7,12 +7,22 @@ import { InvitationCard } from '../features/InvitationCard';
 import { InvitationUpdateHint } from '../features/InvitationUpdateHint';
 import { copyText, shareList } from '../features/share';
 import { printInvitations } from '../features/printInvitations';
+import { cardArt } from '../features/printArt';
 import { Button, CheckBox, Icon, Screen, Stepper, Surface, Text, TopBar, useToast } from '../ui';
-import { fonts, radii, TOUCH, useColors, useLayout, themedStyles } from '../theme';
+import { fonts, inviteCardThumbs, radii, TOUCH, useColors, useLayout, themedStyles } from '../theme';
 import { useTranslation } from 'react-i18next';
 import {
   addDays,
+  availableInfoLines,
   buildInvitation,
+  CARD_IDS,
+  cardName,
+  chosenInfoLines,
+  infoLineText,
+  INVITATION_HOSTS_MAX,
+  MAX_INFO_LINES,
+  resolvedCardId,
+  toggleInfoLine,
   buildPrintSheet,
   clampPrintCount,
   defaultPrintCount,
@@ -60,8 +70,14 @@ export default function InvitasjonScreen() {
     [party, today, i18n.language],
   );
 
+  // the chosen card's drawing is fetched ahead, so «Skriv ut» opens at once
+  const cardId = party ? resolvedCardId(party) : null;
+  useEffect(() => {
+    if (cardId) void cardArt(cardId);
+  }, [cardId]);
+
   if (!ready) return <Loading />;
-  if (!party || !inv) return <Redirect href="/" />;
+  if (!party || !inv || !cardId) return <Redirect href="/" />;
 
   const s = inv.settings;
   const helpers = helpingParents(party);
@@ -86,15 +102,25 @@ export default function InvitasjonScreen() {
     setInvitation({ rsvpBy: next });
   };
 
-  const check = (testID: string, label: string, checked: boolean, onPress: () => void, sub?: string) => (
+  const check = (
+    testID: string,
+    label: string,
+    checked: boolean,
+    onPress: () => void,
+    sub?: string,
+    disabled = false,
+  ) => (
     <Pressable
+      key={testID}
       testID={testID}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
-      accessibilityState={{ checked }}
+      accessibilityState={{ checked, disabled }}
       aria-checked={checked}
+      aria-disabled={disabled}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.check, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [styles.check, disabled && { opacity: 0.45 }, pressed && { opacity: 0.85 }]}
     >
       <CheckBox checked={checked} size={28} />
       <View style={{ flex: 1 }}>
@@ -190,6 +216,24 @@ export default function InvitasjonScreen() {
           </Text>
         ) : null}
       </View>
+      <View style={{ gap: 6 }}>
+        <Text style={styles.label} nativeID="invitation-hosts-label">
+          {t('invitation.hostNamesLabel')}
+        </Text>
+        <TextInput
+          testID="invitation-hosts"
+          value={party.invitation?.hostNames ?? ''}
+          onChangeText={(hostNames) => setInvitation({ hostNames })}
+          placeholder={t('invitation.hostNamesPlaceholder')}
+          placeholderTextColor={colors.muted}
+          accessibilityLabel={t('invitation.hostNamesLabel')}
+          aria-labelledby="invitation-hosts-label"
+          maxLength={INVITATION_HOSTS_MAX}
+          autoComplete="name"
+          style={styles.input}
+        />
+        <Text variant="small">{t('invitation.hostNamesSub')}</Text>
+      </View>
       {check(
         'invitation-parents-help',
         t('invitation.parentsHelp'),
@@ -276,6 +320,18 @@ export default function InvitasjonScreen() {
         () => toggleTask('sendInvite', !sent),
         t('invitation.sentSub'),
       )}
+      {/* Påminnelser: the reminders and the thank-you message, written from the same plan */}
+      <Pressable
+        testID="invitation-reminders"
+        accessibilityRole="link"
+        onPress={() => router.push('/paminnelser')}
+        style={({ pressed }) => [styles.check, pressed && { opacity: 0.85 }]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.checkLabel}>{t('reminders.entry.title')} →</Text>
+          <Text variant="small">{t('reminders.entry.sub')}</Text>
+        </View>
+      </Pressable>
     </Surface>
   );
 
@@ -325,22 +381,90 @@ export default function InvitasjonScreen() {
     </Surface>
   ) : null;
 
-  // Skriv ut: four per A4 page, one per child on the list (not «Kommer ikke»), or blank «Til: ____» cards
+  // Skriv ut: illustrated A5 cards, two per A4 sheet, one per child on the list (answers are not looked at),
+  // or blank «Til: ____» cards
   const names = printNames(party).length;
   const cardCount = clampPrintCount(party, printCount ?? defaultPrintCount(party));
   const cards = printCards(party, cardCount);
   const blanks = cards.filter((c) => c === null).length;
   const sheets = toPages(cards).length;
   const minCards = minPrintCount(party);
+  const offered = availableInfoLines(party);
+  const chosen = chosenInfoLines(party);
+  const whitePaper = Boolean(party.invitation?.whitePaper);
   const print = async () => {
-    const sheet = buildPrintSheet(party, { count: cardCount, today });
+    const art = await cardArt(cardId);
+    const sheet = buildPrintSheet(party, { count: cardCount, today, art });
     const outcome = await printInvitations(sheet, t('print.title'));
     if (outcome === 'failed') toast(t('print.failed'));
   };
+  const cardPicker = (
+    <View style={{ gap: 8 }}>
+      <Text style={styles.label} nativeID="invitation-card-label">
+        {t('print.cardTitle')}
+      </Text>
+      <View accessibilityRole="radiogroup" aria-labelledby="invitation-card-label" style={styles.cardRow}>
+        {CARD_IDS.map((id) => {
+          const on = id === cardId;
+          return (
+            <Pressable
+              key={id}
+              testID={`invitation-card-${id}`}
+              accessibilityRole="radio"
+              accessibilityLabel={cardName(id)}
+              accessibilityState={{ checked: on }}
+              aria-checked={on}
+              onPress={() => setInvitation({ cardId: id })}
+              style={({ pressed }) => [styles.cardOption, pressed && { opacity: 0.85 }]}
+            >
+              <View style={[styles.cardThumbWrap, on && { borderColor: colors.green }]}>
+                <Image source={inviteCardThumbs[id]} style={styles.cardThumb} resizeMode="cover" />
+              </View>
+              <Text style={[styles.cardLabel, on && { fontFamily: fonts.bodyBold }]}>{cardName(id)}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text variant="small" testID="invitation-card-chosen">
+        {t('print.cardSelected', { name: cardName(cardId) })}
+      </Text>
+    </View>
+  );
+  const infoBox = (
+    <View style={{ gap: 4 }} testID="invitation-info">
+      <Text style={styles.label}>{t('print.infoTitle')}</Text>
+      <Text variant="small">{chosen.length >= MAX_INFO_LINES ? t('print.infoMax') : t('print.infoHint')}</Text>
+      {offered.map((id) => {
+        const on = chosen.includes(id);
+        return check(
+          `invitation-info-${id}`,
+          infoLineText(party, id),
+          on,
+          () => setInvitation({ infoLines: toggleInfoLine(party, id) }),
+          undefined,
+          !on && chosen.length >= MAX_INFO_LINES,
+        );
+      })}
+    </View>
+  );
   const printBox = (
     <Surface testID="invitation-print" style={{ gap: 12 }}>
       <Text style={styles.sectionTitle}>{t('print.title')}</Text>
       <Text variant="small">{t('print.lede')}</Text>
+      {cardPicker}
+      {infoBox}
+      {check(
+        'invitation-white-paper',
+        t('print.whitePaper'),
+        whitePaper,
+        () => setInvitation({ whitePaper: !whitePaper }),
+        t('print.whitePaperSub'),
+      )}
+      {!s.hostNames ? (
+        <Text variant="small" testID="invitation-hosts-tip">
+          {t('print.hostsTip')}
+        </Text>
+      ) : null}
       <View style={{ gap: 4 }} testID="invitation-print-summary">
         {names ? (
           <Text style={styles.checkLabel} testID="invitation-print-named">
@@ -487,6 +611,18 @@ const useStyles = themedStyles((colors) => ({
   pillText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.ink },
   rsvpRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rsvpText: { flex: 1, textAlign: 'center', fontFamily: fonts.bodySemi, fontSize: 17, color: colors.ink },
+  cardRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cardOption: { width: 92, alignItems: 'center', gap: 4 },
+  cardThumbWrap: {
+    width: 92,
+    height: 130,
+    borderRadius: radii.sm,
+    borderWidth: 3,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+  },
+  cardThumb: { width: '100%', height: '100%' },
+  cardLabel: { fontFamily: fonts.bodySemi, fontSize: 14, lineHeight: 18, color: colors.ink, textAlign: 'center' },
   stepBtn: {
     width: TOUCH,
     height: TOUCH,

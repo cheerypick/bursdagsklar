@@ -374,4 +374,27 @@ export interface InvitationSettings {
   replyMode?: ReplyMode;
   /** The parent's own edit of the text. Missing = the generated text («Lag teksten på nytt» clears it). */
   customText?: string;
+  /**
+   * «Navn på foreldrene» (Oct 2026): «Kari og Per», as typed. On the printed card: «Svar til Kari og Per
+   * (Emmas foreldre)». Missing or empty = «Svar til» and the phone only.
+   */
+  hostNames?: string;
+  /** The printed card she picked («Velg kort»). Missing = the party's theme card (or «Bursdag»). */
+  cardId?: CardId;
+  /**
+   * The extra lines on the printed card (at most two). Missing = picked from the plan
+   * (rules/printCards.ts `chosenInfoLines`); [] = none.
+   */
+  infoLines?: InfoLineId[];
+  /** «Hvit bakgrunn (sparer blekk)»: white paper instead of the cream tint (the drawing stays). Default off. */
+  whitePaper?: boolean;
 }
+
+/**
+ * The illustrated printed cards (Oct 2026): one per theme we have our own drawing for, and «Bursdag» for
+ * everything else (no theme, and the brand themes, which get no brand art).
+ */
+export type CardId = 'bursdag' | 'enhjorning' | 'dinosaurer' | 'verdensrommet' | 'fotball' | 'dyr-i-skogen';
+
+/** The optional extra lines on the printed card, picked from what the plan knows. */
+export type InfoLineId = 'siblings' | 'parentsHelp' | 'menu' | 'outdoor' | 'allergies';

@@ -19,5 +19,6 @@ export * from './rules/programme';
 export * from './rules/goodieBags';
 export * from './rules/guests';
 export * from './rules/printInvitations';
+export * from './rules/printCards';
 export * from './texts/render';
 export * from './storage/PartyRepository';

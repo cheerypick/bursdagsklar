@@ -21,6 +21,7 @@ import { clampAge } from '../rules/celebrants';
 import { THEMES } from '../themes';
 import { sanitizeInvitation } from '../rules/invitation';
 import { sanitizeCake } from '../rules/cake';
+import { sanitizeProgramme } from '../rules/programme';
 
 /** The minimal async key-value API both AsyncStorage and an in-memory test store implement. */
 export interface KeyValueStore {
@@ -187,6 +188,8 @@ export function migrate(raw: unknown): Party | null {
     theme: knownTheme(p.theme),
     // Kake (Oct 2026): no schema bump; an older cake (vanilje/sjokolade cakeId) opens as the Toro default
     cake: sanitizeCake(p.cake),
+    // Program (Oct 2026): no schema bump; the old switches (includePinata/includeSkattejakt) become picked ideas
+    programme: sanitizeProgramme(p.programme),
     ...(invitation ? { invitation } : {}),
   };
 }

@@ -12,6 +12,8 @@ import { themeById } from '../themes';
 import { isIncluded, mainItemWord } from './food';
 import { dishOn, menuDishes } from './dishes';
 import { kidsCount } from './units';
+import { pickedActivities } from './programme';
+import { youngestAge } from './celebrants';
 
 /** RSVP offset R (days before the party). */
 export function rsvpOffset(avail: number): number {
@@ -48,8 +50,15 @@ export function buildTasks(p: Party): TaskPlan {
   const theme = p.theme ? themeById(p.theme) : null;
   // a joint birthday shares ONE cake for all guests, with a candle set for each child
   const candleNote = p.celebrants.length > 1 ? t('rules.todos.candleNote') : null;
-  const pinata = p.programme.includePinata;
-  const clues = p.programme.includeSkattejakt;
+  // Program (Oct 2026): the ideas she picked (rules/programme.ts); an older party's switches map onto them
+  const picked = pickedActivities(p);
+  const pinata = picked.includes('pinata');
+  const hunt = picked.includes('skattejakt');
+  // 7+ get the clue-note variant (the to-do keeps the old id `printClues`); the youngest get a drawn map
+  const clues = hunt && youngestAge(p.celebrants) >= 7;
+  const map = hunt && !clues;
+  const photo = picked.includes('fotojakt');
+  const fishing = picked.includes('fiskedam');
   // Kake (Oct 2026): the choice on the Kake screen (rules/cake.ts); an older party opens with the Toro default
   const cake = cakePlan(p);
   const bake = cake.kind !== 'buy';
@@ -79,7 +88,8 @@ export function buildTasks(p: Party): TaskPlan {
     pinata &&
       avail >= 8 && {
         id: 'orderPinata',
-        date: front(17),
+        // about a week before (Program, Oct 2026): a theme piñata ordered online often takes 3–5 days
+        date: at(7),
         title: theme
           ? t('rules.todos.orderPinata.title', { pinata: theme.pinata })
           : t('rules.todos.orderPinata.titleNeutral'),
@@ -159,12 +169,45 @@ export function buildTasks(p: Party): TaskPlan {
       detail: t('rules.todos.partyReminder.detail'),
       link: { label: t('rules.todos.partyReminder.link'), route: '/invitasjon' },
     },
+    // Program (Oct 2026): the to-dos of the picked ideas, linked to the Program screen
+    fishing && {
+      id: 'makeRod',
+      date: at(2),
+      title: t('program.todo.makeRod'),
+      link: { label: t('rules.todos.programmeLink'), route: '/program' },
+    },
+    pinata && {
+      id: 'fillPinata',
+      date: at(1),
+      title: t('program.todo.fillPinata'),
+      link: { label: t('rules.todos.programmeLink'), route: '/program' },
+    },
+    // 7+: the clue-note variant keeps the old to-do id (`printClues`); the youngest get Ekaterina's drawn map
     clues && {
       id: 'printClues',
-      date: at(2),
+      date: at(1),
       title: t('rules.todos.printClues.title'),
       detail: t('rules.todos.printClues.detail'),
       link: { label: t('rules.todos.printClues.link'), route: '/program' },
+    },
+    map && {
+      id: 'drawMap',
+      date: at(1),
+      title: t('program.todo.drawMap'),
+      detail: t('rules.todos.drawMapDetail'),
+      link: { label: t('rules.todos.programmeLink'), route: '/program' },
+    },
+    photo && {
+      id: 'makePhotoList',
+      date: at(1),
+      title: t('program.todo.makePhotoList'),
+      link: { label: t('rules.todos.programmeLink'), route: '/program' },
+    },
+    hunt && {
+      id: 'hideTreasure',
+      date: at(0),
+      title: t('program.todo.hideTreasure'),
+      link: { label: t('rules.todos.programmeLink'), route: '/program' },
     },
     // only when she makes the dough herself; ready-made dough is the default
     pizza?.kind === 'pizza' &&

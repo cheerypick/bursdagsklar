@@ -4,6 +4,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { useParty } from '../state/PartyProvider';
 import { Loading } from '../features/Loading';
 import { InvitationCard } from '../features/InvitationCard';
+import { InvitationUpdateHint } from '../features/InvitationUpdateHint';
 import { copyText, shareList } from '../features/share';
 import { printInvitations } from '../features/printInvitations';
 import { cardArt } from '../features/printArt';
@@ -515,6 +516,7 @@ export default function InvitasjonScreen() {
         <Text variant="lede" style={{ marginBottom: 6, maxWidth: 640 }}>
           {t('invitation.lede')}
         </Text>
+        <InvitationUpdateHint />
       </View>
       {isWide ? (
         <View

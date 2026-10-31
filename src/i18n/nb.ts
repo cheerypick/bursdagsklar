@@ -152,6 +152,32 @@ export const nb = {
     confirm: 'Slett og start på nytt',
     cancel: 'Avbryt',
   },
+  editParty: {
+    action: 'Endre festen',
+    actionLabel: 'Endre festen: navn, alder, dato, tid, antall barn og sted',
+    title: 'Endre festen',
+    lede: 'Endre det du vil. Det du har krysset av og valgt, blir med videre.',
+    keepNote:
+      'Mat, kake, godteposer, handleliste og gjøremål regnes ut på nytt. Avkrysninger, gjesteliste, tema og valgene dine blir med.',
+    save: 'Lagre endringene',
+    cancel: 'Avbryt',
+    saved: 'Planen er oppdatert',
+    incomplete: 'Alle barna trenger et navn og en alder før du lagrer.',
+    pastDate: 'Den dagen har allerede vært. Det går fint å lagre, men kanskje du mente en annen dag?',
+    hint: {
+      title: 'Du har endret {{what}}. Vil du oppdatere teksten?',
+      sub: 'Teksten du har skrevet selv er ikke endret. Oppdaterer du, lager vi en ny tekst fra planen.',
+      update: 'Oppdater teksten',
+      keep: 'Behold teksten min',
+      updated: 'Teksten er oppdatert',
+      what: {
+        date: 'datoen',
+        time: 'klokkeslettet',
+        celebrants: 'navn eller alder',
+        place: 'stedet',
+      },
+    },
+  },
   plan: {
     greeting: 'Alt er planlagt. Nå blir det fest!',
     meta: '{{dato}} · kl. {{tid}} · {{kids}}',

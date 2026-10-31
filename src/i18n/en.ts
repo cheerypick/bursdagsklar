@@ -144,6 +144,32 @@ export const en: LanguageResource = {
     confirm: 'Delete and start over',
     cancel: 'Cancel',
   },
+  editParty: {
+    action: 'Edit party',
+    actionLabel: 'Edit the party: names, ages, date, time, number of children and place',
+    title: 'Edit the party',
+    lede: 'Change whatever you like. Everything you have ticked and chosen comes along.',
+    keepNote:
+      'Food, cake, goodie bags, shopping list and to-dos are worked out again. Ticks, guest list, theme and your choices stay.',
+    save: 'Save changes',
+    cancel: 'Cancel',
+    saved: 'The plan is updated',
+    incomplete: 'Every child needs a name and an age before you save.',
+    pastDate: 'That day has already been. Saving is fine, but maybe you meant another day?',
+    hint: {
+      title: 'You changed {{what}}. Would you like to update the text?',
+      sub: 'The text you wrote yourself has not been changed. If you update it, we make a new text from the plan.',
+      update: 'Update the text',
+      keep: 'Keep my text',
+      updated: 'The text is updated',
+      what: {
+        date: 'the date',
+        time: 'the time',
+        celebrants: 'names or ages',
+        place: 'the place',
+      },
+    },
+  },
   plan: {
     greeting: "Everything is planned. Let's party!",
     meta: '{{dato}} · {{tid}} · {{kids}}',

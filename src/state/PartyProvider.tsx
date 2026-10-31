@@ -26,6 +26,8 @@ import {
   withGuestStatus,
   withGuestNote,
   withChildrenFromGuests,
+  withSetupEdit,
+  withoutInvitationChanges,
   type GuestStatus,
   type ActivityId,
   type CakeChoice,
@@ -90,6 +92,13 @@ interface PartyState {
   startOver: () => Promise<void>;
   /** Invitasjon: the invitation screen's fields (undefined in the patch = back to the default). */
   setInvitation: (patch: Partial<InvitationSettings>) => void;
+  /**
+   * «Endre festen»: saves the edited setup answers onto the same party (rules/setupEdit.ts). Everything
+   * derived follows; ticks, picks, the guest list, the theme and her own invitation text stay.
+   */
+  saveSetupEdit: (draft: SetupDraft) => void;
+  /** Invitasjon's «Behold teksten min»: the hint about changed details goes away, her text stays. */
+  dismissInvitationChanges: () => void;
   /** Kake: the kind of cake, the glaze, the muffins and whether it is chosen (rules/cake.ts `withCake`). */
   setCake: (patch: Partial<Pick<CakeChoice, 'kind' | 'glaze' | 'muffinFlavour' | 'muffins' | 'chosen'>>) => void;
   /** Program: pick or unpick one activity idea (rules/programme.ts `withActivity`). */
@@ -228,9 +237,16 @@ export function PartyProvider({
   const applyGuestCount = useCallback(() => update((p) => withChildrenFromGuests(p)), [update]);
 
   const setInvitation = useCallback(
-    (patch: Partial<InvitationSettings>) => update((p) => withInvitation(p, patch)),
+    (patch: Partial<InvitationSettings>) =>
+      update((p) => {
+        const next = withInvitation(p, patch);
+        // back to the generated text («Lag teksten på nytt»): it follows the party, nothing left to point out
+        return 'customText' in patch && patch.customText === undefined ? withoutInvitationChanges(next) : next;
+      }),
     [update],
   );
+  const saveSetupEdit = useCallback((d: SetupDraft) => update((p) => withSetupEdit(p, d, today)), [update, today]);
+  const dismissInvitationChanges = useCallback(() => update((p) => withoutInvitationChanges(p)), [update]);
   const setCake = useCallback(
     (patch: Partial<Pick<CakeChoice, 'kind' | 'glaze' | 'muffinFlavour' | 'muffins' | 'chosen'>>) =>
       update((p) => withCake(p, patch)),
@@ -279,6 +295,8 @@ export function PartyProvider({
       setInvitation,
       setCake,
       setActivity,
+      saveSetupEdit,
+      dismissInvitationChanges,
     }),
     [
       ready,
@@ -310,6 +328,8 @@ export function PartyProvider({
       setInvitation,
       setCake,
       setActivity,
+      saveSetupEdit,
+      dismissInvitationChanges,
     ],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

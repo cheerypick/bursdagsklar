@@ -65,7 +65,8 @@ describe('to-do links (no blind buttons)', () => {
 
     it(`${lng}: a to-do that says its text is written links to where the text is`, async () => {
       await i18n.changeLanguage(lng);
-      const claims = lng === 'nb' ? /skrevet|er klar/i : /written|is ready/i;
+      // «så første brett er klart rundt kl. 15» (Festdagen's clock times) is about food, not a written text
+      const claims = lng === 'nb' ? /skrevet|er klar(?!t?\s+rundt)/i : /written|is ready(?!\s+around)/i;
       const bad: string[] = [];
       let checked = 0;
       for (const p of parties)

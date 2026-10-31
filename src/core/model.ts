@@ -326,7 +326,17 @@ export interface Party {
    * (see rules/invitation.ts `resolveInvitation`).
    */
   invitation?: InvitationSettings;
+  /**
+   * «Endre festen» (Oct 2026): what changed in the party (date, time, the birthday children, the place)
+   * while the parent had her OWN invitation text. Her text is never overwritten; Invitasjon shows a soft
+   * hint («Du har endret datoen. Vil du oppdatere teksten?») until she updates the text or keeps hers.
+   * Optional and without a schema bump: missing = nothing to point out.
+   */
+  invitationChanges?: InvitationChange[];
 }
+
+/** A detail the generated invitation text is built from (rules/setupEdit.ts). */
+export type InvitationChange = 'date' | 'time' | 'celebrants' | 'place';
 
 export interface Task {
   id: string;

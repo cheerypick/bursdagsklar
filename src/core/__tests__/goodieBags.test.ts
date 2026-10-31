@@ -162,11 +162,9 @@ describe('amounts: one per child, the ONE children number', () => {
     );
     expect(bagLines(p)).toEqual(['20 godteposer', '20 små pakker fargestifter']);
   });
-  it('a child who said no gets no bag', () => {
-    const p = plain({
-      guests: [{ id: 'g1', name: 'Kari', status: 'no', allergies: [], adultsStaying: 0 } as never],
-    });
-    expect(goodieBagCount(p)).toBe(12);
+  it('the Gjesteliste never changes the bag count on its own (soft hints only)', () => {
+    const p = plain({ guests: [{ id: 'g1', name: 'Kari', status: 'no' }] });
+    expect(goodieBagCount(p)).toBe(goodieBagCount(plain()));
   });
   it('candy follows the existing constant: ca. 100 g per bag, half with «Litt av begge»', () => {
     expect(candyPerBag('klassisk')).toBe(CANDY_G_CHILD);

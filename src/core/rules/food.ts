@@ -3,7 +3,7 @@
  * The Mat screen shows them through rules/menu.ts (amounts plus a reason line per item).
  */
 import { cakePieces as cakePiecesFor } from './cake';
-import type { AllergyTag, Dish, MenuChoice, Party, PizzaDough, PizzaTopping, ShoppingItem } from '../model';
+import type { Dish, MenuChoice, Party, PizzaDough, PizzaTopping, ShoppingItem } from '../model';
 import { PIZZA_TOPPINGS } from '../model';
 import { dishShare, menuDishes } from './dishes';
 import * as C from './constants';
@@ -545,12 +545,6 @@ export function extraSausagesFor(_kind: 'grillpolser' | 'wienerpolser', affected
   return ceilSafe(affectedKids * C.SAUSAGE_PER_CHILD[band(age)]) + 1;
 }
 
-export function allergyUnion(party: Pick<Party, 'guests'>): AllergyTag[] {
-  const set = new Set<AllergyTag>();
-  party.guests.filter((g) => g.status !== 'no').forEach((g) => g.allergies.forEach((a) => set.add(a)));
-  return [...set];
-}
-
 // ---------------- the shopping list for a party ----------------
 
 /**
@@ -771,21 +765,6 @@ function dishItems(m: Dish, p: People, party: Party, out: ShoppingItem[]) {
         why: onionWhy(s),
       }),
     );
-    const noPork = party.guests.filter((g) => g.status !== 'no' && g.allergies.includes('ikke-svin')).length;
-    const extra = extraSausagesFor(m.kind, noPork, p.age);
-    if (extra > 0)
-      out.push(
-        item({
-          id: 'kyllingpolser',
-          name: 'Kyllingpølser',
-          need: extra,
-          unit: 'stk',
-          display: `${extra}`,
-          trip: 'ferskvarer',
-          ruleRef: 'allergy.ikke-svin',
-          why: 'Grilles først, på egen side',
-        }),
-      );
   } else if (m.kind === 'pizza') {
     const units = pizzaUnits(p);
     if (m.style === 'hjemmelaget') {

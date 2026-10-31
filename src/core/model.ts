@@ -220,12 +220,20 @@ export interface ProgrammeChoice {
   includeSkattejakt?: boolean;
 }
 
+/** The answer from one guest's family on the Gjesteliste («Venter på svar» until she sets it). */
+export type GuestStatus = 'pending' | 'yes' | 'no';
+export const GUEST_STATUSES: readonly GuestStatus[] = ['yes', 'no', 'pending'];
+
+/**
+ * One child on the optional Gjesteliste (Oct 2026). The list holds the GUESTS only: the birthday children
+ * come from setup. It is a list of notes: it never changes the party's one children number, the food or the
+ * shopping list on its own (rules/guests.ts; she can tap «Bruk … i planen» if she wants). Stays on the device.
+ */
 export interface Guest {
   id: string;
-  label: string;
-  status: 'pending' | 'yes' | 'no';
-  adultsStaying: 0 | 1 | 2;
-  allergies: AllergyTag[];
+  name: string;
+  status: GuestStatus;
+  /** A short free-text allergy or diet note («nøtter», «ikke svin»); notes only, nothing is auto-ticked. */
   note?: string;
 }
 
@@ -308,6 +316,7 @@ export interface Party {
   shopping: ShoppingState;
   cake: CakeChoice;
   programme: ProgrammeChoice;
+  /** Gjesteliste (optional, Oct 2026): the guests' names, answers and notes. [] when unused; never changes the counts. */
   guests: Guest[];
   haveAtHome: HomeItemId[];
   taskState: Record<string, TaskState>;

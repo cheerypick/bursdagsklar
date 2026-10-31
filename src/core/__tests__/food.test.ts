@@ -22,15 +22,14 @@ describe('head-count (spec §4.1)', () => {
   it('Emma: 13 kids coming, 4 adults eating', () => {
     expect(headCount(emma())).toMatchObject({ kidsComing: 13, adultsEating: 4, pendingCount: 12 });
   });
-  it('two «Kommer ikke» → 11 kids, still 4 adults', () => {
-    const no = (i: number): Guest => ({
-      id: `g${i}`,
-      label: `Barn ${i}`,
-      status: 'no',
-      adultsStaying: 0,
-      allergies: [],
+  it('the Gjesteliste never changes the count on its own: two «Kommer ikke» → still 13 kids, 4 adults', () => {
+    const no = (i: number): Guest => ({ id: `g${i}`, name: `Barn ${i}`, status: 'no' });
+    const yes = (i: number): Guest => ({ id: `y${i}`, name: `Barn ${i}`, status: 'yes' });
+    expect(headCount(emma({ guests: [no(1), no(2), yes(3)] }))).toMatchObject({
+      kidsComing: 13,
+      adultsEating: 4,
+      pendingCount: 12,
     });
-    expect(headCount(emma({ guests: [no(1), no(2)] }))).toMatchObject({ kidsComing: 11, adultsEating: 4 });
   });
 });
 
@@ -206,18 +205,11 @@ describe('shopping list for Emma (spec §6.9)', () => {
     expect(by.polsebrod).toMatchObject({ packs: 4, display: '32 (4 pk à 8)' });
     expect(by.saft.packs).toBe(2);
   });
-  it('RSVPs: Nora (nøtter) and Adam (ikke svin) → +4 kyllingpølser, and no candy line', () => {
-    const g = (id: string, label: string, allergies: Guest['allergies']): Guest => ({
-      id,
-      label,
-      status: 'yes',
-      adultsStaying: 0,
-      allergies,
-    });
-    const list = shoppingList(emma({ guests: [g('1', 'Nora', ['notter']), g('2', 'Adam', ['ikke-svin'])] }));
-    const by = Object.fromEntries(list.map((i) => [i.id, i]));
-    expect(by.kyllingpolser.need).toBe(4);
-    expect(by.godteri).toBeUndefined();
+  it('guest notes (Nora: nøtter, Adam: ikke svin) never change the shopping list: notes only', () => {
+    const g = (id: string, name: string, note: string): Guest => ({ id, name, status: 'yes', note });
+    const list = shoppingList(emma({ guests: [g('1', 'Nora', 'nøtter'), g('2', 'Adam', 'ikke svin')] }));
+    expect(list).toEqual(shoppingList(emma()));
+    expect(list.map((i) => i.id)).not.toContain('kyllingpolser');
   });
   it('a line deselected on the Mat screen (included: false) is left off the list, the rest stay', () => {
     const list = shoppingList(emma({ foodItems: { polsebrod: { included: false }, lomper: { included: true } } }));

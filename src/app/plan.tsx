@@ -15,6 +15,7 @@ import {
   formatLongCap,
   formatRangeCompact,
   goodieCardLine,
+  guestCardLine,
   goodieStatus,
   handleliste,
   menuCardOf,
@@ -167,6 +168,29 @@ export default function PlanScreen() {
     </Pressable>
   );
 
+  // Gjesteliste (optional): «Valgfritt: navn, svar og allergier», or «3 navn · 2 kommer» once used
+  const guestLine = guestCardLine(party);
+  const guestCard = (
+    <Pressable
+      testID="plan-card-guests"
+      accessibilityRole="link"
+      accessibilityLabel={`${t('plan.cards.guests.title')}. ${guestLine}`}
+      onPress={() => router.push('/gjesteliste')}
+      style={({ pressed }) => [styles.shopCard, pressed && { opacity: 0.85 }]}
+    >
+      <View style={styles.shopThumb}>
+        <Text style={{ fontSize: 28 }}>📝</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.themeTitle}>{t('plan.cards.guests.title')}</Text>
+        <Text variant="small" testID="plan-card-guests-line">
+          {guestLine}
+        </Text>
+      </View>
+      <Icon name="forward" size={22} strokeWidth={2.4} color={colors.green} />
+    </Pressable>
+  );
+
   const nextCard = (
     <View style={styles.next} testID="next-task">
       {next.task ? (
@@ -287,6 +311,7 @@ export default function PlanScreen() {
         ) : null}
         {isWide ? shoppingCard : null}
         {isWide ? goodieCard : null}
+        {isWide ? guestCard : null}
         {isWide ? null : (
           <>
             {cards
@@ -322,6 +347,7 @@ export default function PlanScreen() {
               )}
             />
             {goodieCard}
+            {guestCard}
             {cards
               .filter((c) => c.key === 'todo')
               .map((c) => (

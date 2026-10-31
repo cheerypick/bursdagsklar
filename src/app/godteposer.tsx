@@ -117,6 +117,11 @@ export default function GodteposerScreen() {
               {t('goodie.smallParts')}
             </Text>
           ) : null}
+          {party.guests.length ? (
+            <Text variant="small" testID="goodie-names">
+              {t('guests.goodieNames')}
+            </Text>
+          ) : null}
           {candy ? (
             <Text variant="small" testID="goodie-allergy">
               {t('goodie.allergy')}

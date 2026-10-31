@@ -21,6 +21,7 @@ import {
   foodCounts,
   forWhom,
   guestBounds,
+  guestNotesSummary,
   headCount,
   helpingParents,
   partyFoodPlan,
@@ -347,6 +348,26 @@ export default function MatScreen() {
     </View>
   );
 
+  // Gjesteliste: the guests' notes as one soft line («Fra gjestelista: Ola (nøtter), Sara (gluten)»).
+  // Notes only: nothing is ticked for her and no amount changes; the chips stay hers to tap.
+  const notes = guestNotesSummary(party);
+  const guestNotesLine = notes ? (
+    <View testID="food-guest-notes" style={styles.guestNotes}>
+      <Text variant="small" style={styles.guestNotesText} testID="food-guest-notes-text">
+        {t('guests.foodNotes', { list: notes })}
+      </Text>
+      {plan ? <Text variant="small">{t('guests.foodNotesHint')}</Text> : null}
+      <Pressable
+        testID="food-guest-notes-link"
+        accessibilityRole="link"
+        onPress={() => router.push('/gjesteliste')}
+        style={({ pressed }) => [{ alignSelf: 'flex-start', paddingVertical: 4 }, pressed && { opacity: 0.7 }]}
+      >
+        <Text style={styles.changeText}>{t('guests.foodNotesLink')}</Text>
+      </Pressable>
+    </View>
+  ) : null;
+
   const dietBox = (
     <View testID="food-diets">
       <Text variant="h3" style={{ marginBottom: 4 }}>
@@ -355,6 +376,7 @@ export default function MatScreen() {
       <Text variant="small" style={{ marginBottom: 10 }}>
         {t('food.dietLede')}
       </Text>
+      {guestNotesLine}
       <PillRow>
         {DIET_TAGS.map((tag) => {
           const on = party.diets.includes(tag);
@@ -413,6 +435,7 @@ export default function MatScreen() {
         </Text>
         {grid}
         {choices}
+        {plan ? null : guestNotesLine ? <View style={{ marginTop: 18 }}>{guestNotesLine}</View> : null}
       </View>
 
       {plan ? (
@@ -591,6 +614,8 @@ const useStyles = themedStyles((colors) => ({
     justifyContent: 'center',
   },
   changeText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.green },
+  guestNotes: { gap: 4, marginBottom: 12, padding: 12, borderRadius: radii.sm, backgroundColor: colors.blush },
+  guestNotesText: { color: colors.ink, fontFamily: fonts.bodySemi },
   smallOption: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 4 },
   smallOptionText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.muted, textDecorationLine: 'underline' },
   line: { flexDirection: 'row', gap: 12, paddingVertical: 12, alignItems: 'flex-start', minHeight: 44 },

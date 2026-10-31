@@ -15,6 +15,8 @@ import {
   celebrantNames,
   formatLong,
   helpingParents,
+  inviteeGuests,
+  personalInvitation,
   INVITATION_ADDRESS_MAX,
   INVITATION_PHONE_MAX,
   INVITATION_TEXT_MAX,
@@ -265,6 +267,52 @@ export default function InvitasjonScreen() {
     </Surface>
   );
 
+  // Gjesteliste: the same invitation with «Hei Ola!» on top, one child at a time (only when names exist)
+  const invitees = inviteeGuests(party);
+  const personal = (name: string) => personalInvitation(name, inv.text);
+  const copyFor = async (name: string) => {
+    const outcome = await copyText(t('guests.inviteShareTitle', { name }), personal(name));
+    if (outcome === 'copied') toast(t('invitation.copied'));
+    else if (outcome === 'failed') toast(t('invitation.copyFailed'));
+  };
+  const shareFor = async (name: string) => {
+    const outcome = await shareList(t('guests.inviteShareTitle', { name }), personal(name));
+    if (outcome === 'copied') toast(t('invitation.copied'));
+    else if (outcome === 'failed') toast(t('invitation.shareFailed'));
+  };
+  const personalBox = invitees.length ? (
+    <Surface testID="invitation-personal" style={{ gap: 10 }}>
+      <Text style={styles.sectionTitle}>{t('guests.inviteTitle')}</Text>
+      <Text variant="small">{t('guests.inviteLede')}</Text>
+      {invitees.map((g) => (
+        <View key={g.id} testID={`invitation-personal-${g.id}`} style={styles.personalRow}>
+          <Text style={styles.personalName}>{t('guests.inviteHello', { name: g.name })}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Button
+              compact
+              block
+              kind="light"
+              testID={`invitation-personal-${g.id}-copy`}
+              label={t('guests.inviteCopy')}
+              accessibilityLabel={t('guests.inviteCopyLabel', { name: g.name })}
+              onPress={() => copyFor(g.name)}
+              disabled={!inv.text.trim()}
+            />
+            <Button
+              compact
+              block
+              testID={`invitation-personal-${g.id}-share`}
+              label={t('guests.inviteShare')}
+              accessibilityLabel={t('guests.inviteShareLabel', { name: g.name })}
+              onPress={() => shareFor(g.name)}
+              disabled={!inv.text.trim()}
+            />
+          </View>
+        </View>
+      ))}
+    </Surface>
+  ) : null;
+
   return (
     <Screen tab="plan" testID="screen-invitation">
       {!isWide ? <TopBar onBack={back} /> : null}
@@ -285,6 +333,7 @@ export default function InvitasjonScreen() {
           <View style={{ flex: 1, gap: 20 }}>
             {details}
             {textBox}
+            {personalBox}
           </View>
         </View>
       ) : (
@@ -292,6 +341,7 @@ export default function InvitasjonScreen() {
           {preview}
           {details}
           {textBox}
+          {personalBox}
         </View>
       )}
       <View style={{ paddingHorizontal: gutter, marginTop: 24, alignItems: isWide ? 'flex-start' : 'stretch' }}>
@@ -313,6 +363,18 @@ function estimateHeight(text: string): number {
 
 const useStyles = themedStyles((colors) => ({
   sectionTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.ink },
+  personalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  // long names wrap (never «…»)
+  personalName: { flexShrink: 1, minWidth: 120, fontFamily: fonts.bodySemi, fontSize: 17, color: colors.ink },
   label: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   input: {
     minHeight: TOUCH,

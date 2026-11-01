@@ -67,7 +67,8 @@ test('switch to English and back: front page, a setup step, Planen and Handlelis
   await expect(visible(page, 'screen-shopping')).toBeVisible();
   await expect(text(page, 'Meat and cold cuts')).toBeVisible();
   await expect(visible(page, 'shop-item-grillpolser')).toContainText('Grill sausages');
-  await expect(visible(page, 'shop-item-grillpolser')).toContainText('5 packs');
+  await expect(visible(page, 'shop-item-grillpolser')).toContainText('3 packs');
+  await expect(visible(page, 'shop-item-grillpolser')).toContainText('grab one extra pack');
 
   // a reload keeps English
   await page.reload();

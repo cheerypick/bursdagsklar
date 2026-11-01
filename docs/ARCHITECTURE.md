@@ -67,10 +67,11 @@ The sausage amounts follow a per-person rule Ekaterina chose and are rounded to 
 
 **The rule:**
 
-- Per person: 3 per child (every age 3–10) and 2 per grown-up, then up to whole packs. No extra percentage: rounding up to packs is the margin. Emma: 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50. Wienerpølser use the same rule with packs of 8 (47 → 6 pk = 48).
-- Lomper and pølsebrød both on: each covers about 60 % of the sausages, up to whole packs, so together there is some bread to spare (people mix). Emma: 60 % of 50 = 30 → lomper 3 pk à 10 = 30, pølsebrød 4 pk à 8 = 32; the reason reads «Ca. 30 av hver – noen vil ha lompe, noen brød». One left out: the other covers every sausage. A greyed-out bread line shows what it comes back as.
+- Per person (a minimum, Ekaterina 1 Nov 2026, after real-party feedback that 14 kids had «way too many sausages»): 2 per child (every age 3–10) and 1 per grown-up, then the whole pack count nearest the need, rounding down only when that leaves at most 2 short (`nearestPacks`, `PACK_SHORTFALL_MAX`), never below 1 pack. 14 barn + 4 voksne: 32 → wienerpølser 4 pk à 8 = 32, grillpølser 3 pk à 10 = 30 («nærmeste hele pakke»). Emma: 13 × 2 + 4 × 1 = 30 → 3 pk grill = 30, 4 pk wiener = 32. Until 1 Nov 2026 it was 3 per child and 2 per grown-up, always rounded up (Emma: 50).
+- A soft hint under the pølser on Mat: «Dette er et minimum som pleier å holde. Store spisere, lang fest eller mange voksne som spiser? Ta gjerne én pakke ekstra – uåpnede pølser holder seg lenge i kjøleskapet, og lomper kan fryses.» The Handleliste line adds a short version.
+- Lomper and pølsebrød both on: each covers about 60 % of the sausages, up to whole packs, so together there is some bread to spare (people mix). Unchanged on 1 Nov 2026 («let's stick to initial breads then. Reduce just sausage»); it follows the lower sausage count. 14 barn: 60 % of 32 = 20 → lomper 2 pk à 10 = 20, pølsebrød 3 pk à 8 = 24; the reason reads «Ca. 20 av hver – noen vil ha lompe, noen brød». One left out: the other covers every sausage. A greyed-out bread line shows what it comes back as.
 - Ketchup and sennep (one line, «1 av hver»): one bottle each (ca. 500 g) per ca. 25 people. Sprøstekt løk (its own line, id `lok`): ca. 5 g per pølse, so one 100 g bag per ca. 10 people.
-- The grillpølse reason shows the sum and the pack: «13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50», and from 3 packs up the storpakning («eller 1 storpakning (3 × 10) og 2 pk»).
+- The grillpølse reason shows the sum and the pack: «14 barn × 2 + 4 voksne × 1 = 32. 3 pk Gilde Grillpølser à 10 = 30 (nærmeste hele pakke)», and from 3 packs up the storpakning («eller 1 storpakning (3 × 10)»).
 
 **Packs read on Oda, 21 Oct 2026** ([Wienerpølser](https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3044-wienerpolser/), [Grillpølser](https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3004-grillpolser/), Oda search):
 

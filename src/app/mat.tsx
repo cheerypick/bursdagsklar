@@ -502,6 +502,11 @@ function SectionCard({
           <Line key={l.id} line={l} first={i === 0} styles={styles} onToggle={onToggle} />
         ),
       )}
+      {section.hint ? (
+        <Text variant="small" testID={`food-hint-${section.id}`} style={[styles.lineBorder, styles.hint]}>
+          {section.hint}
+        </Text>
+      ) : null}
     </Surface>
   );
 }
@@ -629,6 +634,7 @@ const useStyles = themedStyles((colors) => ({
     gap: 16,
   },
   lineBorder: { borderTopWidth: 1, borderTopColor: colors.line },
+  hint: { paddingTop: 12, paddingBottom: 8, color: colors.ink },
   lineName: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
   amount: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24, color: colors.ink, textAlign: 'right' },
   packs: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.muted, marginTop: 2, textAlign: 'right' },

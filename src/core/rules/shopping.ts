@@ -206,7 +206,7 @@ function fromFoodLine(l: FoodLine): Omit<ShopItem, 'ticked'> | null {
       group,
       name: l.name,
       qty,
-      detail: t('rules.shop.packDetail', { size: l.packSize, total: l.amount }),
+      detail: t('rules.shop.packDetail', { size: l.packSize, total: l.amount }) + (l.hint ? `. ${l.hint}` : ''),
       text: phrase(qty, l.name),
     };
   }

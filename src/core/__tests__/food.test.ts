@@ -5,6 +5,7 @@ import {
   extras,
   extraSausagesFor,
   homemadePizza,
+  nearestPacks,
   pizzaCount,
   pizzaUnits,
   sausages,
@@ -41,77 +42,112 @@ describe('ceilSafe', () => {
   });
 });
 
-describe('sausages (spec §6.4, her amounts 21 Oct 2026)', () => {
-  // Emma: 13 children × 3 + 4 adults × 2 = 47 → up to whole packs
-  it('grill: 47 → 5 pk Gilde à 10 = 50; both breads ca. 60 % each: 30 lomper (3 pk à 10), 32 pølsebrød (4 pk à 8)', () => {
+describe('sausages (spec §6.4, a minimum since 1 Nov 2026)', () => {
+  // Emma: 13 children × 2 + 4 adults × 1 = 30 → whole packs nearest the need; bread unchanged (ca. 60 % each)
+  it('grill: 30 → 3 pk Gilde à 10 = 30; both breads ca. 60 % each (18): 20 lomper (2 pk à 10), 24 pølsebrød (3 pk à 8)', () => {
     expect(sausages('grillpolser', P)).toMatchObject({
-      raw: 47,
-      need: 47,
-      packs: 5,
-      bought: 50,
-      share: 30,
-      lomperNeed: 30,
-      lomper: 30,
-      lomperPacks: 3,
-      buns: 30,
-      bunPacks: 4,
-      bunsBought: 32,
+      raw: 30,
+      need: 30,
+      packs: 3,
+      bought: 30,
+      roundedDown: false,
+      share: 18,
+      lomperNeed: 18,
+      lomper: 20,
+      lomperPacks: 2,
+      buns: 18,
+      bunPacks: 3,
+      bunsBought: 24,
       condiments: 1,
       onionBags: 2,
     });
   });
-  it('wiener: 47 → 6 pk Gilde à 8 = 48; 29 of each bread → 3 pk lomper, 4 pk pølsebrød', () => {
+  it('wiener: 30 → 4 pk Gilde à 8 = 32 (3 pk would be 6 short); 20 of each bread → 2 pk lomper, 3 pk pølsebrød', () => {
     expect(sausages('wienerpolser', P)).toMatchObject({
-      need: 47,
-      packs: 6,
-      bought: 48,
-      share: 29,
-      lomper: 30,
-      buns: 29,
-      bunPacks: 4,
-      bunsBought: 32,
-    });
-  });
-  it('wiener with 0 adults: 13 × 3 = 39 → 5 pk = 40; 24 of each bread → 3 pk lomper, 3 pk pølsebrød', () => {
-    expect(sausages('wienerpolser', { ...P, adultsEating: 0 })).toMatchObject({
-      need: 39,
-      packs: 5,
-      bought: 40,
-      lomper: 30,
-      buns: 24,
-      bunPacks: 3,
-    });
-  });
-  it('10 children: 30 + 8 = 38 → 4 pk = 40; pølsebrød 24 → 3 pk', () => {
-    expect(sausages('grillpolser', { ...P, kidsComing: 10 })).toMatchObject({
-      need: 38,
+      need: 30,
       packs: 4,
-      buns: 24,
+      bought: 32,
+      share: 20,
+      lomper: 20,
+      buns: 20,
+      bunPacks: 3,
+      bunsBought: 24,
+    });
+  });
+  it('her feedback party, 14 children and 4 adults: 32 → 4 pk wiener = 32, 3 pk grill = 30 (nearest); 20 lomper + 24 brød', () => {
+    const p = { kidsComing: 14, adultsEating: 4, age: 5 };
+    expect(sausages('wienerpolser', p)).toMatchObject({
+      need: 32,
+      packs: 4,
+      bought: 32,
+      roundedDown: false,
+      lomper: 20,
+      lomperPacks: 2,
+      bunsBought: 24,
+      bunPacks: 3,
+    });
+    expect(sausages('grillpolser', p)).toMatchObject({
+      need: 32,
+      packs: 3,
+      bought: 30,
+      roundedDown: true,
+      lomper: 20,
+      bunsBought: 24,
+    });
+    // fewer than the 40ish wienerpølser that were too many
+    expect(sausages('wienerpolser', p).bought).toBeLessThan(40);
+  });
+  it('wiener with 0 adults: 13 × 2 = 26 → 3 pk = 24 (2 short, nearer than 32); 15 of each bread → 2 pk lomper, 2 pk pølsebrød', () => {
+    expect(sausages('wienerpolser', { ...P, adultsEating: 0 })).toMatchObject({
+      need: 26,
+      packs: 3,
+      bought: 24,
+      roundedDown: true,
+      lomper: 20,
+      buns: 15,
+      bunPacks: 2,
+    });
+  });
+  it('10 children: 20 + 4 = 24 → 3 pk = 30 (2 pk would be 4 short); pølsebrød 18 → 3 pk', () => {
+    expect(sausages('grillpolser', { ...P, kidsComing: 10 })).toMatchObject({
+      need: 24,
+      packs: 3,
+      buns: 18,
       bunPacks: 3,
     });
   });
-  it('the same at every age 3–10: 3 per child', () => {
-    for (const age of [3, 4, 5, 6, 7, 8, 9, 10]) expect(sausages('grillpolser', { ...P, age }).need).toBe(47);
+  it('the same at every age 3–10: 2 per child, 1 per adult', () => {
+    for (const age of [3, 4, 5, 6, 7, 8, 9, 10]) expect(sausages('grillpolser', { ...P, age }).need).toBe(30);
   });
-  it('her real party, 15 children and 5 adults: 45 + 10 = 55 → 6 pk = 60, what she bought', () => {
+  it('15 children and 5 adults: 30 + 5 = 35 → 4 pk = 40; both breads together still more than the sausages', () => {
     const s = sausages('grillpolser', { kidsComing: 15, adultsEating: 5, age: 5 });
-    expect(s).toMatchObject({ need: 55, packs: 6, bought: 60, condiments: 1, onionBags: 2 });
-    // both breads: more bread than sausages, so nobody has to eat it the «wrong» way
+    expect(s).toMatchObject({ need: 35, packs: 4, bought: 40, condiments: 1, onionBags: 2 });
     expect(s.lomper + s.bunsBought).toBeGreaterThan(s.bought);
   });
   it('lomper left out: one pølsebrød per sausage', () => {
-    expect(sausages('grillpolser', P, { withLomper: false })).toMatchObject({ buns: 50, bunPacks: 7, bunsBought: 56 });
+    expect(sausages('grillpolser', P, { withLomper: false })).toMatchObject({ buns: 30, bunPacks: 4, bunsBought: 32 });
   });
   it('pølsebrød left out: one lompe per sausage', () => {
-    expect(sausages('grillpolser', P, { withPolsebrod: false })).toMatchObject({ lomperNeed: 50, lomperPacks: 5 });
+    expect(sausages('grillpolser', P, { withPolsebrod: false })).toMatchObject({ lomperNeed: 30, lomperPacks: 3 });
+  });
+  it('nearestPacks: rounds down only when at most 2 short and nearer; never below 1 pack', () => {
+    expect(nearestPacks(32, 10)).toBe(3);
+    expect(nearestPacks(33, 10)).toBe(4);
+    expect(nearestPacks(35, 10)).toBe(4);
+    expect(nearestPacks(32, 8)).toBe(4);
+    expect(nearestPacks(26, 8)).toBe(3);
+    expect(nearestPacks(25, 8)).toBe(3);
+    expect(nearestPacks(4, 10)).toBe(1);
+    expect(nearestPacks(11, 10)).toBe(1);
+    expect(nearestPacks(0, 10)).toBe(0);
   });
   it('the pack sizes are the real Oda packs', () => {
     expect(SAUSAGE_PACK).toEqual({ grillpolser: 10, wienerpolser: 8 });
     expect(LOMPER_PACK).toBe(10);
     expect(POLSEBROD_PACK).toBe(8);
   });
-  it('one child who eats no pork → 4 kyllingpølser (3, plus one to spare)', () => {
-    expect(extraSausagesFor('grillpolser', 1, 5)).toBe(4);
+  it('one child who eats no pork → 3 kyllingpølser (2, plus one to spare)', () => {
+    expect(extraSausagesFor('grillpolser', 1, 5)).toBe(3);
   });
 });
 
@@ -198,11 +234,11 @@ describe('shopping list for Emma (spec §6.9)', () => {
   it('grill menu lines', () => {
     const list = shoppingList(emma());
     const by = Object.fromEntries(list.map((i) => [i.id, i]));
-    expect(by.grillpolser).toMatchObject({ need: 47, packs: 5, display: '50 (5 pk à 10)' });
-    expect(by.lomper).toMatchObject({ packs: 3, display: '30 (3 pk à 10)' });
+    expect(by.grillpolser).toMatchObject({ need: 30, packs: 3, display: '30 (3 pk à 10)' });
+    expect(by.lomper).toMatchObject({ packs: 2, display: '20 (2 pk à 10)' });
     expect(by.ketchup).toMatchObject({ name: 'Ketchup og sennep', display: '1 av hver' });
     expect(by.lok).toMatchObject({ name: 'Sprøstekt løk', display: '2 poser' });
-    expect(by.polsebrod).toMatchObject({ packs: 4, display: '32 (4 pk à 8)' });
+    expect(by.polsebrod).toMatchObject({ packs: 3, display: '24 (3 pk à 8)' });
     expect(by.saft.packs).toBe(2);
   });
   it('guest notes (Nora: nøtter, Adam: ikke svin) never change the shopping list: notes only', () => {

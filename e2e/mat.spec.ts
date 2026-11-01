@@ -351,7 +351,9 @@ test('Mat: 14 children, wienerpølser — a minimum of 32, bread follows, and a 
   await expect(hint).toContainText('Dette er et minimum som pleier å holde');
   await expect(hint).toContainText('lomper kan fryses');
   if (process.env.MAT_SHOTS) {
-    await visible(page, 'food-section-main-polser').scrollIntoViewIfNeeded();
+    // the whole card with the hint under it, clear of the bottom menu (still 390 px wide, a little taller)
+    await page.setViewportSize({ width: 390, height: 1120 });
+    await visible(page, 'food-section-main-polser').evaluate((el) => el.scrollIntoView({ block: 'start' }));
     await page.screenshot({ path: process.env.MAT_SHOTS });
   }
   expect(errors).toEqual([]);

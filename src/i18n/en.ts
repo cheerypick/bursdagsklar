@@ -1162,6 +1162,10 @@ export const en: LanguageResource = {
       lomperOnly: 'Without buns: one lompe per sausage',
       bunsBoth: 'About {{share}} of each – some like lompe, some a bun',
       bunsOnly: 'Without lompe: one bun per sausage',
+      nearestPack: ' (nearest whole pack)',
+      moreHint:
+        'This is a minimum that usually does the job. Big eaters, a long party or lots of grown-ups eating? Feel free to grab one extra pack – unopened sausages keep well in the fridge, and lompe can be frozen.',
+      moreHintShort: 'A minimum that usually does the job – grab one extra pack if you have big eaters',
       condimentWhy: 'For {{people}}. One bottle of each is enough for about {{per}}',
       onionWhy: 'For {{people}}. One bag (100 g) is enough for about {{per}}',
       enoughOne: '{{one}} is enough for {{people}}',

@@ -45,24 +45,24 @@ describe('Handleliste from Emma’s party (13 children, 4 adults, grillpølser)'
   });
 
   it('has the Mat lines with the same amounts and pack sizes', () => {
-    // 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50; lomper and pølsebrød ca. 30 each
+    // 13 × 2 + 4 × 1 = 30 → 3 pk à 10 = 30, a minimum with a soft hint; lomper and pølsebrød ca. 18 each
     expect(item(emma(), 'grillpolser')).toMatchObject({
       group: 'kjott',
-      qty: '5 pk',
-      detail: 'à 10, 50 stk i alt',
-      text: '5 pk grillpølser',
+      qty: '3 pk',
+      detail: 'à 10, 30 stk i alt. Et minimum som pleier å holde – ta gjerne én pakke ekstra om dere er storspisere',
+      text: '3 pk grillpølser',
     });
     expect(item(emma(), 'lomper')).toMatchObject({
       group: 'brod',
-      qty: '3 pk',
-      detail: 'à 10, 30 stk i alt',
-      text: '3 pk lomper',
+      qty: '2 pk',
+      detail: 'à 10, 20 stk i alt',
+      text: '2 pk lomper',
     });
     expect(item(emma(), 'polsebrod')).toMatchObject({
       group: 'brod',
-      qty: '4 pk',
-      detail: 'à 8, 32 stk i alt',
-      text: '4 pk pølsebrød',
+      qty: '3 pk',
+      detail: 'à 8, 24 stk i alt',
+      text: '3 pk pølsebrød',
     });
     expect(item(emma(), 'ketchup')).toMatchObject({ group: 'torrvarer', text: 'Ketchup og sennep: 1 av hver' });
     expect(item(emma(), 'lok')).toMatchObject({ group: 'torrvarer', text: '2 poser sprøstekt løk' });
@@ -239,7 +239,7 @@ describe('Handleliste with homemade pizza and with pølser + pizza (PR #5)', () 
       menu: { kind: 'flere', dishes: [{ kind: 'grillpolser' }, { kind: 'pizza', style: 'hjemmelaget' }] },
       diets: ['glutenfri'],
     });
-    expect(item(p, 'grillpolser')?.qty).toBe('3 pk');
+    expect(item(p, 'grillpolser')?.qty).toBe('2 pk');
     expect(item(p, 'pizzadeig')?.qty).toBe('2 pk');
     expect(groupOf(p, 'diet-glutenfri')).toBe('brod');
     expect(item(p, 'diet-glutenfri-pizza-hjemmelaget')?.name).toBe('1 Brisk Glutenfri pizzabunn 300 g');
@@ -258,7 +258,7 @@ describe('shareText', () => {
         'Handleliste – Emmas bursdag 7. nov',
         '',
         'Kjøtt og pålegg',
-        '☐ 5 pk grillpølser',
+        '☐ 3 pk grillpølser',
         '',
         'Brød',
         `☐ ${item(p, 'lomper')!.text}`,

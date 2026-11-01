@@ -1165,6 +1165,10 @@ export const nb = {
       lomperOnly: 'Uten pølsebrød: én lompe per pølse',
       bunsBoth: 'Ca. {{share}} av hver – noen vil ha lompe, noen brød',
       bunsOnly: 'Uten lomper: ett pølsebrød per pølse',
+      nearestPack: ' (nærmeste hele pakke)',
+      moreHint:
+        'Dette er et minimum som pleier å holde. Store spisere, lang fest eller mange voksne som spiser? Ta gjerne én pakke ekstra – uåpnede pølser holder seg lenge i kjøleskapet, og lomper kan fryses.',
+      moreHintShort: 'Et minimum som pleier å holde – ta gjerne én pakke ekstra om dere er storspisere',
       condimentWhy: 'Til {{people}}. Én flaske av hver holder til ca. {{per}}',
       onionWhy: 'Til {{people}}. Én pose (100 g) holder til ca. {{per}}',
       enoughOne: '{{one}} holder til {{people}}',

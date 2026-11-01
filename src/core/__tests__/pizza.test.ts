@@ -176,7 +176,7 @@ describe('pølser OR pizza (MVP)', () => {
     ).toEqual({ kind: 'flere', dishes: [{ kind: 'grillpolser' }, { kind: 'annet', text: 'Vårruller' }] });
     const plan = partyFoodPlan(migrate({ ...base, menu: BOTH })!)!;
     expect(plan.sections.filter((s) => isMainSection(s.id)).map((s) => s.id)).toEqual(['main-polser']);
-    expect(line(plan, 'grillpolser').amount).toBe('50 stk');
+    expect(line(plan, 'grillpolser').amount).toBe('30 stk');
   });
 });
 
@@ -195,17 +195,17 @@ describe('pølser and pizza together (kept for later, hidden in the MVP)', () =>
     expect(line(plan, 'pizzasaus').amount).toBe('1 glass');
     expect(line(plan, 'pizzaost').amount).toBe('1 pose');
     expect(line(plan, 'pizzaskinke').amount).toBe('1 pk');
-    // pølser: half of the sausage rule (13 × 3 + 4 × 2 = 47 → 24), up to whole packs: 3 pk à 10 = 30 (alone: 50)
+    // pølser: half of the sausage rule (13 × 2 + 4 × 1 = 30 → 15), nearest whole packs: 2 pk à 10 = 20 (alone: 30)
     const full = sausages('grillpolser', { kidsComing: 13, adultsEating: 4, age: 5 });
     const half = sausages('grillpolser', { kidsComing: 13, adultsEating: 4, age: 5, share: 0.5 });
-    expect(full.bought).toBe(50);
-    expect(half.need).toBe(24);
+    expect(full.bought).toBe(30);
+    expect(half.need).toBe(15);
     expect(line(plan, 'grillpolser')).toMatchObject({
-      amount: '30 stk',
-      packs: '3 pk à 10',
-      why: 'Halvparten pølser, halvparten pizza. 13 barn × 3 + 4 voksne × 2 = 47, halvparten er 24. 3 pk Gilde Grillpølser à 10 = 30, eller 1 storpakning (3 × 10)',
+      amount: '20 stk',
+      packs: '2 pk à 10',
+      why: 'Halvparten pølser, halvparten pizza. 13 barn × 2 + 4 voksne × 1 = 30, halvparten er 15. 2 pk Gilde Grillpølser à 10 = 20',
     });
-    // the bread follows the 30 sausages
+    // the bread follows the 20 sausages
     expect(line(plan, 'lomper').amount).toBe(`${half.lomper} stk`);
     expect(line(plan, 'polsebrod').amount).toBe(`${half.bunsBought} stk`);
   });

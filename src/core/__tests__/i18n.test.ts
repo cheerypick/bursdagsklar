@@ -25,8 +25,8 @@ const inLanguage = (lng: 'nb' | 'en', f: () => void) => {
   }
 };
 
-const emmaPlan = (menu: MenuChoice) =>
-  foodPlan({ menu, counts: { kids: 13, adults: 4 }, age: 5, diets: [], celebrants: 1 });
+const emmaPlan = (menu: MenuChoice, counts = { kids: 13, adults: 4 }) =>
+  foodPlan({ menu, counts, age: 5, diets: [], celebrants: 1 });
 const line = (plan: ReturnType<typeof foodPlan>, id: string) =>
   plan.sections.flatMap((s) => s.lines).find((l) => l.id === id)!;
 
@@ -50,18 +50,24 @@ describe('core rules in nb and en', () => {
   it('grill sausages for Emma: same numbers, words in the language', () => {
     const nb = line(emmaPlan({ kind: 'grillpolser' }), 'grillpolser');
     expect(nb.why).toBe(
-      '13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk',
+      '13 barn × 2 + 4 voksne × 1 = 30. 3 pk Gilde Grillpølser à 10 = 30, eller 1 storpakning (3 × 10)',
     );
     inLanguage('en', () => {
       const plan = emmaPlan({ kind: 'grillpolser' });
       expect(plan.forWhom).toBe('for 13 kids and 4 adults');
       const en = line(plan, 'grillpolser');
       expect(en.name).toBe('Grill sausages');
-      expect(en.packs).toBe('5 packs of 10');
+      expect(en.packs).toBe('3 packs of 10');
       expect(en.why).toBe(
-        '13 kids × 3 + 4 adults × 2 = 47. 5 × Gilde Grillpølser (10 each) = 50, or 1 big pack (3 × 10) and 2 more',
+        '13 kids × 2 + 4 adults × 1 = 30. 3 × Gilde Grillpølser (10 each) = 30, or 1 big pack (3 × 10)',
       );
-      expect(line(plan, 'lomper').why).toMatch(/^About 30 of each – some like lompe, some a bun/);
+      expect(en.hint).toBe('A minimum that usually does the job – grab one extra pack if you have big eaters');
+      expect(plan.sections[0].hint).toMatch(/^This is a minimum that usually does the job/);
+      // 14 kids + 4 adults: 32 → grill 3 packs = 30, said as the nearest whole pack
+      expect(line(emmaPlan({ kind: 'grillpolser' }, { kids: 14, adults: 4 }), 'grillpolser').why).toContain(
+        '= 30 (nearest whole pack)',
+      );
+      expect(line(plan, 'lomper').why).toMatch(/^About 18 of each – some like lompe, some a bun/);
     });
   });
 
@@ -140,13 +146,14 @@ describe('core rules in nb and en', () => {
       );
       const sausages = list.groups.flatMap((g) => g.items).find((i) => i.id === 'grillpolser')!;
       expect(sausages).toMatchObject({
-        qty: '5 packs',
-        detail: '10 each, 50 in total',
-        text: '5 packs grill sausages',
+        qty: '3 packs',
+        detail:
+          '10 each, 30 in total. A minimum that usually does the job – grab one extra pack if you have big eaters',
+        text: '3 packs grill sausages',
       });
       expect(shoppingCardLine({ count: 1, tickedCount: 0 })).toBe('1 item');
       expect(foodCardSummary(p)!.line).toBe(
-        '50 grill sausages with lompe and hot dog buns · 2 bottles of cordial · for 13 kids and 4 adults',
+        '30 grill sausages with lompe and hot dog buns · 2 bottles of cordial · for 13 kids and 4 adults',
       );
       const { tasks } = buildTasks(p);
       expect(tasks.find((t) => t.id === 'sendInvite')!.title).toBe('Send the invitation');

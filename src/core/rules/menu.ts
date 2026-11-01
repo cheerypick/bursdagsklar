@@ -132,10 +132,12 @@ export interface FoodLine {
   /** The same packs as data, for the shopping list («5 pk» + «à 10»): count and pack size. */
   packCount?: number;
   packSize?: string;
-  /** A plain piece count («50 stk»), for the Mat card on Planen («50 grillpølser»). */
+  /** A plain piece count («30 stk»), for the Mat card on Planen («30 grillpølser»). */
   count?: number;
   /** Why this amount, in one short line. */
   why: string;
+  /** A short soft hint the shopping list adds to this line's detail (sausages: «Et minimum … én pakke ekstra»). */
+  hint?: string;
   /** Whether the parent can tap this line to leave it out (every quantity line in main, drikke, frukt). */
   toggleable: boolean;
   /** false = deselected: shown greyed and struck through, left out of the Mat card and the shopping list. */
@@ -156,6 +158,8 @@ export interface FoodSection {
   card?: MenuCardId;
   title: string;
   lines: FoodLine[];
+  /** A soft hint under the lines (pølser: «Dette er et minimum som pleier å holde …», 1 Nov 2026). */
+  hint?: string;
 }
 
 export interface FoodPlanInput {
@@ -219,6 +223,7 @@ function mainLines(
           count: s.bought,
           ...packed(s.packs, s.pack),
           why: sausageWhy(menu.kind, s, people),
+          hint: t('rules.food.moreHintShort'),
         },
         {
           id: 'lomper',
@@ -591,8 +596,10 @@ export function foodPlan(input: FoodPlanInput): FoodPlan {
       c,
       input.items ?? {},
     ),
+    // a minimum that usually holds, plus a soft «ta gjerne én pakke ekstra» (Ekaterina, 1 Nov 2026)
+    ...(d.kind === 'grillpolser' || d.kind === 'wienerpolser' ? { hint: t('rules.food.moreHint') } : {}),
   }));
-  const raw: { id: FoodSectionId; card?: MenuCardId; title: string; lines: RawLine[] }[] = [
+  const raw: { id: FoodSectionId; card?: MenuCardId; title: string; lines: RawLine[]; hint?: string }[] = [
     ...mains,
     {
       id: 'drikke',
@@ -673,7 +680,7 @@ export function partyFoodPlan(p: Party): FoodPlan | null {
 const SAUSAGE_SIDES = ['lomper', 'polsebrod'];
 
 /**
- * The Mat card on Planen: «Grillpølser» + «50 grillpølser med lomper og pølsebrød · 2 flasker saft ·
+ * The Mat card on Planen: «Grillpølser» + «30 grillpølser med lomper og pølsebrød · 2 flasker saft ·
  * for 13 barn og 4 voksne». A line the parent deselected is left out (pølsebrød off → «med lomper»).
  */
 export function foodCardSummary(p: Party): { title: string; line: string } | null {

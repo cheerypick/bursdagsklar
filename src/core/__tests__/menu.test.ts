@@ -14,6 +14,7 @@ import {
 import { guestBounds, toggleDiet, withFoodItem, withGuestCounts, withMenu } from '../party';
 import { buildTasks } from '../rules/todos';
 import { headCount } from '../rules/people';
+import { nearestPacks } from '../rules/food';
 import type { MenuChoice } from '../model';
 
 const line = (plan: FoodPlan, id: string) => {
@@ -31,7 +32,7 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     expect(foodCounts(emma())).toEqual({ kids: 13, adults: 4 });
   });
 
-  it('grillpølser: 13 × 3 + 4 × 2 = 47 → 5 pk Gilde à 10 = 50, with the reason in words', () => {
+  it('grillpølser: 13 × 2 + 4 × 1 = 30 → 3 pk Gilde à 10 = 30, with the reason in words and a soft hint', () => {
     const plan = emmaPlan({ kind: 'grillpolser' });
     expect(plan.title).toBe('Grillpølser');
     expect(plan.forWhom).toBe('for 13 barn og 4 voksne');
@@ -39,22 +40,28 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     expect(line(plan, 'grillpolser')).toMatchObject({
       id: 'grillpolser',
       name: 'Grillpølser',
-      amount: '50 stk',
-      packs: '5 pk à 10',
-      why: '13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk',
+      amount: '30 stk',
+      packs: '3 pk à 10',
+      why: '13 barn × 2 + 4 voksne × 1 = 30. 3 pk Gilde Grillpølser à 10 = 30, eller 1 storpakning (3 × 10)',
+      hint: 'Et minimum som pleier å holde – ta gjerne én pakke ekstra om dere er storspisere',
       toggleable: true,
       included: true,
     });
-    // both breads on: ca. 60 % each (30 lomper → 3 pk à 10, 30 pølsebrød → 4 pk à 8), said in words
+    // a minimum, with a soft «ta gjerne én pakke ekstra» under the lines (1 Nov 2026)
+    const sec = plan.sections.find((s) => s.id === 'main-polser')!;
+    expect(sec.hint).toContain('Dette er et minimum som pleier å holde');
+    expect(sec.hint).toContain('Ta gjerne én pakke ekstra');
+    expect(plan.sections.find((s) => s.id === 'drikke')!.hint).toBeUndefined();
+    // both breads on: ca. 60 % each (18 → lomper 2 pk à 10, pølsebrød 3 pk à 8), said in words
     expect(line(plan, 'lomper')).toMatchObject({
-      amount: '30 stk',
-      packs: '3 pk à 10',
-      why: 'Ca. 30 av hver – noen vil ha lompe, noen brød. Tar du bort det ene, dekker det andre alle pølsene',
+      amount: '20 stk',
+      packs: '2 pk à 10',
+      why: 'Ca. 18 av hver – noen vil ha lompe, noen brød. Tar du bort det ene, dekker det andre alle pølsene',
     });
     expect(line(plan, 'polsebrod')).toMatchObject({
-      amount: '32 stk',
-      packs: '4 pk à 8',
-      why: 'Ca. 30 av hver – noen vil ha lompe, noen brød',
+      amount: '24 stk',
+      packs: '3 pk à 8',
+      why: 'Ca. 18 av hver – noen vil ha lompe, noen brød',
     });
     expect(line(plan, 'ketchup')).toMatchObject({
       name: 'Ketchup og sennep',
@@ -77,12 +84,12 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
       celebrants: 1,
       items: { lomper: { included: false } },
     });
-    // the greyed lomper line shows what it comes back as: ca. 30
-    expect(line(plan, 'lomper')).toMatchObject({ included: false, amount: '30 stk' });
+    // the greyed lomper line shows what it comes back as: ca. 18 → 2 pk
+    expect(line(plan, 'lomper')).toMatchObject({ included: false, amount: '20 stk' });
     expect(line(plan, 'polsebrod')).toMatchObject({
       included: true,
-      amount: '56 stk',
-      packs: '7 pk à 8',
+      amount: '32 stk',
+      packs: '4 pk à 8',
       why: 'Uten lomper: ett pølsebrød per pølse',
     });
   });
@@ -97,8 +104,8 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
       items: { polsebrod: { included: false } },
     });
     expect(line(plan, 'lomper')).toMatchObject({
-      amount: '50 stk',
-      packs: '5 pk à 10',
+      amount: '30 stk',
+      packs: '3 pk à 10',
       why: 'Uten pølsebrød: én lompe per pølse',
     });
   });
@@ -131,11 +138,11 @@ describe('Mat for Emma: 13 children, 4 adults (spec §6.9)', () => {
     expect(line(plan, 'kake').why).toBe('1,5 bit per barn og 1 per voksen. Kaken velger du under Kake');
   });
 
-  it('wienerpølser: 47 → 6 pk Gilde à 8 = 48, same per-person rule', () => {
+  it('wienerpølser: 30 → 4 pk Gilde à 8 = 32 (3 pk would be 6 short), same per-person rule', () => {
     expect(line(emmaPlan({ kind: 'wienerpolser' }), 'wienerpolser')).toMatchObject({
-      amount: '48 stk',
-      packs: '6 pk à 8',
-      why: '13 barn × 3 + 4 voksne × 2 = 47. 6 pk Gilde Wienerpølse à 8 = 48',
+      amount: '32 stk',
+      packs: '4 pk à 8',
+      why: '13 barn × 2 + 4 voksne × 1 = 30. 4 pk Gilde Wienerpølse à 8 = 32',
     });
   });
 
@@ -195,33 +202,39 @@ describe('a joint party with mixed ages', () => {
     expect(hc.kidsComing).toBe(16);
     const plan = partyFoodPlan(joint)!;
     const adults = hc.adultsEating;
-    // 3 per child at every age, 2 per adult
-    const need = 16 * 3 + adults * 2;
-    expect(line(plan, 'grillpolser').why).toContain(`16 barn × 3 + ${adults} voksne × 2 = ${need}.`);
-    expect(line(plan, 'grillpolser').packs).toBe(`${Math.ceil(need / 10)} pk à 10`);
+    // 2 per child at every age, 1 per adult
+    const need = 16 * 2 + adults * 1;
+    expect(line(plan, 'grillpolser').why).toContain(`16 barn × 2 + ${adults} voksne × 1 = ${need}.`);
+    expect(line(plan, 'grillpolser').packs).toBe(`${nearestPacks(need, 10)} pk à 10`);
     expect(line(plan, 'kake').why).toContain('Ett lys-sett per bursdagsbarn');
   });
-  it('a 4-year-old gets the same 3 per child', () => {
+  it('a 4-year-old gets the same 2 per child', () => {
     const plan = partyFoodPlan(emma({ celebrants: [{ id: 'c1', name: 'Ali', age: 4 }], children: 15 }))!;
-    expect(line(plan, 'grillpolser').why).toContain('15 barn × 3');
+    expect(line(plan, 'grillpolser').why).toContain('15 barn × 2');
   });
 });
 
 describe('rounding to pack sizes', () => {
-  it('never rounds down, and float noise does not add a pack', () => {
-    // 13 × 3 + 4 × 2 = 47 → 5 pk
-    expect(line(emmaPlan({ kind: 'grillpolser' }), 'grillpolser').packs).toBe('5 pk à 10');
-    // 20 × 3 = 60 → wiener 8 pk à 8 = 64
+  it('rounds to the nearest whole pack, at most 2 short, and float noise does not add a pack', () => {
+    // 13 × 2 + 4 × 1 = 30 → 3 pk
+    expect(line(emmaPlan({ kind: 'grillpolser' }), 'grillpolser').packs).toBe('3 pk à 10');
+    // 20 × 2 = 40 → wiener 5 pk à 8 = 40, a count that fits whole packs exactly takes no extra pack
     expect(line(emmaPlan({ kind: 'wienerpolser' }, { kids: 20, adults: 0 }), 'wienerpolser')).toMatchObject({
-      amount: '64 stk',
-      packs: '8 pk à 8',
+      amount: '40 stk',
+      packs: '5 pk à 8',
     });
-    // a count that fits whole packs exactly takes no extra pack: 16 × 3 = 48 → 6 pk à 8
-    expect(line(emmaPlan({ kind: 'wienerpolser' }, { kids: 16, adults: 0 }), 'wienerpolser')).toMatchObject({
-      amount: '48 stk',
-      packs: '6 pk à 8',
+    // her feedback party: 14 × 2 + 4 × 1 = 32 → wiener 4 pk = 32; grill 3 pk = 30 (2 short, nearer than 40)
+    expect(line(emmaPlan({ kind: 'wienerpolser' }, { kids: 14, adults: 4 }), 'wienerpolser')).toMatchObject({
+      amount: '32 stk',
+      packs: '4 pk à 8',
+      why: '14 barn × 2 + 4 voksne × 1 = 32. 4 pk Gilde Wienerpølse à 8 = 32',
     });
-    // one child, no adults: 3 → still a whole pack
+    expect(line(emmaPlan({ kind: 'grillpolser' }, { kids: 14, adults: 4 }), 'grillpolser')).toMatchObject({
+      amount: '30 stk',
+      packs: '3 pk à 10',
+      why: '14 barn × 2 + 4 voksne × 1 = 32. 3 pk Gilde Grillpølser à 10 = 30 (nærmeste hele pakke), eller 1 storpakning (3 × 10)',
+    });
+    // one child, no adults: 2 → still a whole pack
     expect(line(emmaPlan({ kind: 'grillpolser' }, { kids: 1, adults: 0 }), 'grillpolser')).toMatchObject({
       amount: '10 stk',
       packs: '1 pk à 10',
@@ -229,13 +242,13 @@ describe('rounding to pack sizes', () => {
   });
   it('no adults: the reason line leaves them out', () => {
     expect(line(emmaPlan({ kind: 'grillpolser' }, { kids: 10, adults: 0 }), 'grillpolser').why).toBe(
-      '10 barn × 3 = 30. 3 pk Gilde Grillpølser à 10 = 30, eller 1 storpakning (3 × 10)',
+      '10 barn × 2 = 20. 2 pk Gilde Grillpølser à 10 = 20',
     );
   });
-  it('more children → more packs: 20 children, 4 adults = 60 + 8 = 68 → 7 pk', () => {
+  it('more children → more packs: 20 children, 4 adults = 40 + 4 = 44 → 5 pk (4 pk would be 4 short)', () => {
     expect(line(emmaPlan({ kind: 'grillpolser' }, { kids: 20, adults: 4 }), 'grillpolser')).toMatchObject({
-      amount: '70 stk',
-      packs: '7 pk à 10',
+      amount: '50 stk',
+      packs: '5 pk à 10',
     });
   });
   it('the steppers are clamped', () => {
@@ -282,7 +295,7 @@ describe('the party record', () => {
     p = withMenu(p, { kind: 'grillpolser' });
     expect(foodCardSummary(p)).toEqual({
       title: 'Grillpølser',
-      line: '50 grillpølser med lomper og pølsebrød · 2 flasker saft · for 13 barn og 4 voksne',
+      line: '30 grillpølser med lomper og pølsebrød · 2 flasker saft · for 13 barn og 4 voksne',
     });
     p = toggleDiet(p, 'vegetar');
     expect(p.diets).toEqual(['vegetar']);
@@ -308,7 +321,7 @@ describe("item toggles (deselect what you don't need)", () => {
     let p = withFoodItem(grill(), 'polsebrod', false);
     expect(p.foodItems).toEqual({ polsebrod: { included: false } });
     const l = line(partyFoodPlan(p)!, 'polsebrod');
-    expect(l).toMatchObject({ included: false, toggleable: true, amount: '32 stk' });
+    expect(l).toMatchObject({ included: false, toggleable: true, amount: '24 stk' });
     expect(line(partyFoodPlan(p)!, 'lomper').included).toBe(true);
     p = withFoodItem(p, 'polsebrod', true);
     expect(p.foodItems).toEqual({ polsebrod: { included: true } });
@@ -316,9 +329,9 @@ describe("item toggles (deselect what you don't need)", () => {
   });
   it('the Mat card on Planen leaves out deselected lines', () => {
     let p = withFoodItem(grill(), 'polsebrod', false);
-    expect(foodCardSummary(p)!.line).toBe('50 grillpølser med lomper · 2 flasker saft · for 13 barn og 4 voksne');
+    expect(foodCardSummary(p)!.line).toBe('30 grillpølser med lomper · 2 flasker saft · for 13 barn og 4 voksne');
     p = withFoodItem(p, 'lomper', false);
-    expect(foodCardSummary(p)!.line).toBe('50 grillpølser · 2 flasker saft · for 13 barn og 4 voksne');
+    expect(foodCardSummary(p)!.line).toBe('30 grillpølser · 2 flasker saft · for 13 barn og 4 voksne');
     p = withFoodItem(withFoodItem(p, 'saft', false), 'grillpolser', false);
     expect(foodCardSummary(p)!.line).toBe('for 13 barn og 4 voksne');
   });

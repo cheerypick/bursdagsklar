@@ -36,11 +36,13 @@ export function clampChildren(n: number, celebrants: number): number {
   return Math.min(MAX_CHILDREN, Math.max(minChildren(celebrants), Math.round(n)));
 }
 
-// ---- sausages (§6.4, reworked 21 Oct 2026) ----
+// ---- sausages (§6.4, reworked 21 Oct 2026, minimum since 1 Nov 2026) ----
 /**
  * Context: en ekte fest med 15 barn (Ekaterina's, KIWI 26.08.2026) kjøpte 60 grillpølser og hadde ~20 til
  * overs; the bread was lomper and pølsebrød. On 21 Oct 2026 she chose the more generous amounts (Emma: 50
- * grillpølser, ca. 30 lomper and 30 pølsebrød) over a tighter rule that gave 40 / 20 / 24.
+ * grillpølser, ca. 30 lomper and 30 pølsebrød) over a tighter rule that gave 40 / 20 / 24. On 1 Nov 2026 real-party
+ * feedback (14 kids: 20 lomper, 24 brød, ca. 40 wienerpølser was «way too many») replaced that with a minimum plus
+ * soft hints, see SAUSAGE_PER_CHILD below.
  *
  * Packs read on Oda (oda.com) on 21 Oct 2026, the «Wienerpølser» and «Grillpølser» categories
  * (https://oda.com/no/categories/26-kylling-og-kjott/29-polser/3044-wienerpolser/ and
@@ -70,13 +72,21 @@ export const LOMPER_PRODUCT = { name: 'lomper', count: 10 } as const;
 export const POLSEBROD_PRODUCT = { name: 'pølsebrød', count: 8 } as const;
 
 /**
- * Sausages to buy per person (Ekaterina, 21 Oct 2026): 3 per child, every age 3–10, and 2 per grown-up, then up to
- * whole packs. No extra percentage: rounding up to packs is the margin. Emma (13 barn, 4 voksne):
- * 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50 grillpølser (wienerpølser: 6 pk à 8 = 48).
- * Kept per age band so a band can differ later; today they are all 3.
+ * Sausages to buy per person, a MINIMUM that usually holds (Ekaterina, 1 Nov 2026, superseding her 21 Oct 2026
+ * choice of 3 per child + 2 per adult): real-party feedback «way too many sausages and breads. Yesterday for 14 kids
+ * they had 20 lomper and 24 breads. And I think 40ish wienerpølser … Or even 30. maybe we should give a minimum? And
+ * some hints?». So: 2 per child (every age 3–10) and 1 per eating grown-up, then whole packs by `nearestPacks`
+ * (rules/food.ts): the pack count nearest the need, rounding DOWN only when that leaves at most
+ * PACK_SHORTFALL_MAX sausages short (and never below 1 pack). The Mat screen adds a soft hint to buy one pack
+ * more for big eaters or a long party.
+ * 14 barn + 4 voksne: 14 × 2 + 4 × 1 = 32 → wienerpølser 4 pk à 8 = 32, grillpølser 3 pk à 10 = 30 (2 short,
+ * nearer than 40). Emma (13 barn, 4 voksne): 30 → 3 pk grill = 30, 4 pk wiener = 32.
+ * Kept per age band so a band can differ later; today they are all 2.
  */
-export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 3, B: 3, C: 3, D: 3 };
-export const SAUSAGE_PER_ADULT = 2;
+export const SAUSAGE_PER_CHILD: Record<Band, number> = { A: 2, B: 2, C: 2, D: 2 };
+export const SAUSAGE_PER_ADULT = 1;
+/** Whole packs may land this many sausages under the need when that is nearer than a whole extra pack (1 Nov 2026). */
+export const PACK_SHORTFALL_MAX = 2;
 export const SAUSAGE_PACK = {
   grillpolser: SAUSAGE_PRODUCT.grillpolser.count,
   wienerpolser: SAUSAGE_PRODUCT.wienerpolser.count,
@@ -85,16 +95,18 @@ export const LOMPER_PACK = LOMPER_PRODUCT.count;
 export const POLSEBROD_PACK = POLSEBROD_PRODUCT.count;
 /**
  * Lomper and pølsebrød both on: each covers about 60 % of the sausages, up to whole packs, so together there is
- * some bread to spare (people mix, and nobody knows in advance who wants which). Emma: 60 % of 50 = 30 →
- * lomper 3 pk à 10 = 30, pølsebrød 4 pk à 8 = 32. One left out: the other covers every sausage.
+ * some bread to spare (people mix, and nobody knows in advance who wants which). Unchanged on 1 Nov 2026 («let's
+ * stick to initial breads then. Reduce just sausage»): the bread follows the lower sausage count on its own.
+ * 14 barn + 4 voksne: 32 wienerpølser → 60 % = 20 → lomper 2 pk à 10 = 20, pølsebrød 3 pk à 8 = 24.
+ * One left out: the other covers every sausage.
  */
 export const BREAD_SHARE_WHEN_BOTH = 0.6;
 /**
- * One bottle of ketchup (ca. 500 g), and one of sennep, for ca. 25 people: ca. 2 pølser each, and not all
- * children take both (I).
+ * One bottle of ketchup (ca. 500 g), and one of sennep, for ca. 25 people: ca. 2 pølser each (the 1 Nov 2026
+ * minimum), and not all children take both (I).
  */
 export const CONDIMENT_PER_EATERS = 25;
-/** Sprøstekt løk, 100 g bags: ca. 5 g per pølse, ca. 2 pølser per person → one bag per ca. 10 people (I). */
+/** Sprøstekt løk, 100 g bags: ca. 5 g per pølse, ca. 2 pølser per person (still true with the 1 Nov 2026 minimum) → one bag per ca. 10 people (I). */
 export const CRISPY_ONION_PER_EATERS = 10;
 
 // ---- pizza (§6.5, reworked 21 Oct 2026) ----

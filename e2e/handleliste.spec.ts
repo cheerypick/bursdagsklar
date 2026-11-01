@@ -72,9 +72,10 @@ test('Handleliste: pick Pølser, tick 2 items, reload keeps them; goodie-bag sug
   for (const g of ['kjott', 'brod', 'frukt', 'drikke', 'torrvarer', 'fest', 'godteposer'])
     await expect(visible(page, `shop-group-${g}`)).toBeVisible();
   await expect(visible(page, 'shop-group-kjott')).toContainText('Kjøtt og pålegg');
-  // 12 children, 4 adults: 12 × 3 + 4 × 2 = 44 → 5 pk à 10
-  await expect(visible(page, 'shop-qty-grillpolser')).toHaveText('5 pk');
-  await expect(item(page, 'grillpolser')).toContainText('à 10, 50 stk i alt');
+  // 12 children, 4 adults: 12 × 2 + 4 × 1 = 28 → 3 pk à 10, a minimum with a soft hint
+  await expect(visible(page, 'shop-qty-grillpolser')).toHaveText('3 pk');
+  await expect(item(page, 'grillpolser')).toContainText('à 10, 30 stk i alt');
+  await expect(item(page, 'grillpolser')).toContainText('ta gjerne én pakke ekstra');
   await expect(visible(page, 'shop-qty-godteposer')).toHaveText('12 stk');
   // nothing inside the goodie bags is assumed
   await expect(visible(page, 'shop-group-godteposer').locator('[data-testid^="shop-item-pose-"]')).toHaveCount(0);
@@ -181,7 +182,7 @@ test('Handleliste: «Del listen» without a share sheet copies plain text and sa
   await expect(page.getByText('Kopiert', { exact: true })).toBeVisible();
   const text = await page.evaluate(() => (window as unknown as { __copied: string | null }).__copied);
   expect(text).toMatch(/^Handleliste – Emmas bursdag 15\. [a-z]{3}\n\n/);
-  expect(text).toContain('Kjøtt og pålegg\n☐ 5 pk grillpølser');
+  expect(text).toContain('Kjøtt og pålegg\n☐ 3 pk grillpølser');
   expect(text).toContain('grillpølser');
   expect(text).toContain('☐ Sugerør');
   // ticked items are not shared

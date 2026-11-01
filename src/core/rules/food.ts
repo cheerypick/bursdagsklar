@@ -62,10 +62,23 @@ export interface People {
 // ---------------- sausages ----------------
 
 /**
- * Sausages in whole real packs (constants.ts names them), and the bread for them.
- * 3 per child and 2 per grown-up, up to whole packs (Emma: 13 × 3 + 4 × 2 = 47 → 5 pk à 10 = 50).
- * Bread: lomper and pølsebrød both on → each covers about 60 % of the sausages, up to whole packs, so there is
- * some to spare (Emma: 30 lomper, 32 pølsebrød). With one of them left out, the other covers them all.
+ * Whole packs nearest the need (1 Nov 2026): round down only when that leaves at most PACK_SHORTFALL_MAX short
+ * and is nearer than rounding up; never below 1 pack. 32 grillpølser → 3 pk à 10 = 30; 33 → 4 pk = 40.
+ */
+export function nearestPacks(need: number, size: number): number {
+  const up = packs(need, size);
+  const down = up - 1;
+  if (down < 1) return Math.max(up, need > 0 ? 1 : 0);
+  const short = need - down * size;
+  const over = up * size - need;
+  return short <= C.PACK_SHORTFALL_MAX && short < over ? down : up;
+}
+
+/**
+ * Sausages in whole real packs (constants.ts names them), and the bread for them. A minimum that usually holds
+ * (1 Nov 2026): 2 per child and 1 per grown-up, packs by `nearestPacks` (14 barn + 4 voksne: 32 → 4 pk wiener = 32,
+ * 3 pk grill = 30). Bread (unchanged): lomper and pølsebrød both on → each covers about 60 % of the sausages, up to
+ * whole packs (32 → 20 lomper, 24 pølsebrød). With one of them left out, the other covers them all.
  */
 export function sausages(
   kind: 'grillpolser' | 'wienerpolser',
@@ -80,12 +93,12 @@ export function sausages(
   const raw = p.kidsComing * perChild + p.adultsEating * C.SAUSAGE_PER_ADULT;
   /** What the whole party would need if sausages were the only dish. */
   const needAll = ceilSafe(raw);
-  /** Sausages the per-person rule asks for, before rounding up to packs (half of it when pizza is chosen too). */
+  /** Sausages the per-person rule asks for, before rounding to packs (half of it when pizza is chosen too). */
   const need = ceilSafe(raw * portion);
   const pack = C.SAUSAGE_PACK[kind];
-  const sausagePacks = packs(need, pack);
+  const sausagePacks = nearestPacks(need, pack);
   const bought = sausagePacks * pack;
-  /** Both breads on: about 60 % of the sausages each («ca. 30 av hver»). */
+  /** Both breads on: about 60 % of the sausages each («ca. 20 av hver»). */
   const share = ceilSafe(bought * C.BREAD_SHARE_WHEN_BOTH);
   const lomperNeed = both ? share : bought;
   const lomperPacks = packs(lomperNeed, C.LOMPER_PACK);
@@ -103,8 +116,10 @@ export function sausages(
     need,
     pack,
     packs: sausagePacks,
-    /** Sausages bought: whole packs. */
+    /** Sausages bought: whole packs (may be up to PACK_SHORTFALL_MAX under the need, see `nearestPacks`). */
     bought,
+    /** The whole packs landed under the need («nærmeste hele pakke»). */
+    roundedDown: bought < need,
     /** Each bread's share when both are on (about 60 % of the sausages). */
     share,
     lomperNeed,
@@ -127,7 +142,7 @@ export function sausages(
 const persons = (k: number) => peopleCount(k);
 
 /**
- * «13 barn × 3 + 4 voksne × 2 = 47. 5 pk Gilde Grillpølser à 10 = 50, eller 1 storpakning (3 × 10) og 2 pk»
+ * «14 barn × 2 + 4 voksne × 1 = 32. 3 pk Gilde Grillpølser à 10 = 30 (nærmeste hele pakke), eller 1 storpakning (3 × 10)»
  */
 export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<typeof sausages>, p: People): string {
   const product = C.SAUSAGE_PRODUCT[kind];
@@ -135,7 +150,7 @@ export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<t
   const kids = t('rules.food.kidsTimes', { kids: kidsCount(p.kidsComing), per: fmt(s.perChild) });
   const adults = t('rules.food.adultsTimes', { adults: adultsCount(p.adultsEating), per: fmt(C.SAUSAGE_PER_ADULT) });
   const sum = p.adultsEating > 0 ? `${kids} + ${adults}` : kids;
-  // pølser and pizza both picked: «Halvparten pølser, halvparten pizza. 13 barn × 3 + 4 voksne × 2 = 47, halvparten er 24»
+  // pølser and pizza both picked: «Halvparten pølser, halvparten pizza. 13 barn × 2 + 4 voksne × 1 = 30, halvparten er 15»
   const calc =
     s.portion < 1
       ? t('rules.food.shareCount', {
@@ -146,13 +161,14 @@ export function sausageWhy(kind: 'grillpolser' | 'wienerpolser', s: ReturnType<t
           need: s.need,
         })
       : `${sum} = ${s.need}`;
-  const line = t('rules.food.sausagePacks', {
-    calc,
-    packs: s.packs,
-    product: product.name,
-    size: product.count,
-    bought: s.bought,
-  });
+  const line =
+    t('rules.food.sausagePacks', {
+      calc,
+      packs: s.packs,
+      product: product.name,
+      size: product.count,
+      bought: s.bought,
+    }) + (s.roundedDown ? t('rules.food.nearestPack') : '');
   const big = Math.floor(s.packs / C.GRILL_STORPAKNING_PACKS);
   if (kind !== 'grillpolser' || big < 1) return line;
   const rest = s.packs - big * C.GRILL_STORPAKNING_PACKS;
